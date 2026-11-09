@@ -89,7 +89,7 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
 
   @override Widget build(BuildContext context) {
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Container(color: Colors.white, padding: const EdgeInsets.fromLTRB(18, 17, 18, 14),
+      Container(color: HyperionColors.card, padding: const EdgeInsets.fromLTRB(18, 17, 18, 14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('Tax Filing', style: TextStyle(color: HyperionColors.ink,
             fontSize: 22, fontWeight: FontWeight.w900)),
@@ -119,9 +119,9 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
   Widget _choice(int i) => OutlinedButton(
     onPressed: () => setState(() => section = i),
     style: OutlinedButton.styleFrom(
-      backgroundColor: section == i ? HyperionColors.brand : Colors.white,
-      foregroundColor: section == i ? Colors.white : HyperionColors.brand,
-      side: BorderSide(color: section == i ? HyperionColors.brand : HyperionColors.border)),
+      backgroundColor: section == i ? HyperionColors.brandFill : HyperionColors.card,
+      foregroundColor: section == i ? HyperionColors.onBrandFill : HyperionColors.brand,
+      side: BorderSide(color: section == i ? HyperionColors.brandFill : HyperionColors.border)),
     child: Text(sections[i]));
 
   Widget _periodPicker() => Row(mainAxisSize: MainAxisSize.min, children: [
