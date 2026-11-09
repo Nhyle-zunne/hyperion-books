@@ -81,10 +81,61 @@ const taxStatuses = [
   'Non-VAT / percentage tax', 'Consult accountant',
 ];
 
+
+const taxRecordKinds = ['Filing', '2307', 'Invoice'];
+const taxRecordStatuses = ['Draft', 'Filed', 'Issued', 'Received', 'Paid', 'Cancelled'];
+const taxRecordDirections = ['', 'Incoming', 'Outgoing'];
+
+/// A user-maintained registry item. It is NOT a BIR-submitted or verified return,
+/// tax certificate or legally issued electronic invoice.
+class TaxRecord {
+  final String id, kind, name, reference, period, status, direction, notes;
+  final DateTime date;
+  final int amountCentavos;
+  const TaxRecord({
+    required this.id, required this.kind, required this.name,
+    required this.reference, required this.date,
+    this.period = '', this.status = 'Draft', this.direction = '',
+    this.notes = '', this.amountCentavos = 0,
+  });
+  Map<String, Object?> toJson() => {
+    'id': id, 'kind': kind, 'name': name, 'reference': reference,
+    'period': period, 'date': BookEntry.dateKeyOf(date),
+    'status': status, 'direction': direction,
+    'notes': notes, 'amount_centavos': amountCentavos,
+  };
+  factory TaxRecord.fromJson(Map<String, dynamic> json) {
+    final id = json['id'], kind = json['kind'];
+    final name = json['name'], reference = json['reference'];
+    final period = json['period'] ?? '';
+    final date = json['date'], status = json['status'] ?? 'Draft';
+    final direction = json['direction'] ?? '', notes = json['notes'] ?? '';
+    final amount = json['amount_centavos'] ?? 0;
+    final parsed = date is String ? DateTime.tryParse(date) : null;
+    if (id is! String || id.isEmpty || id.length > 120 ||
+        kind is! String || !taxRecordKinds.contains(kind) ||
+        name is! String || name.trim().isEmpty || name.length > 180 ||
+        reference is! String || reference.length > 160 ||
+        period is! String || period.length > 40 ||
+        parsed == null || date != BookEntry.dateKeyOf(parsed) ||
+        status is! String || !taxRecordStatuses.contains(status) ||
+        direction is! String || !taxRecordDirections.contains(direction) ||
+        notes is! String || notes.length > 1500 ||
+        amount is! int || amount < 0 || amount > 100000000000000) {
+      throw const FormatException('Invalid local tax tracking record.');
+    }
+    return TaxRecord(id: id, kind: kind, name: name.trim(),
+      reference: reference.trim(), period: period.trim(), date: parsed,
+      status: status, direction: direction, notes: notes,
+      amountCentavos: amount);
+  }
+}
+
 class BusinessWorkspace {
   final String businessName, registrationStatus, taxStatus, notes;
   final List<BusinessListItem> masters;
   final List<BusinessReminder> reminders;
+  final List<TaxRecord> taxRecords;
 
   const BusinessWorkspace({
     this.businessName = '',
@@ -93,6 +144,7 @@ class BusinessWorkspace {
     this.notes = '',
     this.masters = const [],
     this.reminders = const [],
+    this.taxRecords = const [],
   });
 
   BusinessWorkspace copyWith({
@@ -100,6 +152,7 @@ class BusinessWorkspace {
     String? taxStatus, String? notes,
     List<BusinessListItem>? masters,
     List<BusinessReminder>? reminders,
+    List<TaxRecord>? taxRecords,
   }) => BusinessWorkspace(
     businessName: businessName ?? this.businessName,
     registrationStatus: registrationStatus ?? this.registrationStatus,
@@ -107,6 +160,7 @@ class BusinessWorkspace {
     notes: notes ?? this.notes,
     masters: List.unmodifiable(masters ?? this.masters),
     reminders: List.unmodifiable(reminders ?? this.reminders),
+    taxRecords: List.unmodifiable(taxRecords ?? this.taxRecords),
   );
 
   List<String> get expenseCategories {
@@ -125,6 +179,7 @@ class BusinessWorkspace {
     'notes': notes,
     'masters': masters.map((e) => e.toJson()).toList(),
     'reminders': reminders.map((e) => e.toJson()).toList(),
+    'tax_records': taxRecords.map((e) => e.toJson()).toList(),
   };
 
   factory BusinessWorkspace.fromJson(Map<String, dynamic> json) {
@@ -134,12 +189,14 @@ class BusinessWorkspace {
     final notes = json['notes'] ?? '';
     final rawMasters = json['masters'] ?? [];
     final rawReminders = json['reminders'] ?? [];
+    final rawTaxRecords = json['tax_records'] ?? [];
     if (name is! String || name.length > 180 ||
         reg is! String || !registrationStatuses.contains(reg) ||
         tax is! String || !taxStatuses.contains(tax) ||
         notes is! String || notes.length > 3000 ||
         rawMasters is! List || rawMasters.length > 10000 ||
-        rawReminders is! List || rawReminders.length > 10000) {
+        rawReminders is! List || rawReminders.length > 10000 ||
+        rawTaxRecords is! List || rawTaxRecords.length > 10000) {
       throw const FormatException('Invalid business settings in backup.');
     }
     final masters = <BusinessListItem>[];
@@ -166,11 +223,25 @@ class BusinessWorkspace {
       }
       reminders.add(item);
     }
+
+    final taxRecords = <TaxRecord>[];
+    ids.clear();
+    for (final raw in rawTaxRecords) {
+      if (raw is! Map<String, dynamic>) {
+        throw const FormatException('Invalid tax tracking record.');
+      }
+      final item = TaxRecord.fromJson(raw);
+      if (!ids.add(item.id)) {
+        throw const FormatException('Duplicate tax tracking reference ID.');
+      }
+      taxRecords.add(item);
+    }
     return BusinessWorkspace(
       businessName: name.trim(), registrationStatus: reg,
       taxStatus: tax, notes: notes,
       masters: List.unmodifiable(masters),
       reminders: List.unmodifiable(reminders),
+      taxRecords: List.unmodifiable(taxRecords),
     );
   }
 }
