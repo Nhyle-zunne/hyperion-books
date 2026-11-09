@@ -7,7 +7,6 @@ import '../models/book_entry.dart';
 import '../models/business_workspace.dart';
 import '../models/paymongo_transaction.dart';
 import '../models/tax_period_summary.dart';
-import 'accounting_books_page.dart';
 import 'tax_calendar_view.dart';
 
 final _php = NumberFormat.currency(locale: 'en_PH', symbol: '₱');
@@ -33,12 +32,12 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
   bool busy = false;
   @override void initState() {
     super.initState();
-    section = widget.initialSection.clamp(0, 6);
+    section = widget.initialSection.clamp(0, 5);
   }
 
   static const sections = [
     'Calendar','Monthly','Quarterly','Annual',
-    '2307 Certificates','e-Invoicing','Books of Accounts',
+    '2307 Certificates','e-Invoicing',
   ];
 
   Future<void> _save(BusinessWorkspace next) async {
@@ -110,9 +109,7 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
         1 || 2 || 3 => _periodOverview(),
         4 => _register('2307'),
         5 => _register('Invoice'),
-        _ => AccountingBooksPage(entries: widget.entries,
-          transactions: widget.transactions, workspace: widget.workspace,
-          save: widget.save),
+        _ => _calendar(),
       }),
     ]);
   }
