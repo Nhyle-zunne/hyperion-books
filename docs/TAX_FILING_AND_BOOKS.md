@@ -10,7 +10,7 @@ This is an **original, Hyperion-themed implementation** of workflows visible in 
 - **Export to Excel** exports the current book, period, and visible columns, with currency amounts stored numerically.
 - **Print Report** opens a separate, offline-capable printable HTML report in a new browser tab (browser pop-up permission may be required).
 - Ledger running balances carry forward earlier transactions, even when the display is filtered to a later period. Book classification is based on all imported PayMongo transactions, not just the selected date range.
-- **Include voided entries** and **Include unverified** are presently disabled. Hyperion Books does not yet maintain source-level void and verification audit flags; showing operative checkboxes without these records would be misleading. Deleted entries are actually removed from local storage.
+- **Include voided entries** and **Include unverified** filter working-paper rows by local manual flags. Tap a reference number to mark it reviewed/verified or void it in draft reports. A void flag excludes the complete reference from draft book views without deleting the original transaction. Filtering recalculates the provisional ledger balances from all included historical entries. These flags **are not** official BIR verification, statutory void/reversal entries, or tamper-proof audit logs. Tax period management totals still use underlying source records.
 - Separate **full Excel export** from Tools includes all four books, raw PayMongo records, business lists and tax tracking items.
 
 ## Tax Filing menu
