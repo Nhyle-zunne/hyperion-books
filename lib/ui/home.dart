@@ -6,6 +6,7 @@ import '../services/export_service.dart';
 import '../services/backup_service.dart';
 import '../state/books_controller.dart';
 import 'entry_dialog.dart';
+import 'hyperion_loading.dart';
 
 final _peso = NumberFormat.currency(locale: 'en_PH', symbol: '₱', decimalDigits: 2);
 String php(int centavos) => _peso.format(centavos / 100);
@@ -25,12 +26,20 @@ class _BooksHomeState extends State<BooksHome> {
   String _filter = 'All';
   String _month = 'All time';
 
+  void _navigate(int page) {
+    if (_page == page) return;
+    setState(() => _page = page);
+    HyperionLoading.pageTransition(
+      const ['Loading overview', 'Loading entries', 'Loading books', 'Loading settings'][page],
+    );
+  }
+
   Future<void> _edit(BuildContext context, EntryKind kind, {BookEntry? initial}) async {
     final id = widget.controller.userId;
     final value = await showEntryEditor(context, id, kind, initial: initial);
     if (value == null || !context.mounted) return;
     try {
-      await widget.controller.save(value);
+      await HyperionLoading.whileRunning('Saving entry', () => widget.controller.save(value));
     } catch (e) {
       if (context.mounted) _message(context, 'Could not save: $e');
     }
@@ -43,7 +52,13 @@ class _BooksHomeState extends State<BooksHome> {
       actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
         FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete'))],
     ));
-    if (confirmed == true) await widget.controller.remove(entry);
+    if (confirmed == true) {
+      try {
+        await HyperionLoading.whileRunning('Deleting entry', () => widget.controller.remove(entry));
+      } catch (error) {
+        if (context.mounted) _message(context, 'Could not delete: $error');
+      }
+    }
   }
 
   void _message(BuildContext context, String text) => ScaffoldMessenger.of(context)
@@ -51,7 +66,8 @@ class _BooksHomeState extends State<BooksHome> {
 
   Future<void> _export(BuildContext context) async {
     try {
-      await ExportService.export(widget.controller.report);
+      await HyperionLoading.whileRunning(
+        'Exporting Excel books', () => ExportService.export(widget.controller.report));
       if (context.mounted) _message(context, 'Excel workbook exported.');
     } catch (error) {
       if (context.mounted) _message(context, 'Excel export failed: $error');
@@ -62,7 +78,9 @@ class _BooksHomeState extends State<BooksHome> {
   Widget build(BuildContext context) {
     return AnimatedBuilder(animation: widget.controller, builder: (context, _) {
       final ctrl = widget.controller;
-      if (ctrl.loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      if (ctrl.loading) {
+        return const Scaffold(body: Center(child: Text('Opening your local books…')));
+      }
       if (!ctrl.ready) {
         return Scaffold(body: Center(child: Padding(
           padding: const EdgeInsets.all(25), child: Text(ctrl.status, textAlign: TextAlign.center))));
@@ -90,7 +108,7 @@ class _BooksHomeState extends State<BooksHome> {
         ),
         body: Row(children: [
           if (isWide) NavigationRail(
-            selectedIndex: _page, onDestinationSelected: (v) => setState(() => _page = v),
+            selectedIndex: _page, onDestinationSelected: _navigate,
             backgroundColor: Colors.white, labelType: NavigationRailLabelType.all,
             destinations: const [
               NavigationRailDestination(icon: Icon(Icons.space_dashboard_outlined),
@@ -109,7 +127,7 @@ class _BooksHomeState extends State<BooksHome> {
           ))),
         ]),
         bottomNavigationBar: isWide ? null : NavigationBar(
-          selectedIndex: _page, onDestinationSelected: (v) => setState(() => _page = v),
+          selectedIndex: _page, onDestinationSelected: _navigate,
           destinations: const [
             NavigationDestination(icon: Icon(Icons.dashboard_outlined), label: 'Home'),
             NavigationDestination(icon: Icon(Icons.swap_vert), label: 'Entries'),
@@ -126,7 +144,8 @@ class _BooksHomeState extends State<BooksHome> {
 
   Future<void> _backup(BuildContext context) async {
     try {
-      await BackupService.export(widget.controller.entries);
+      await HyperionLoading.whileRunning(
+        'Exporting backup', () => BackupService.export(widget.controller.entries));
       if (context.mounted) _message(context, 'JSON backup saved. Keep it somewhere safe.');
     } catch (error) {
       if (context.mounted) _message(context, 'Could not save backup: $error');
@@ -155,7 +174,8 @@ class _BooksHomeState extends State<BooksHome> {
         ],
       ));
       if (accepted != true || !context.mounted) return;
-      await widget.controller.restore(incoming);
+      await HyperionLoading.whileRunning(
+        'Restoring local books', () => widget.controller.restore(incoming));
       if (context.mounted) _message(context, 'Restored ${incoming.length} entries from backup.');
     } catch (error) {
       if (context.mounted) _message(context, 'Backup import failed: $error');
@@ -219,7 +239,7 @@ class _BooksHomeState extends State<BooksHome> {
             style: TextStyle(fontSize: 12)),
         ]))),
       const SizedBox(height: 21),
-      _section('Recent entries', trailing: TextButton(onPressed: () => setState(() => _page = 1), child: const Text('View all'))),
+      _section('Recent entries', trailing: TextButton(onPressed: () => _navigate(1), child: const Text('View all'))),
       ...widget.controller.entries.take(6).map((e) => _entryTile(context, e)),
       if (widget.controller.entries.isEmpty) const _EmptyState('No entries yet', 'Add a payout or expense to begin.'),
     ]);

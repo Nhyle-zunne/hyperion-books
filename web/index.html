@@ -5,22 +5,183 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0B294A">
-  <meta name="description" content="Hyperion Books: payouts and expenses, saved offline on your device.">
+  <meta name="description" content="Hyperion Books: simple local-first bookkeeping for payouts and expenses.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Hyperion Books">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
-  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <!-- hyperion-pwa uses its gold/navy logo.png as the tab icon. -->
+  <link rel="icon" type="image/png" href="logo.png?v=3">
   <link rel="manifest" href="manifest.json">
   <title>Hyperion Books</title>
   <style>
-    html,body{height:100%;margin:0;background:#f4f7fa;font-family:system-ui,-apple-system,sans-serif}
-    #startup{position:fixed;inset:0;display:grid;place-items:center;color:#0b294a;font-weight:800}
+    :root { --loader-accent: #22c55e; --loader-text: #102840; }
+    html, body { height: 100%; margin: 0; background: #f4f7fa; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    /* Shares the same cube faces, navy/gold mark, 2.4-second rotation and 1.08-second
+       top progress sweep used by hyperion-pwa's TopLoadingIndicator. */
+    .hyperion-top-loader {
+      position: fixed; inset: 0 0 auto; height: 116px; z-index: 9500;
+      opacity: 0; transform: translateY(-7px); pointer-events: none;
+      transition: opacity 190ms ease, transform 220ms cubic-bezier(.2,.8,.2,1);
+    }
+    .hyperion-top-loader.is-visible { opacity: 1; transform: translateY(0); }
+    .hyperion-top-loader__track {
+      position: absolute; inset: 0 0 auto; display: block; height: 4px; overflow: hidden;
+      background: rgba(34,197,94,.12);
+    }
+    .hyperion-top-loader__progress {
+      display: block; width: 30%; height: 100%; border-radius: 0 99px 99px 0;
+      background: linear-gradient(90deg,#042353 0%,var(--loader-accent) 68%,#4ade80 100%);
+      box-shadow: 0 0 12px rgba(34,197,94,.4);
+      animation: hyperion-loader-sweep 1.08s cubic-bezier(.45,0,.55,1) infinite;
+    }
+    .hyperion-top-loader__logo-wrap {
+      --cube-size: 56px; --cube-depth: calc(var(--cube-size) / 2);
+      position: absolute; top: 12px; left: 50%; display: block;
+      width: 120px; height: 112px; perspective: 600px; transform: translateX(-50%);
+    }
+    .hyperion-top-loader__cube {
+      position: absolute; top: 8px; left: calc(50% - var(--cube-depth));
+      width: var(--cube-size); height: var(--cube-size);
+      transform-style: preserve-3d; transform: rotateX(-30deg) rotateY(-45deg);
+      animation: hyperion-loader-cube-turn 2.4s linear infinite;
+    }
+    .hyperion-top-loader__face {
+      position: absolute; inset: 0; display: block; background: #042353;
+      backface-visibility: hidden;
+    }
+    .hyperion-top-loader__face::after {
+      content: ''; position: absolute; inset: 0; border: 1px solid rgba(255,212,93,.16);
+      background: rgba(0,9,28,var(--face-shade,0));
+    }
+    .hyperion-top-loader__face--front { transform: translateZ(var(--cube-depth)); }
+    .hyperion-top-loader__face--back { transform: rotateY(180deg) translateZ(var(--cube-depth)); }
+    .hyperion-top-loader__face--right { transform: rotateY(90deg) translateZ(var(--cube-depth)); --face-shade: .16; }
+    .hyperion-top-loader__face--left { transform: rotateY(-90deg) translateZ(var(--cube-depth)); --face-shade: .16; }
+    .hyperion-top-loader__face--top { transform: rotateX(90deg) translateZ(var(--cube-depth)); }
+    .hyperion-top-loader__face--bottom { transform: rotateX(-90deg) translateZ(var(--cube-depth)); --face-shade: .3; }
+    .hyperion-top-loader__logo { display: block; width: 100%; height: 100%; object-fit: contain; }
+    .hyperion-top-loader__shadow {
+      position: absolute; top: 70px; left: calc(50% - var(--cube-depth));
+      width: var(--cube-size); height: var(--cube-size); background: var(--loader-text);
+      opacity: .16; filter: blur(1px); transform: rotateX(65deg) rotateZ(-45deg);
+      animation: hyperion-loader-shadow-turn 2.4s linear infinite;
+    }
+    .hyperion-loader__sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    .hyperion-startup {
+      position: fixed; inset: 0; z-index: 9990; background: #f4f7fa;
+      color: #042353; text-align: center; pointer-events: none;
+    }
+    .hyperion-startup .hyperion-top-loader__track { left: 0; right: 0; }
+    .hyperion-startup .hyperion-top-loader__logo-wrap { top: calc(50% - 83px); }
+    .hyperion-startup__brand {
+      position: absolute; top: calc(50% + 66px); left: 12px; right: 12px;
+      font-size: 18px; font-weight: 900; letter-spacing: .08em;
+    }
+    .hyperion-startup__description { display: block; color: #64748b; margin-top: 6px; font-size: 12px; font-weight: 500; letter-spacing: normal; }
+    @keyframes hyperion-loader-sweep { 0% { transform: translateX(-120%); } 55% { transform: translateX(220%); } 100% { transform: translateX(340%); } }
+    @keyframes hyperion-loader-cube-turn { from { transform: rotateX(-30deg) rotateY(-45deg); } to { transform: rotateX(-30deg) rotateY(315deg); } }
+    @keyframes hyperion-loader-shadow-turn { from { transform: rotateX(65deg) rotateZ(-45deg); } to { transform: rotateX(65deg) rotateZ(315deg); } }
+    @media (max-width: 599px) {
+      .hyperion-top-loader { height: 108px; }
+      .hyperion-top-loader__logo-wrap { --cube-size: 46px; top: 10px; height: 98px; }
+      .hyperion-top-loader__shadow { top: 60px; }
+      .hyperion-startup .hyperion-top-loader__logo-wrap { top: calc(50% - 72px); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .hyperion-top-loader, .hyperion-top-loader.is-visible { transition: none; transform: none; }
+      .hyperion-top-loader__progress { width: 100%; animation: none; }
+      .hyperion-top-loader__cube, .hyperion-top-loader__shadow { animation: none; }
+    }
   </style>
 </head>
 <body>
-  <div id="startup">⚓ HYPERION BOOKS</div>
-  <script>window.addEventListener('flutter-first-frame',function(){var el=document.getElementById('startup');if(el)el.remove();});</script>
+  <div id="startup" class="hyperion-startup" role="status" aria-label="Opening Hyperion Books">
+    <span class="hyperion-top-loader__track" aria-hidden="true"><span class="hyperion-top-loader__progress"></span></span>
+    <span class="hyperion-top-loader__logo-wrap" aria-hidden="true">
+      <span class="hyperion-top-loader__shadow"></span>
+      <span class="hyperion-top-loader__cube">
+        <span class="hyperion-top-loader__face hyperion-top-loader__face--front"><img class="hyperion-top-loader__logo" src="logo.png" alt=""></span>
+        <span class="hyperion-top-loader__face hyperion-top-loader__face--back"><img class="hyperion-top-loader__logo" src="logo.png" alt=""></span>
+        <span class="hyperion-top-loader__face hyperion-top-loader__face--right"><img class="hyperion-top-loader__logo" src="logo.png" alt=""></span>
+        <span class="hyperion-top-loader__face hyperion-top-loader__face--left"><img class="hyperion-top-loader__logo" src="logo.png" alt=""></span>
+        <span class="hyperion-top-loader__face hyperion-top-loader__face--top"><img class="hyperion-top-loader__logo" src="logo.png" alt=""></span>
+        <span class="hyperion-top-loader__face hyperion-top-loader__face--bottom"><img class="hyperion-top-loader__logo" src="logo.png" alt=""></span>
+      </span>
+    </span>
+    <span class="hyperion-startup__brand">HYPERION BOOKS<span class="hyperion-startup__description">Opening your local books…</span></span>
+  </div>
+  <div id="hyperion-operation-loader" class="hyperion-top-loader" role="status" aria-live="polite" aria-hidden="true" aria-label="Loading Hyperion Books">
+    <span class="hyperion-top-loader__track" aria-hidden="true"><span class="hyperion-top-loader__progress"></span></span>
+    <span class="hyperion-top-loader__logo-wrap" aria-hidden="true">
+      <span class="hyperion-top-loader__shadow"></span>
+      <span class="hyperion-top-loader__cube">
+        <span class="hyperion-top-loader__face hyperion-top-loader__face--front"><img class="hyperion-top-loader__logo" src="logo.png" alt=""></span>
+        <span class="hyperion-top-loader__face hyperion-top-loader__face--back"><img class="hyperion-top-loader__logo" src="logo.png" alt=""></span>
+        <span class="hyperion-top-loader__face hyperion-top-loader__face--right"><img class="hyperion-top-loader__logo" src="logo.png" alt=""></span>
+        <span class="hyperion-top-loader__face hyperion-top-loader__face--left"><img class="hyperion-top-loader__logo" src="logo.png" alt=""></span>
+        <span class="hyperion-top-loader__face hyperion-top-loader__face--top"><img class="hyperion-top-loader__logo" src="logo.png" alt=""></span>
+        <span class="hyperion-top-loader__face hyperion-top-loader__face--bottom"><img class="hyperion-top-loader__logo" src="logo.png" alt=""></span>
+      </span>
+    </span>
+    <span class="hyperion-loader__sr-only">Loading Hyperion Books</span>
+  </div>
+  <script>
+    (() => {
+      const startup = document.getElementById('startup');
+      const overlay = document.getElementById('hyperion-operation-loader');
+      const message = overlay.querySelector('.hyperion-loader__sr-only');
+      const active = new Map();
+      let nextId = 0;
+      let ready = false;
+      let showTimer;
+      let hideTimer;
+      function refresh() {
+        clearTimeout(showTimer);
+        clearTimeout(hideTimer);
+        if (!ready || active.size === 0) {
+          hideTimer = setTimeout(() => {
+            overlay.classList.remove('is-visible');
+            overlay.setAttribute('aria-hidden', 'true');
+          }, 180);
+        } else {
+          showTimer = setTimeout(() => {
+            if (!ready || active.size === 0) return;
+            const label = [...active.values()].at(-1).label;
+            overlay.setAttribute('aria-label', label);
+            message.textContent = label;
+            overlay.setAttribute('aria-hidden', 'false');
+            overlay.classList.add('is-visible');
+          }, 70);
+        }
+      }
+      function stop(id) {
+        const task = active.get(id);
+        if (!task) return;
+        clearTimeout(task.watchdog);
+        active.delete(id);
+        refresh();
+      }
+      window.hyperionBooksLoader = {
+        start(label) {
+          const id = ++nextId;
+          active.set(id, { label: label || 'Loading Hyperion Books', watchdog: setTimeout(() => stop(id), 45000) });
+          refresh();
+          return id;
+        },
+        stop,
+        pulse(label, durationMs) {
+          const id = window.hyperionBooksLoader.start(label);
+          setTimeout(() => stop(id), Math.max(0, Math.min(2000, durationMs || 480)));
+        }
+      };
+      window.addEventListener('flutter-first-frame', () => {
+        ready = true;
+        if (startup) startup.remove();
+        refresh();
+      }, { once: true });
+    })();
+  </script>
   <script src="flutter_bootstrap.js" async></script>
   <script>
     if ('serviceWorker' in navigator) {

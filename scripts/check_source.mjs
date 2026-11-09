@@ -7,7 +7,7 @@ for (const file of [
   'lib/main.dart','lib/models/book_entry.dart','lib/models/reports.dart',
   'lib/data/local_repository.dart','lib/state/books_controller.dart',
   'lib/services/backup_service.dart','lib/services/export_service.dart',
-  'lib/ui/entry_dialog.dart','lib/ui/home.dart','scripts/make_sw.mjs',
+  'lib/ui/entry_dialog.dart','lib/ui/home.dart','lib/ui/hyperion_loading.dart','scripts/make_sw.mjs',
   'test/book_entry_test.dart','test/backup_test.dart','web/index.html','web/manifest.json',
   '.github/workflows/pages.yml',
 ]) assert(existsSync(join(root, file)), `Missing ${file}`);
@@ -29,5 +29,10 @@ for (const tab of ['PAYOUTS','EXPENSES','CASH RECEIPTS','CASH DISBURSEMENTS','GE
 const report = source('lib/models/reports.dart');
 assert(report.includes('journalBalanced'), 'Double-entry accounting missing');
 assert(source('web/index.html').includes('serviceWorker.register'), 'Offline app worker missing');
+assert(source('web/index.html').includes('hyperionBooksLoader'), 'PWA-style runtime loader missing');
+assert(source('lib/ui/home.dart').includes('HyperionLoading.whileRunning'), 'Operation loading hooks missing');
+for (const icon of ['web/logo.png','web/favicon.png','web/apple-touch-icon.png','web/icons/Icon-192.png','web/icons/Icon-512.png']) {
+  assert(existsSync(join(root, icon)), `Missing shared Hyperion PWA branding asset: ${icon}`);
+}
 assert(source('web/manifest.json').includes('"start_url": "."'), 'GitHub Pages subpath support missing');
 console.log('PASS: local-first storage, picker, journal, Excel, JSON backup/restore, GitHub Pages subpath, offline shell.');

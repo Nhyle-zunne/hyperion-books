@@ -25,6 +25,7 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
+      - run: node scripts/test_loader.mjs
       - run: flutter build web --release --no-web-resources-cdn --base-href=/hyperion-books/
       - run: node scripts/make_sw.mjs build/web
       - run: find build/web -name '*.map' -delete

@@ -44,3 +44,7 @@ The app runs on Android, iPhone/iPad, Windows, and Mac through an HTTPS browser 
 ## Accounting caveat
 
 Processor payouts may include sales from earlier dates and differ from gross sales because of fees, refunds, withholding, or other adjustments. This app records net cash movement and provisional journals; the reports are not independently certified BIR books of accounts or automatically tax-compliant. Keep underlying statements and receipts.
+
+## Shared Hyperion branding
+
+The browser tab, home-screen icons and startup/operation loader reuse the exact gold/navy logo assets from `hyperion-pwa`. The cube loader uses the same six faces, 2.4-second rotation, progress sweep and reduced-motion behavior. The loader is visual-only: no financial data leaves the device.
