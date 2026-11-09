@@ -229,7 +229,7 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
   String _hint() => switch (_tab) {
     0 => 'Debits and credits by account, with original transaction references.',
     1 => 'One account at a time. Dr/Cr shows the balance side; B/F carries '
-        'approved earlier activity into the selected period.',
+        'included earlier activity into the selected period.',
     2 => 'Bank / cash is money received. Clearing is still held by the '
         'processor. Transfers are not extra sales; never add these columns as revenue.',
     _ => 'Only recorded payments, not unpaid purchases or draft bills.',
