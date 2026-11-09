@@ -81,6 +81,13 @@ void main() {
     expect(find.text('Imported PayMongo activity'), findsOneWidget);
     expect(find.text('Gross customer payments'), findsOneWidget);
     expect(find.text('1 paid transactions'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Business performance'), 360,
+      scrollable: find.byType(Scrollable).first);
+    expect(find.text('Business performance'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Bank and cash movements'), 360,
+      scrollable: find.byType(Scrollable).first);
     expect(find.text('Bank and cash movements'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
