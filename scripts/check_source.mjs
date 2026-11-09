@@ -23,8 +23,14 @@ assert(form.includes('showDatePicker'), 'Calendar picker missing');
 const backup = source('lib/services/backup_service.dart');
 assert(backup.includes('schema_version') && backup.includes('decode') && backup.includes('selectAndRead'), 'Restorable backup missing');
 const excel = source('lib/services/export_service.dart');
-for (const tab of ['PAYOUTS','EXPENSES','CASH RECEIPTS','CASH DISBURSEMENTS','GENERAL JOURNAL','GENERAL LEDGER','MONTHLY SUMMARY']) {
+for (const tab of ['PAYOUTS','EXPENSES','CASH RECEIPTS JOURNAL','CASH DISBURSEMENTS JOURNAL','GENERAL JOURNAL','GENERAL LEDGER','MONTHLY SUMMARY','PAYMONGO TRANSACTIONS']) {
   assert(excel.includes(`'${tab}'`), `Excel sheet missing: ${tab}`);
+}
+const accounting = source('lib/models/accounting_books.dart');
+assert(accounting.includes('PayMongo settlement clearing') && accounting.includes('balanced'), 'Combined accounting journals missing');
+const booksUi = source('lib/ui/home.dart');
+for (const name of ['Cash Receipts Journal','Cash Disbursements Journal','General Journal','General Ledger','Imported PayMongo activity']) {
+  assert(booksUi.includes(name), `Missing dashboard or books view: ${name}`);
 }
 const report = source('lib/models/reports.dart');
 assert(report.includes('journalBalanced'), 'Double-entry accounting missing');
