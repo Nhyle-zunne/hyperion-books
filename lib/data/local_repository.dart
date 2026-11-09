@@ -1,5 +1,6 @@
 import 'package:sembast_web/sembast_web.dart';
 import '../models/book_entry.dart';
+import '../models/paymongo_transaction.dart';
 
 /// Data never leaves this browser's IndexedDB unless the user exports it.
 /// Records are not encrypted at rest; do not use a shared browser profile.
@@ -7,6 +8,8 @@ class LocalRepository {
   final Database db;
   final StoreRef<String, Map<String, Object?>> _records =
       stringMapStoreFactory.store('entries');
+  final StoreRef<String, Map<String, Object?>> _paymongo =
+      stringMapStoreFactory.store('paymongo_transactions');
 
   LocalRepository._(this.db);
 
@@ -20,16 +23,39 @@ class LocalRepository {
     return snapshots.map((s) => BookEntry.fromLocalJson(s.value)).toList();
   }
 
+  Future<List<PayMongoTransaction>> listPayMongo() async {
+    final snapshots = await _paymongo.find(db);
+    return snapshots.map((s) => PayMongoTransaction.fromJson(s.value)).toList();
+  }
+
+  /// Idempotent: an already-imported PayMongo transaction ID is never counted
+  /// twice, even if a CSV contains overlapping dates or is re-imported.
+  Future<int> importPayMongo(List<PayMongoTransaction> transactions) async {
+    return db.transaction((txn) async {
+      var added = 0;
+      for (final item in transactions) {
+        if (await _paymongo.record(item.id).get(txn) != null) continue;
+        await _paymongo.record(item.id).put(txn, item.toJson());
+        added++;
+      }
+      return added;
+    });
+  }
+
   Future<void> upsert(BookEntry entry) async {
     await _records.record(entry.id).put(db, entry.toLocalJson());
   }
 
   /// Atomic replacement so an interrupted restore never leaves partial books.
-  Future<void> replaceAll(List<BookEntry> entries) async {
+  Future<void> replaceAll(List<BookEntry> entries, List<PayMongoTransaction> paymongo) async {
     await db.transaction((txn) async {
       await _records.delete(txn);
+      await _paymongo.delete(txn);
       for (final entry in entries) {
         await _records.record(entry.id).put(txn, entry.toLocalJson());
+      }
+      for (final item in paymongo) {
+        await _paymongo.record(item.id).put(txn, item.toJson());
       }
     });
   }
