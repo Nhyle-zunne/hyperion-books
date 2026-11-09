@@ -132,7 +132,7 @@ void main() {
     expect(row1.length, 28);
     expect(row2.length, 28);
     final result = PayMongoCsvService.parse(
-      '${csvHeader}${row1.join(',')}\n${row2.join(',')}\n');
+      '$csvHeader${row1.join(',')}\n${row2.join(',')}\n');
     expect(result.transactions.length, 2);
     expect(result.transactions.first.id, 'adj_synthetic01');
     expect(result.transactions.first.occurredAt, DateTime(2026, 11, 4, 6, 49));
