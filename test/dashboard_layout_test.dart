@@ -47,6 +47,14 @@ void main() {
       tester.view.resetDevicePixelRatio();
     });
 
+    final originalHandler = FlutterError.onError;
+    FlutterError.onError = (details) {
+      // ignore: avoid_print
+      print('DESKTOP RENDER DIAGNOSTIC: ${details.toString()}');
+      originalHandler?.call(details);
+    };
+    addTearDown(() => FlutterError.onError = originalHandler);
+
     final fixture = _DashboardFixture();
     addTearDown(fixture.dispose);
 
