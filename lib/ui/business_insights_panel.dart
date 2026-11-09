@@ -52,11 +52,11 @@ class _BusinessInsightsPanelState extends State<BusinessInsightsPanel> {
         final width = (size.maxWidth - (count - 1) * gap) / count;
         return Wrap(spacing: gap, runSpacing: gap, children: [
           SizedBox(width: width, child: _kpi('Tracked receipts',
-            pesos(a.trackedReceipts), 'PayMongo gross + provisional Play', green)),
+            pesos(a.trackedReceipts), 'Imported sales + other provisional receipts', green)),
           SizedBox(width: width, child: _kpi('Indicative result',
             pesos(a.indicativeResult), 'Not audited net profit', navy)),
           SizedBox(width: width, child: _kpi('Known costs',
-            pesos(a.trackedCosts), 'PayMongo fees + expenses', coral)),
+            pesos(a.trackedCosts), 'Processing fees + recorded expenses', coral)),
           SizedBox(width: width, child: _kpi('Bank cash movement',
             pesos(a.cashMovement), 'Manual payouts − expenses',
             HyperionColors.chartBlue)),
@@ -91,7 +91,7 @@ class _BusinessInsightsPanelState extends State<BusinessInsightsPanel> {
       SizedBox(height: 12),
       Text('Tracked receipts are not verified taxable sales. '
         'Google Play amounts are provisional. Bank payouts do not create '
-        'additional sales. Imported PayMongo fees include VAT.',
+        'additional sales. Imported processing fees include their VAT component.',
         style: TextStyle(color: muted, fontSize: 11.5, height: 1.45)),
     ]);
   }
