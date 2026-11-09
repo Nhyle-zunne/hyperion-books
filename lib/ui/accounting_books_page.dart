@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/hyperion_theme.dart';
 import 'package:intl/intl.dart';
 import '../models/accounting_books.dart';
 import '../models/book_entry.dart';
@@ -7,8 +8,6 @@ import '../models/paymongo_transaction.dart';
 import '../services/export_service.dart';
 import '../services/report_printer.dart';
 
-const _navy = Color(0xFF112940);
-const _muted = Color(0xFF63748A);
 final _money = NumberFormat.currency(locale: 'en_PH', symbol: '₱');
 String _peso(int centavos) => centavos == 0 ? '' : _money.format(centavos / 100);
 String _stamp(DateTime d) => DateFormat('yyyy-MM-dd').format(d);
@@ -35,7 +34,7 @@ class _ReportTable {
   final String title;
   final List<String> headers;
   final List<List<String>> rows;
-  const _ReportTable(this.title, this.headers, this.rows);
+  _ReportTable(this.title, this.headers, this.rows);
 }
 
 class _AccountingBooksPageState extends State<AccountingBooksPage> {
@@ -63,7 +62,7 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
     final position = _tableHorizontal.position;
     _tableHorizontal.animateTo(
       (_tableHorizontal.offset + delta).clamp(0.0, position.maxScrollExtent),
-      duration: const Duration(milliseconds: 250),
+      duration: Duration(milliseconds: 250),
       curve: Curves.easeOutCubic);
   }
 
@@ -91,7 +90,7 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
     final other = begin ? _end : _start;
     if (other != null && (begin ? chosen.isAfter(other) : chosen.isBefore(other))) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('The beginning date must not be after the ending date.')));
       }
       return;
@@ -203,14 +202,14 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
     Widget detail(String label, String value) => Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        SizedBox(width: 120, child: Text(label, style: const TextStyle(
-          fontSize: 12, color: _muted, fontWeight: FontWeight.w600))),
+        SizedBox(width: 120, child: Text(label, style: TextStyle(
+          fontSize: 12, color: HyperionColors.muted, fontWeight: FontWeight.w600))),
         Expanded(child: SelectableText(value,
-          style: const TextStyle(fontSize: 13))),
+          style: TextStyle(fontSize: 13))),
       ]));
     final choice = await showDialog<String>(context: context, builder: (d) =>
       AlertDialog(
-        title: const Text('Source transaction details'),
+        title: Text('Source transaction details'),
         content: SizedBox(width: 530, child: SingleChildScrollView(
           child: Column(mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -236,15 +235,15 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
               if (manual.grossCentavos != null)
                 detail('Reported gross', _money.format(manual.grossCentavos! / 100)),
             ] else
-              const Text('No matching source transaction on this device.',
-                style: TextStyle(color: _muted)),
-            const Divider(height: 26),
-            const Text('Book working-paper review',
+              Text('No matching source transaction on this device.',
+                style: TextStyle(color: HyperionColors.muted)),
+            Divider(height: 26),
+            Text('Book working-paper review',
               style: TextStyle(fontWeight: FontWeight.w800)),
-            const SizedBox(height: 4),
-            const Text('These manual flags only change draft book views. '
+            SizedBox(height: 4),
+            Text('These manual flags only change draft book views. '
               'They do not change the original CSV or establish BIR verification.',
-              style: TextStyle(fontSize: 12, color: _muted)),
+              style: TextStyle(fontSize: 12, color: HyperionColors.muted)),
             ListTile(contentPadding: EdgeInsets.zero,
               leading: Icon(verified ? Icons.verified : Icons.verified_outlined),
               title: Text(verified ? 'Remove manual verification' : 'Mark manually verified'),
@@ -255,7 +254,7 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
               onTap: () => Navigator.pop(d, 'void')),
           ]))),
         actions: [TextButton(onPressed: () => Navigator.pop(d),
-          child: const Text('Close'))]));
+          child: Text('Close'))]));
     if (choice == null) return;
     final next = choice == 'verify'
       ? widget.workspace.copyWith(verifiedReferences: [
@@ -271,7 +270,7 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
     try {
       await widget.save(next);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Book review flag saved locally. Back up your records.')));
       }
     } catch (error) {
@@ -292,7 +291,7 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
         businessTin: widget.workspace.businessTin,
         businessAddress: widget.workspace.businessAddress);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Selected book exported to Excel.')));
       }
     } catch (e) {
@@ -313,7 +312,7 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
       businessAddress: widget.workspace.businessAddress,
       headers: table.headers, rows: table.rows);
     if (!opened && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Allow pop-ups to open the printable report.')));
     }
   }
@@ -338,70 +337,70 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
             Card(child: Padding(padding: EdgeInsets.all(narrow ? 12 : 17),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(children: [
-                  const Expanded(child: Column(
+                  Expanded(child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Text('Books of Accounts', style: TextStyle(
-                        fontSize: 21, fontWeight: FontWeight.w900, color: _navy)),
+                        fontSize: 21, fontWeight: FontWeight.w900, color: HyperionColors.brand)),
                       SizedBox(height: 3),
                       Text('Four journals and ledgers · local working papers',
-                        style: TextStyle(fontSize: 12, color: _muted)),
+                        style: TextStyle(fontSize: 12, color: HyperionColors.muted)),
                     ])),
-                  if (!narrow) const Icon(Icons.menu_book_outlined,
-                    color: _navy, size: 26),
+                  if (!narrow) Icon(Icons.menu_book_outlined,
+                    color: HyperionColors.brand, size: 26),
                 ]),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 Wrap(spacing: 7, runSpacing: 8, children: [
                   for (var i = 0; i < 4; i++)
-                    _tabButton(i, const [
+                    _tabButton(i, [
                       'Journal', 'Ledger', 'Cash Receipt', 'Cash Disbursement'][i]),
                 ]),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 Wrap(spacing: 8, runSpacing: 8, children: [
                   FilledButton.icon(
                     onPressed: _exporting ? null : () => _export(report),
-                    icon: const Icon(Icons.table_view_outlined, size: 17),
-                    label: const Text('Export to Excel')),
+                    icon: Icon(Icons.table_view_outlined, size: 17),
+                    label: Text('Export to Excel')),
                   OutlinedButton.icon(
                     onPressed: () => _print(report),
-                    icon: const Icon(Icons.print_outlined, size: 17),
-                    label: const Text('Print Report')),
+                    icon: Icon(Icons.print_outlined, size: 17),
+                    label: Text('Print Report')),
                 ]),
               ]))),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             Card(child: Padding(padding: const EdgeInsets.all(12),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('COVERED PERIOD', style: TextStyle(
+                Text('COVERED PERIOD', style: TextStyle(
                   fontSize: 11, letterSpacing: .7,
-                  color: _muted, fontWeight: FontWeight.w900)),
-                const SizedBox(height: 8),
+                  color: HyperionColors.muted, fontWeight: FontWeight.w900)),
+                SizedBox(height: 8),
                 Wrap(spacing: 8, runSpacing: 8,
                   crossAxisAlignment: WrapCrossAlignment.center, children: [
                     OutlinedButton.icon(style: buttonStyle,
                       onPressed: () => _pick(true),
-                      icon: const Icon(Icons.calendar_today_outlined, size: 15),
+                      icon: Icon(Icons.calendar_today_outlined, size: 15),
                       label: Text(_start == null ? 'Start date' : _stamp(_start!))),
-                    const Text('to', style: TextStyle(color: _muted)),
+                    Text('to', style: TextStyle(color: HyperionColors.muted)),
                     OutlinedButton.icon(style: buttonStyle,
                       onPressed: () => _pick(false),
-                      icon: const Icon(Icons.calendar_today_outlined, size: 15),
+                      icon: Icon(Icons.calendar_today_outlined, size: 15),
                       label: Text(_end == null ? 'End date' : _stamp(_end!))),
                     TextButton(onPressed: () => setState(() => _all = !_all),
                       child: Text(_all ? 'Use selected period' : 'Show all dates')),
                   ]),
-                const SizedBox(height: 6),
+                SizedBox(height: 6),
                 Wrap(spacing: 8, runSpacing: 4, children: [
-                  FilterChip(label: const Text('Optional columns'),
+                  FilterChip(label: Text('Optional columns'),
                     selected: _optional,
                     onSelected: (v) => setState(() => _optional = v)),
-                  FilterChip(label: const Text('Include voided'),
+                  FilterChip(label: Text('Include voided'),
                     selected: _includeVoided,
                     onSelected: (v) => setState(() => _includeVoided = v)),
-                  FilterChip(label: const Text('Include unverified'),
+                  FilterChip(label: Text('Include unverified'),
                     selected: _includeUnverified,
                     onSelected: (v) => setState(() => _includeUnverified = v)),
                 ]),
               ]))),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             Card(clipBehavior: Clip.antiAlias,
               child: Padding(padding: EdgeInsets.all(narrow ? 10 : 16),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -411,7 +410,7 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
                         ? 'HYPERION BOOKS'
                         : widget.workspace.businessName.trim(),
                         textAlign: TextAlign.center,
-                        style: const TextStyle(color: _navy,
+                        style: TextStyle(color: HyperionColors.brand,
                           fontWeight: FontWeight.w900, fontSize: 16)),
                       if (widget.workspace.businessTin.isNotEmpty ||
                           widget.workspace.businessAddress.isNotEmpty)
@@ -423,41 +422,41 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
                               widget.workspace.businessAddress,
                           ].join(' · '),
                           textAlign: TextAlign.center,
-                          style: const TextStyle(color: _muted, fontSize: 11))),
-                      const SizedBox(height: 9),
-                      Text(report.title, style: const TextStyle(
-                        color: _navy, fontWeight: FontWeight.w900, fontSize: 17)),
-                      const SizedBox(height: 3),
+                          style: TextStyle(color: HyperionColors.muted, fontSize: 11))),
+                      SizedBox(height: 9),
+                      Text(report.title, style: TextStyle(
+                        color: HyperionColors.brand, fontWeight: FontWeight.w900, fontSize: 17)),
+                      SizedBox(height: 3),
                       Text('For the period $_period',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(color: _muted, fontSize: 12)),
-                      const SizedBox(height: 3),
+                        style: TextStyle(color: HyperionColors.muted, fontSize: 12)),
+                      SizedBox(height: 3),
                       Text('${report.rows.length} visible journal/ledger lines',
-                        style: const TextStyle(color: _muted, fontSize: 11)),
+                        style: TextStyle(color: HyperionColors.muted, fontSize: 11)),
                     ])),
-                    const SizedBox(height: 13),
+                    SizedBox(height: 13),
                     if (report.rows.isEmpty)
-                      const Padding(padding: EdgeInsets.symmetric(vertical: 28),
+                      Padding(padding: EdgeInsets.symmetric(vertical: 28),
                         child: Center(child: Text(
                           'No records in this period. Select “Show all dates” or import transactions.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: _muted))))
+                          style: TextStyle(color: HyperionColors.muted))))
                     else ...[
                       // Keep the horizontal track visible even when there are
                       // hundreds of rows; the report has its own vertical pane.
                       Row(children: [
-                        const Icon(Icons.swipe, color: _muted, size: 17),
-                        const SizedBox(width: 5),
-                        const Expanded(child: Text(
+                        Icon(Icons.swipe, color: HyperionColors.muted, size: 17),
+                        SizedBox(width: 5),
+                        Expanded(child: Text(
                           'Drag the bottom scrollbar or use arrows to see every column. '
                           'Select a reference to view the complete transaction.',
-                          style: TextStyle(fontSize: 11, color: _muted))),
+                          style: TextStyle(fontSize: 11, color: HyperionColors.muted))),
                         IconButton(tooltip: 'Scroll table left',
                           onPressed: () => _scrollTable(-320),
-                          icon: const Icon(Icons.chevron_left)),
+                          icon: Icon(Icons.chevron_left)),
                         IconButton(tooltip: 'Scroll table right',
                           onPressed: () => _scrollTable(320),
-                          icon: const Icon(Icons.chevron_right)),
+                          icon: Icon(Icons.chevron_right)),
                       ]),
                       SizedBox(height: dataHeight,
                         child: LayoutBuilder(builder: (context, size) =>
@@ -484,9 +483,9 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
                                       dataRowMinHeight: 46,
                                       dataRowMaxHeight: 96,
                                       headingRowColor: WidgetStateProperty.all(
-                                        const Color(0xFFF0F4F9)),
-                                      headingTextStyle: const TextStyle(
-                                        fontWeight: FontWeight.w900, color: _navy),
+                                        HyperionColors.elevated),
+                                      headingTextStyle: TextStyle(
+                                        fontWeight: FontWeight.w900, color: HyperionColors.brand),
                                       columnSpacing: narrow ? 16 : 25,
                                       columns: [
                                         for (final header in report.headers)
@@ -502,12 +501,12 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
                                                 child: i == (_tab == 1 ? 3 : 0) &&
                                                     row[i].isNotEmpty && row[i] != 'TOTAL'
                                                   ? Text(row[i],
-                                                      style: const TextStyle(
-                                                        color: _navy,
+                                                      style: TextStyle(
+                                                        color: HyperionColors.brand,
                                                         decoration: TextDecoration.underline,
                                                         fontSize: 12))
                                                   : SelectableText(row[i],
-                                                      style: const TextStyle(fontSize: 12))),
+                                                      style: TextStyle(fontSize: 12))),
                                                 onTap: i == (_tab == 1 ? 3 : 0) &&
                                                     row[i].isNotEmpty && row[i] != 'TOTAL'
                                                   ? () => _manageReference(row[i]) : null),
@@ -520,29 +519,29 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
                             ),
                           ),
                         )),
-                      const SizedBox(height: 4),
-                      const Text('Horizontal and vertical report scrollbars are separate.',
-                        style: TextStyle(color: _muted, fontSize: 10)),
+                      SizedBox(height: 4),
+                      Text('Horizontal and vertical report scrollbars are separate.',
+                        style: TextStyle(color: HyperionColors.muted, fontSize: 10)),
                     ],
                   ]))),
             if (books.warnings.isNotEmpty) ...[
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
               Card(child: ExpansionTile(
                 title: Text('Reconciliation notices (${books.warnings.length})'),
                 children: [
                   for (final warning in books.warnings)
                     ListTile(dense: true, title: Text(warning,
-                      style: const TextStyle(fontSize: 12))),
+                      style: TextStyle(fontSize: 12))),
                 ],
               )),
             ],
-            const SizedBox(height: 8),
-            const Padding(padding: EdgeInsets.all(8), child: Text(
+            SizedBox(height: 8),
+            Padding(padding: EdgeInsets.all(8), child: Text(
               'DRAFT WORKING PAPERS ONLY · Not BIR-registered computerized books. '
               'Review and void flags affect reports only. Retain and reconcile '
               'original invoices, PayMongo records and bank statements.',
-              style: TextStyle(color: _muted, fontSize: 11))),
-            const SizedBox(height: 20),
+              style: TextStyle(color: HyperionColors.muted, fontSize: 11))),
+            SizedBox(height: 20),
           ]),
       );
     });
@@ -552,9 +551,9 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
     final active = _tab == index;
     return OutlinedButton(
       style: OutlinedButton.styleFrom(
-        backgroundColor: active ? _navy : Colors.white,
-        foregroundColor: active ? Colors.white : _navy,
-        side: BorderSide(color: active ? _navy : const Color(0xFFDAE3ED))),
+        backgroundColor: active ? HyperionColors.brand : Colors.white,
+        foregroundColor: active ? Colors.white : HyperionColors.brand,
+        side: BorderSide(color: active ? HyperionColors.brand : HyperionColors.border)),
       onPressed: () => setState(() => _tab = index),
       child: Text(label));
   }
