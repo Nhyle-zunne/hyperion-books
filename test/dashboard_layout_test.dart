@@ -53,6 +53,13 @@ void main() {
     await tester.pumpWidget(MaterialApp(home: BooksHome(controller: fixture)));
     await tester.pumpAndSettle();
 
+    // Desktop now has its own independently scrolling navigation drawer.
+    // ignore: avoid_print
+    print('DASHBOARD CHECK $size: HYPERION BOOKS=${find.text('HYPERION BOOKS').evaluate().length}, '
+      'overview=${find.text('Financial overview').evaluate().length}, '
+      'payout=${find.text('Add payout').evaluate().length}, '
+      'expense=${find.text('Add expense').evaluate().length}, '
+      'images=${find.byType(Image).evaluate().length}');
     expect(find.text('HYPERION BOOKS'), findsOneWidget);
     expect(find.text('Financial overview'), findsOneWidget);
     expect(find.text('Add payout'), findsOneWidget);
@@ -81,13 +88,16 @@ void main() {
     expect(find.text('Imported PayMongo activity'), findsOneWidget);
     expect(find.text('Gross customer payments'), findsOneWidget);
     expect(find.text('1 paid transactions'), findsOneWidget);
+    final dashboard = find.descendant(
+      of: find.byKey(const PageStorageKey<String>('hyperion-dashboard')),
+      matching: find.byType(Scrollable)).first;
     await tester.scrollUntilVisible(
       find.text('Business performance'), 360,
-      scrollable: find.byType(Scrollable).first);
+      scrollable: dashboard);
     expect(find.text('Business performance'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('Bank and cash movements'), 360,
-      scrollable: find.byType(Scrollable).first);
+      scrollable: dashboard);
     expect(find.text('Bank and cash movements'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
