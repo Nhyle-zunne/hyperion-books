@@ -40,7 +40,7 @@ class LedgerPosting {
 class AccountingBooks {
   static const bank = '1010 Cash / bank';
   static const clearing = '1020 Sales settlement clearing';
-  static const sales = '4010 Imported sales (provisional)';
+  static const sales = '4010 Sales revenue (provisional)';
   static const google = '4020 Google Play receipts (provisional)';
   static const fees = '5010 Processing fees (VAT included)';
   static const deductions = '5090 Other platform deductions (review)';
@@ -76,7 +76,7 @@ class AccountingBooks {
     final allImported = transactions.toList();
     // Determine this from ALL periods; filtering must not reclassify a
     // later PayMongo bank transfer as new sales.
-    final hasImported = allImported.isNotEmpty;
+    final hasImported = allImported.any((t) => !t.isManual);
     bool inPeriod(DateTime d) =>
         month == null || month == 'All time' || monthOf(d) == month;
     final manual = allEntries.where((e) => inPeriod(e.date));
@@ -96,8 +96,18 @@ class AccountingBooks {
     }
 
     for (final t in imported) {
-      final memo = '${t.type} from imported sales';
-      if (t.isPayment) {
+      final memo = t.isManual
+          ? 'Direct sale: ${t.description}'
+          : '${t.type} from imported sales';
+      if (t.isManual) {
+        // Direct cash/bank receipts bypass settlement clearing.
+        post(t.id, t.occurredAt, bank, memo, 'Manual sale', t.netCentavos);
+        post(t.id, t.occurredAt, fees, memo, 'Manual sale', -t.feeCentavos);
+        post(t.id, t.occurredAt, sales, memo, 'Manual sale', -t.grossCentavos);
+        receipts.add(ReceiptRecord(t.id, t.occurredAt,
+            memo, t.paymentMethod, t.grossCentavos, -t.feeCentavos,
+            0, t.netCentavos, false, false));
+      } else if (t.isPayment) {
         post(t.id, t.occurredAt, clearing, memo, 'Sales import', t.netCentavos);
         // PayMongo CSV Fee is negative, with its VAT portion already included.
         post(t.id, t.occurredAt, fees, memo, 'Sales import', -t.feeCentavos);

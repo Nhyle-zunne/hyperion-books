@@ -13,12 +13,18 @@ class PayMongoScreen extends StatefulWidget {
   final VoidCallback onImport;
   final VoidCallback onExport;
   final VoidCallback? onTemplate;
+  final VoidCallback? onAddManual;
+  final ValueChanged<PayMongoTransaction>? onEditManual;
+  final ValueChanged<PayMongoTransaction>? onDeleteManual;
   const PayMongoScreen({
     super.key,
     required this.transactions,
     required this.onImport,
     required this.onExport,
     this.onTemplate,
+    this.onAddManual,
+    this.onEditManual,
+    this.onDeleteManual,
   });
 
   @override
@@ -29,6 +35,7 @@ class _PayMongoScreenState extends State<PayMongoScreen> {
   bool _newestFirst = true;
   String _month = 'All time';
   bool _tableMode = false;
+  bool _manualOnly = false;
   int _tablePage = 0;
   final _tableHorizontal = ScrollController();
 
@@ -43,7 +50,8 @@ class _PayMongoScreenState extends State<PayMongoScreen> {
       ..sort((a,b) => b.compareTo(a));
     final selectedMonth = months.contains(_month) ? _month : 'All time';
     final items = widget.transactions.where((e) =>
-      selectedMonth == 'All time' || e.month == selectedMonth).toList()
+      (selectedMonth == 'All time' || e.month == selectedMonth) &&
+      (!_manualOnly || e.isManual)).toList()
       ..sort((a, b) {
         final cmp = a.occurredAt.compareTo(b.occurredAt);
         final timeCmp = _newestFirst ? -cmp : cmp;
@@ -60,13 +68,16 @@ class _PayMongoScreenState extends State<PayMongoScreen> {
           Text('Sales', style: TextStyle(
             fontSize: 23, fontWeight: FontWeight.w900, color: HyperionColors.ink)),
           SizedBox(height: 7),
-          Text('Manage customer sales, processing fees, refunds, and adjustments. '
-            'Import CSV or Excel spreadsheets from your business records. '
-            'Each sale needs a unique Reference, Date and Gross Amount.',
+          Text('Record QR Ph, bank transfer and cash sales manually, or import '
+            'CSV/Excel transactions. Direct receipts and imported payments '
+            'appear together in totals and draft accounting books.',
             style: TextStyle(color: HyperionColors.muted, fontSize: 13)),
           SizedBox(height: 15),
           Wrap(spacing: 10, runSpacing: 10, children: [
-            FilledButton.icon(
+            if (widget.onAddManual != null) FilledButton.icon(
+              onPressed: widget.onAddManual, icon: Icon(Icons.add),
+              label: Text('Add sale manually')),
+            OutlinedButton.icon(
               onPressed: widget.onImport, icon: Icon(Icons.upload_file),
               label: Text('Import Sales CSV / Excel')),
             OutlinedButton.icon(
@@ -95,11 +106,10 @@ class _PayMongoScreenState extends State<PayMongoScreen> {
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Icon(Icons.info_outline, color: HyperionColors.accent, size: 19),
               SizedBox(width: 9),
-              Expanded(child: Text('Sales imports are stored only on this device. Paid customer sales '
-                'appear as provisional sales in draft accounting books, but '
-                'are not actual bank deposits. Record each bank transfer once '
-                'under Entries → Add payout to avoid double-counting. '
-                'Dates and times follow the source file.',
+              Expanded(child: Text('Sales are saved locally on this device. Manual QR/bank/cash payments '
+                'are direct receipts and do not require an additional payout entry. '
+                'Imported processor collections use settlement clearing until a bank payout '
+                'is recorded. Never record the same sale twice.',
                 style: TextStyle(fontSize: 12, height: 1.45))),
             ]))),
           SizedBox(height: 17),
@@ -116,17 +126,23 @@ class _PayMongoScreenState extends State<PayMongoScreen> {
                 icon: Icon(_newestFirst ? Icons.arrow_downward : Icons.arrow_upward, size: 17),
                 label: Text(_newestFirst ? 'Newest first' : 'Oldest first')),
               FilterChip(
+                label: Text('Manual only'),
+                avatar: Icon(Icons.edit_note_outlined, size: 17),
+                selected: _manualOnly,
+                onSelected: (v) => setState(() { _manualOnly = v; _tablePage = 0; })),
+              FilterChip(
                 label: Text('Full-width table'),
                 avatar: Icon(Icons.table_chart_outlined, size: 17),
                 selected: _tableMode,
                 onSelected: (v) => setState(() { _tableMode = v; _tablePage = 0; })),
             ]),
           SizedBox(height: 7),
-          Text('${items.length} imported transaction(s) in this view',
+          Text('${items.length} transaction(s) in this view '
+            '· ${items.where((t) => t.isManual).length} manually entered',
             style: TextStyle(fontSize: 12, color: HyperionColors.muted)),
           SizedBox(height: 8),
           if (items.isEmpty) Padding(padding: EdgeInsets.symmetric(vertical: 38),
-            child: Center(child: Text('No sales records yet. Import a CSV or Excel file to begin.'))),
+            child: Center(child: Text('No matching sales. Add a sale manually or import a CSV / Excel file.'))),
           if (_tableMode && items.isNotEmpty) _transactionTable(items),
         ]);
       },
@@ -147,8 +163,18 @@ class _PayMongoScreenState extends State<PayMongoScreen> {
 
   Future<void> _transactionDetails(PayMongoTransaction txn) async {
     final values = <MapEntry<String,String>>[
+      MapEntry('Source', txn.isManual ? 'Manual direct payment' : 'Imported transaction'),
       MapEntry('Transaction ID', txn.id),
-      MapEntry('Date/time (as exported)',
+      if (txn.isManual && txn.reference.isNotEmpty)
+        MapEntry('Payment reference', txn.reference),
+      if (txn.isManual) MapEntry('Product / service', txn.description),
+      if (txn.isManual && txn.customer.isNotEmpty)
+        MapEntry('Customer', txn.customer),
+      if (txn.isManual && txn.depositAccount.isNotEmpty)
+        MapEntry('Received into', txn.depositAccount),
+      if (txn.isManual && txn.notes.isNotEmpty)
+        MapEntry('Notes', txn.notes),
+      MapEntry(txn.isManual ? 'Payment date/time' : 'Date/time (as exported)',
         DateFormat('yyyy-MM-dd HH:mm:ss').format(txn.occurredAt)),
       MapEntry('Type', txn.type),
       MapEntry('Status', txn.status),
@@ -172,12 +198,26 @@ class _PayMongoScreenState extends State<PayMongoScreen> {
                       fontWeight: FontWeight.w700, fontSize: 13)),
                   ])),
               Divider(),
-              Text('The original sales file may contain additional columns. '
-                'Only non-personal accounting fields are stored locally.',
+              Text(txn.isManual
+                ? 'Manual receipt recorded locally; verify against bank/QR evidence. '
+                  'A JSON backup may contain optional customer details.'
+                : 'The original sales file may contain additional columns. '
+                  'Only non-personal accounting fields are stored locally.',
                 style: TextStyle(color: HyperionColors.muted, fontSize: 11)),
             ]))),
-        actions: [TextButton(onPressed: () => Navigator.pop(dialog),
-          child: Text('Close'))]));
+        actions: [
+          if (txn.isManual && widget.onDeleteManual != null)
+            TextButton(onPressed: () {
+              Navigator.pop(dialog);
+              widget.onDeleteManual?.call(txn);
+            }, child: Text('Delete')),
+          if (txn.isManual && widget.onEditManual != null)
+            TextButton(onPressed: () {
+              Navigator.pop(dialog);
+              widget.onEditManual?.call(txn);
+            }, child: Text('Edit')),
+          TextButton(onPressed: () => Navigator.pop(dialog), child: Text('Close')),
+        ]));
   }
 
   Widget _transactionTable(List<PayMongoTransaction> items) {
@@ -222,7 +262,7 @@ class _PayMongoScreenState extends State<PayMongoScreen> {
                     DataCell(Text(DateFormat('yyyy-MM-dd HH:mm').format(txn.occurredAt))),
                     DataCell(ConstrainedBox(constraints: BoxConstraints(maxWidth: 240),
                       child: Text(txn.id, maxLines: 2, overflow: TextOverflow.ellipsis))),
-                    DataCell(Text(txn.type)),
+                    DataCell(Text(txn.isManual ? 'Manual sale' : txn.type)),
                     DataCell(Text(txn.status)),
                     DataCell(Text(txn.paymentMethod)),
                     DataCell(Text(_php(txn.grossCentavos))),
@@ -266,10 +306,16 @@ class _PayMongoScreenState extends State<PayMongoScreen> {
             Icon(payment ? Icons.payments_outlined : Icons.tune_outlined,
               color: primary, size: 20),
             SizedBox(width: 9),
-            Expanded(child: Text(txn.type, style: TextStyle(
+            Expanded(child: Text(txn.isManual
+              ? (txn.description.isEmpty ? 'Manual sale' : txn.description)
+              : txn.type, style: TextStyle(
               fontWeight: FontWeight.w800, fontSize: 14))),
             Text(_php(txn.netCentavos), style: TextStyle(
               color: primary, fontWeight: FontWeight.w900, fontSize: 15)),
+            if (txn.isManual && widget.onEditManual != null)
+              IconButton(tooltip: 'Edit manual sale',
+                onPressed: () => widget.onEditManual?.call(txn),
+                icon: Icon(Icons.edit_outlined, size: 19)),
             IconButton(tooltip: 'View all saved transaction fields',
               onPressed: () => _transactionDetails(txn),
               icon: Icon(Icons.open_in_full_outlined, size: 19)),
@@ -282,7 +328,8 @@ class _PayMongoScreenState extends State<PayMongoScreen> {
             '   •   VAT portion ${_php(txn.vatCentavos)}',
             style: TextStyle(color: HyperionColors.muted, fontSize: 11.5)),
           SizedBox(height: 5),
-          Text('ID: ${txn.id}   •   ${txn.status}'
+          Text('${txn.isManual ? 'MANUAL' : 'IMPORTED'}   •   '
+            '${txn.isManual && txn.reference.isNotEmpty ? txn.reference : txn.id}   •   ${txn.status}'
             '${txn.paymentMethod.isEmpty ? '' : '   •   ${txn.paymentMethod}'}',
             maxLines: 2, overflow: TextOverflow.ellipsis,
             style: TextStyle(color: HyperionColors.muted, fontSize: 10.5)),

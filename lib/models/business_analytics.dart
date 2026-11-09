@@ -36,6 +36,7 @@ class BusinessAnalytics {
   final int fees;
   final int manualExpenses;
   final int bankPayouts;
+  final int manualDirectReceipts;
   final int salesCount;
   final int adjustmentNet;
   final int adjustmentsCount;
@@ -46,7 +47,8 @@ class BusinessAnalytics {
     required this.recentSales, required this.expenseCategories,
     required this.grossPaymongo, required this.provisionalGooglePlay,
     required this.fees, required this.manualExpenses,
-    required this.bankPayouts, required this.salesCount,
+    required this.bankPayouts, required this.manualDirectReceipts,
+    required this.salesCount,
     required this.adjustmentNet, required this.adjustmentsCount,
   });
 
@@ -55,7 +57,7 @@ class BusinessAnalytics {
   int get trackedReceipts => grossPaymongo + provisionalGooglePlay;
   int get trackedCosts => fees + manualExpenses;
   int get indicativeResult => trackedReceipts - trackedCosts;
-  int get cashMovement => bankPayouts - manualExpenses;
+  int get cashMovement => bankPayouts + manualDirectReceipts - manualExpenses;
 
   factory BusinessAnalytics.fromSources({
     required Iterable<BookEntry> entries,
@@ -85,11 +87,13 @@ class BusinessAnalytics {
     final adjustmentByDate = <DateTime, int>{};
     final categories = <String, int>{};
     var gross = 0, google = 0, fees = 0, expenses = 0, bank = 0;
+    var manualDirect = 0;
     var sales = 0, adjustmentNet = 0, adjustmentCount = 0;
     for (final txn in imported) {
       final date = dateOnly(txn.occurredAt);
       if (txn.isPayment) {
         sales++;
+        if (txn.isManual) manualDirect += txn.netCentavos;
         gross += txn.grossCentavos;
         fees += -txn.feeCentavos;
         income[date] = (income[date] ?? 0) + txn.grossCentavos;
@@ -129,6 +133,7 @@ class BusinessAnalytics {
       days: days, start: first, end: last,
       grossPaymongo: gross, provisionalGooglePlay: google,
       fees: fees, manualExpenses: expenses, bankPayouts: bank,
+      manualDirectReceipts: manualDirect,
       salesCount: sales, adjustmentNet: adjustmentNet,
       adjustmentsCount: adjustmentCount,
       expenseCategories: Map.unmodifiable(categories),
