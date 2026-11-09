@@ -4,7 +4,6 @@ import '../models/accounting_books.dart';
 import '../models/book_entry.dart';
 import '../models/business_workspace.dart';
 import '../models/paymongo_transaction.dart';
-import '../models/business_analytics.dart';
 import 'business_insights_panel.dart';
 
 const _navy = Color(0xFF042353);
