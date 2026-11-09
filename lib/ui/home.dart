@@ -14,6 +14,7 @@ import 'entry_dialog.dart';
 import 'paymongo_screen.dart';
 import 'business_insights_panel.dart';
 import 'business_tools.dart';
+import 'accounting_books_page.dart';
 import 'record_search.dart';
 import 'hyperion_loading.dart';
 
@@ -885,105 +886,10 @@ class _BooksHomeState extends State<BooksHome> {
     ));
   }
 
-  Widget _books(BuildContext context) {
-    final books = AccountingBooks.fromSources(
-      widget.controller.entries, widget.controller.paymongoTransactions);
-    String dateTime(DateTime date) => DateFormat('yyyy-MM-dd HH:mm').format(date);
-    String nonzero(int value) => value == 0 ? '' : php(value);
-    return DefaultTabController(length: 4, child: Column(children: [
-      Padding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
-        child: Row(children: [
-          const Expanded(child: Text('Four accounting books',
-            style: TextStyle(fontWeight: FontWeight.w900,
-              color: _ink, fontSize: 20))),
-          FilledButton.icon(onPressed: () => _export(context),
-            icon: const Icon(Icons.download_outlined, size: 18),
-            label: const Text('Excel')),
-        ])),
-      const Padding(padding: EdgeInsets.symmetric(horizontal: 16),
-        child: Align(alignment: Alignment.centerLeft,
-          child: Text('Draft working records based on PayMongo CSV transactions '
-            'and manually entered bank payouts/expenses. '
-            'Not BIR-registered computerized books.',
-            style: TextStyle(fontSize: 11.5, color: Color(0xFF64758A))))),
-      if (books.warnings.isNotEmpty)
-        Padding(padding: const EdgeInsets.fromLTRB(16, 9, 16, 5),
-          child: Container(width: double.infinity,
-            padding: const EdgeInsets.all(11),
-            decoration: BoxDecoration(color: const Color(0xFFFFF7E7),
-              borderRadius: BorderRadius.circular(10)),
-            child: Text(books.warnings.take(3).join('\n'),
-              maxLines: 5, overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 11, color: Color(0xFF785828))))),
-      const TabBar(isScrollable: true, tabAlignment: TabAlignment.start,
-        tabs: [
-          Tab(text: 'Cash Receipts Journal'),
-          Tab(text: 'Cash Disbursements Journal'),
-          Tab(text: 'General Journal'),
-          Tab(text: 'General Ledger'),
-        ]),
-      Expanded(child: TabBarView(children: [
-        _reportTable(context,
-          ['Date / time', 'Reference', 'Particulars', 'Collection channel',
-           'Gross collection', 'Fees incl. VAT', 'Net to processor',
-           'Bank received', 'Bank transfer?'],
-          books.cashReceipts.map((e) => [
-            dateTime(e.date), e.reference, e.particulars, e.channel,
-            nonzero(e.gross), nonzero(e.fees), nonzero(e.processorNet),
-            nonzero(e.bankReceived), e.bankTransfer ? 'Transfer (not sale)' :
-              e.provisional ? 'Provisional' : 'No',
-          ]).toList()),
-        _reportTable(context,
-          ['Date / time', 'Reference', 'Particulars', 'Debit account',
-           'Cash / bank paid'],
-          books.cashDisbursements.map((e) => [
-            dateTime(e.date), e.reference, e.particulars, e.account,
-            php(e.amount),
-          ]).toList()),
-        _reportTable(context,
-          ['Date / time', 'Reference', 'Account', 'Particulars',
-           'Source', 'Debit', 'Credit'],
-          books.journal.map((e) => [
-            dateTime(e.date), e.reference, e.account, e.particulars,
-            e.source, nonzero(e.debit), nonzero(e.credit),
-          ]).toList()),
-        ListView(padding: const EdgeInsets.all(12), children: [
-          for (final account in books.ledger.keys.toList()..sort()) ...[
-            Padding(padding: const EdgeInsets.only(top: 12, bottom: 6),
-              child: Text(account, style: const TextStyle(
-                fontWeight: FontWeight.w800, fontSize: 15))),
-            _staticTable(
-              ['Date / time', 'Reference', 'Particulars',
-               'Debit', 'Credit', 'Debit balance', 'Credit balance'],
-              books.ledger[account]!.map((e) => [
-                dateTime(e.posting.date), e.posting.reference,
-                e.posting.particulars, nonzero(e.posting.debit),
-                nonzero(e.posting.credit), nonzero(e.debitBalance),
-                nonzero(e.creditBalance),
-              ]).toList()),
-          ],
-          if (books.ledger.isEmpty)
-            const Padding(padding: EdgeInsets.all(26),
-              child: Text('Import PayMongo CSV transactions or add bank '
-                'payouts/expenses to populate this ledger.')),
-        ]),
-      ])),
-    ]));
-  }
-
-  Widget _reportTable(BuildContext context, List<String> headers, List<List<String>> rows) =>
-    ListView(padding: const EdgeInsets.all(12), children: [_staticTable(headers, rows)]);
-
-  Widget _staticTable(List<String> headers, List<List<String>> rows) => Card(
-    child: SingleChildScrollView(scrollDirection: Axis.horizontal,
-      child: DataTable(
-        headingTextStyle: const TextStyle(fontWeight: FontWeight.w800, color: _ink),
-        columns: headers.map((s) => DataColumn(label: Text(s))).toList(),
-        rows: (rows.isEmpty ? [List.filled(headers.length, '—')] : rows).map((row) => DataRow(cells:
-          row.map((v) => DataCell(ConstrainedBox(constraints: const BoxConstraints(maxWidth: 260),
-            child: Text(v, overflow: TextOverflow.ellipsis)))).toList())).toList(),
-      ),
-    ),
+  Widget _books(BuildContext context) => AccountingBooksPage(
+    entries: widget.controller.entries,
+    transactions: widget.controller.paymongoTransactions,
+    workspace: widget.controller.workspace,
   );
 
   Widget _settings(BuildContext context) {
