@@ -38,7 +38,10 @@ const booksUi = source('lib/ui/accounting_books_page.dart');
 for (const name of ['Cash Receipts Journal','Cash Disbursements Journal','General Journal','General Ledger']) {
   assert(booksUi.includes(name), `Missing accounting book view: ${name}`);
 }
-assert(source('lib/ui/home.dart').includes('Imported PayMongo activity'), 'PayMongo dashboard missing');
+assert(source('lib/ui/home.dart').includes('Sales activity'), 'Sales dashboard missing');
+assert(!source('lib/ui/hyperion_sidebar.dart').includes("_item('paymongo'"), 'Duplicate activity navigation remains');
+assert(source('lib/ui/home.dart').includes('SalesImportService.select'), 'Generic sales file import missing');
+assert(source('lib/services/sales_import_service.dart').includes('parseWorkbook'), 'Sales XLSX parser missing');
 assert(source('lib/ui/home.dart').includes('TaxFilingPage'), 'Tax Filing navigation missing');
 assert(source('lib/ui/home.dart').includes('HyperionSidebar'), 'Business sidebar missing');
 assert(source('lib/ui/accounting_books_page.dart').includes('ScrollbarOrientation.bottom'), 'Horizontal Books scrollbar missing');
