@@ -131,12 +131,70 @@ class TaxRecord {
   }
 }
 
+
+const businessOperationKinds = ['Purchase', 'Asset', 'Payroll'];
+const businessOperationStatuses = [
+  'Draft', 'Recorded', 'Paid', 'Cancelled',
+];
+
+/// Standalone local operating registers. These are NOT automatically posted
+/// as expenses or stock movements: users must record cash expenses separately.
+class BusinessOperationRecord {
+  final String id, kind, reference, description, counterparty, status, notes;
+  final DateTime date;
+  final int amountCentavos;
+  const BusinessOperationRecord({
+    required this.id, required this.kind, required this.description,
+    required this.date, required this.amountCentavos,
+    this.reference = '', this.counterparty = '',
+    this.status = 'Draft', this.notes = '',
+  });
+
+  Map<String, Object?> toJson() => {
+    'id': id, 'kind': kind, 'reference': reference,
+    'description': description, 'counterparty': counterparty,
+    'status': status, 'notes': notes,
+    'date': BookEntry.dateKeyOf(date), 'amount_centavos': amountCentavos,
+  };
+
+  factory BusinessOperationRecord.fromJson(Map<String, dynamic> json) {
+    final id = json['id'], kind = json['kind'];
+    final reference = json['reference'] ?? '';
+    final description = json['description'];
+    final counterparty = json['counterparty'] ?? '';
+    final status = json['status'] ?? 'Draft';
+    final notes = json['notes'] ?? '';
+    final dateString = json['date'];
+    final money = json['amount_centavos'];
+    final date = dateString is String ? DateTime.tryParse(dateString) : null;
+    if (id is! String || id.isEmpty || id.length > 120 ||
+        kind is! String || !businessOperationKinds.contains(kind) ||
+        reference is! String || reference.length > 160 ||
+        description is! String || description.trim().isEmpty ||
+        description.length > 180 ||
+        counterparty is! String || counterparty.length > 180 ||
+        status is! String || !businessOperationStatuses.contains(status) ||
+        notes is! String || notes.length > 1500 ||
+        date == null || dateString != BookEntry.dateKeyOf(date) ||
+        money is! int || money < 0 || money > 100000000000000) {
+      throw const FormatException('Invalid business operation record.');
+    }
+    return BusinessOperationRecord(
+      id: id, kind: kind, description: description.trim(),
+      date: date, amountCentavos: money,
+      reference: reference.trim(), counterparty: counterparty.trim(),
+      status: status, notes: notes,
+    );
+  }
+}
+
 class BusinessWorkspace {
   final String businessName, businessTin, businessAddress,
       registrationStatus, taxStatus, notes;
   final List<BusinessListItem> masters;
   final List<BusinessReminder> reminders;
   final List<TaxRecord> taxRecords;
+  final List<BusinessOperationRecord> operations;
   final List<String> verifiedReferences, voidedReferences;
 
   const BusinessWorkspace({
@@ -149,6 +207,7 @@ class BusinessWorkspace {
     this.masters = const [],
     this.reminders = const [],
     this.taxRecords = const [],
+    this.operations = const [],
     this.verifiedReferences = const [],
     this.voidedReferences = const [],
   });
@@ -160,6 +219,7 @@ class BusinessWorkspace {
     List<BusinessListItem>? masters,
     List<BusinessReminder>? reminders,
     List<TaxRecord>? taxRecords,
+    List<BusinessOperationRecord>? operations,
     List<String>? verifiedReferences,
     List<String>? voidedReferences,
   }) => BusinessWorkspace(
@@ -172,6 +232,7 @@ class BusinessWorkspace {
     masters: List.unmodifiable(masters ?? this.masters),
     reminders: List.unmodifiable(reminders ?? this.reminders),
     taxRecords: List.unmodifiable(taxRecords ?? this.taxRecords),
+    operations: List.unmodifiable(operations ?? this.operations),
     verifiedReferences: List.unmodifiable(verifiedReferences ?? this.verifiedReferences),
     voidedReferences: List.unmodifiable(voidedReferences ?? this.voidedReferences),
   );
@@ -195,6 +256,7 @@ class BusinessWorkspace {
     'masters': masters.map((e) => e.toJson()).toList(),
     'reminders': reminders.map((e) => e.toJson()).toList(),
     'tax_records': taxRecords.map((e) => e.toJson()).toList(),
+    'operation_records': operations.map((e) => e.toJson()).toList(),
     'verified_references': verifiedReferences,
     'voided_references': voidedReferences,
   };
@@ -209,6 +271,7 @@ class BusinessWorkspace {
     final rawMasters = json['masters'] ?? [];
     final rawReminders = json['reminders'] ?? [];
     final rawTaxRecords = json['tax_records'] ?? [];
+    final rawOperations = json['operation_records'] ?? [];
     final rawVerified = json['verified_references'] ?? [];
     final rawVoided = json['voided_references'] ?? [];
     if (name is! String || name.length > 180 ||
@@ -220,6 +283,7 @@ class BusinessWorkspace {
         rawMasters is! List || rawMasters.length > 10000 ||
         rawReminders is! List || rawReminders.length > 10000 ||
         rawTaxRecords is! List || rawTaxRecords.length > 10000 ||
+        rawOperations is! List || rawOperations.length > 10000 ||
         rawVerified is! List || rawVerified.length > 100000 ||
         rawVoided is! List || rawVoided.length > 100000) {
       throw const FormatException('Invalid business settings in backup.');
@@ -261,6 +325,18 @@ class BusinessWorkspace {
       }
       taxRecords.add(item);
     }
+    final operations = <BusinessOperationRecord>[];
+    ids.clear();
+    for (final raw in rawOperations) {
+      if (raw is! Map<String, dynamic>) {
+        throw const FormatException('Invalid business operating record.');
+      }
+      final item = BusinessOperationRecord.fromJson(raw);
+      if (!ids.add(item.id)) {
+        throw const FormatException('Duplicate business operation ID.');
+      }
+      operations.add(item);
+    }
     List<String> validReferences(List<dynamic> raw) {
       final result = <String>[];
       final unique = <String>{};
@@ -280,6 +356,7 @@ class BusinessWorkspace {
       masters: List.unmodifiable(masters),
       reminders: List.unmodifiable(reminders),
       taxRecords: List.unmodifiable(taxRecords),
+      operations: List.unmodifiable(operations),
       verifiedReferences: validReferences(rawVerified),
       voidedReferences: validReferences(rawVoided),
     );
