@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../theme/hyperion_theme.dart';
 import 'package:intl/intl.dart';
 import '../models/accounting_books.dart';
+import '../models/book_table_view.dart';
+import 'books_compact_table.dart';
 import '../models/book_entry.dart';
 import '../models/business_workspace.dart';
 import '../models/paymongo_transaction.dart';
@@ -30,42 +32,22 @@ class AccountingBooksPage extends StatefulWidget {
   @override State<AccountingBooksPage> createState() => _AccountingBooksPageState();
 }
 
-class _ReportTable {
-  final String title;
-  final List<String> headers;
-  final List<List<String>> rows;
-  _ReportTable(this.title, this.headers, this.rows);
-}
-
 class _AccountingBooksPageState extends State<AccountingBooksPage> {
   late int _tab;
-  bool _optional = false;
   bool _includeVoided = false;
   bool _includeUnverified = true;
   DateTime? _start;
   DateTime? _end;
   bool _all = false;
   bool _exporting = false;
+  bool _showReviewFilters = false;
+  String? _ledgerAccount;
   final ScrollController _pageScroll = ScrollController();
-  final ScrollController _tableHorizontal = ScrollController();
-  final ScrollController _tableVertical = ScrollController();
 
   @override void dispose() {
     _pageScroll.dispose();
-    _tableHorizontal.dispose();
-    _tableVertical.dispose();
     super.dispose();
   }
-
-  void _scrollTable(double delta) {
-    if (!_tableHorizontal.hasClients) return;
-    final position = _tableHorizontal.position;
-    _tableHorizontal.animateTo(
-      (_tableHorizontal.offset + delta).clamp(0.0, position.maxScrollExtent),
-      duration: Duration(milliseconds: 250),
-      curve: Curves.easeOutCubic);
-  }
-
 
   @override void initState() {
     super.initState();
@@ -104,89 +86,16 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
         '${_end == null ? "Present" : _stamp(_end!)}';
   }
 
-  bool _allowed(String ref) =>
-      (_includeVoided || !widget.workspace.voidedReferences.contains(ref)) &&
-      (_includeUnverified || widget.workspace.verifiedReferences.contains(ref));
-
-  _ReportTable _table(AccountingBooks books) {
-    switch (_tab) {
-      case 0:
-        final postings = books.journal.where((p) => _within(p.date) && _allowed(p.reference)).toList();
-        final rows = <List<String>>[
-          for (final p in postings) [
-            p.reference, _stamp(p.date), _code(p.account), _account(p.account),
-            p.particulars,
-            if (_optional) p.source,
-            _peso(p.debit), _peso(p.credit),
-          ],
-        ];
-        if (postings.isNotEmpty) {
-          final totalDebit = postings.fold<int>(0, (v, p) => v + p.debit);
-          final totalCredit = postings.fold<int>(0, (v, p) => v + p.credit);
-          rows.add(['TOTAL', '', '', '', '',
-            if (_optional) '',
-            _peso(totalDebit), _peso(totalCredit)]);
-        }
-        return _ReportTable('General Journal', [
-          'Reference No.', 'Date', 'GL Code', 'GL Account',
-          'Description', if (_optional) 'Source', 'Debit', 'Credit',
-        ], rows);
-      case 1:
-        final rows = <List<String>>[];
-        // Calculate running balances from all permitted transactions before
-        // applying the date filter, so earlier account activity carries forward.
-        final balances = <String,int>{};
-        for (final p in books.journal.where((p) => _allowed(p.reference))) {
-          final balance = (balances[p.account] ?? 0) + p.debit - p.credit;
-          balances[p.account] = balance;
-          if (!_within(p.date)) continue;
-          rows.add([
-            _code(p.account), _account(p.account), _stamp(p.date),
-            p.reference, p.particulars,
-            if (_optional) p.source,
-            _peso(p.debit), _peso(p.credit),
-            _peso(balance > 0 ? balance : 0),
-            _peso(balance < 0 ? -balance : 0),
-          ]);
-        }
-        rows.sort((a,b) {
-          final group = a.first.compareTo(b.first);
-          return group != 0 ? group : a[2].compareTo(b[2]);
-        });
-        return _ReportTable('General Ledger', [
-          'GL Code', 'GL Account', 'Date', 'Reference No.', 'Description',
-          if (_optional) 'Source', 'Debit', 'Credit', 'Debit balance', 'Credit balance',
-        ], rows);
-      case 2:
-        final receipts = books.cashReceipts.where((e) => _within(e.date) && _allowed(e.reference)).toList();
-        return _ReportTable('Cash Receipts Journal', [
-          'Reference No.', 'Date', 'Description',
-          if (_optional) 'Collection channel',
-          'Gross collection', 'Fees incl. VAT', 'Processor net',
-          'Bank received', if (_optional) 'Classification',
-        ], [
-          for (final e in receipts) [
-            e.reference, _stamp(e.date), e.particulars,
-            if (_optional) e.channel,
-            _peso(e.gross), _peso(e.fees), _peso(e.processorNet),
-            _peso(e.bankReceived),
-            if (_optional) e.bankTransfer ? 'Transfer — not a sale' :
-              e.provisional ? 'Provisional — review' : 'Collection',
-          ],
-        ]);
-      default:
-        final paid = books.cashDisbursements.where((e) => _within(e.date) && _allowed(e.reference)).toList();
-        return _ReportTable('Cash Disbursements Journal', [
-          'Reference No.', 'Date', 'Description',
-          'GL Code', 'Expense account', 'Cash / bank paid',
-        ], [
-          for (final e in paid) [
-            e.reference, _stamp(e.date), e.particulars,
-            _code(e.account), _account(e.account), _peso(e.amount),
-          ],
-        ]);
-    }
-  }
+  BookTableData _table(AccountingBooks books) => BookTableData.build(
+    books: books,
+    bookIndex: _tab,
+    start: _start, end: _end, allDates: _all,
+    requestedLedgerAccount: _ledgerAccount,
+    voidedReferences: widget.workspace.voidedReferences.toSet(),
+    verifiedReferences: widget.workspace.verifiedReferences.toSet(),
+    includeVoided: _includeVoided,
+    includeUnverified: _includeUnverified,
+  );
 
   Future<void> _manageReference(String ref) async {
     PayMongoTransaction? transaction;
@@ -215,7 +124,13 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
             crossAxisAlignment: CrossAxisAlignment.start, children: [
             detail('Reference', ref),
             if (transaction != null) ...[
-              detail('Source', 'PayMongo CSV'),
+              detail('Source', transaction.isManual ? 'Manual direct sale' : 'Sales import'),
+              if (transaction.isManual && transaction.reference.isNotEmpty)
+                detail('Payment reference', transaction.reference),
+              if (transaction.isManual)
+                detail('Product / service', transaction.description),
+              if (transaction.isManual && transaction.depositAccount.isNotEmpty)
+                detail('Received into', transaction.depositAccount),
               detail('Date/time', DateFormat('MMM d, yyyy, h:mm a').format(transaction.occurredAt)),
               detail('Type', transaction.type),
               detail('Status', transaction.status),
@@ -281,12 +196,14 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
     }
   }
 
-  Future<void> _export(_ReportTable table) async {
+  Future<void> _export(BookTableData table) async {
     if (_exporting) return;
     setState(() => _exporting = true);
     try {
       await ExportService.exportBookTable(
-        table.title, table.headers, table.rows,
+        table.ledgerAccount == null ? table.title :
+          '${table.title} - ${table.ledgerAccount}',
+        table.headers, table.rows,
         period: _period, businessName: widget.workspace.businessName,
         businessTin: widget.workspace.businessTin,
         businessAddress: widget.workspace.businessAddress);
@@ -304,9 +221,10 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
     }
   }
 
-  void _print(_ReportTable table) {
+  void _print(BookTableData table) {
     final opened = ReportPrinter.printTable(
-      title: table.title, period: _period,
+      title: table.ledgerAccount == null ? table.title :
+        '${table.title} - ${table.ledgerAccount}', period: _period,
       businessName: widget.workspace.businessName,
       businessTin: widget.workspace.businessTin,
       businessAddress: widget.workspace.businessAddress,
