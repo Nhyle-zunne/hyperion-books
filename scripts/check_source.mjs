@@ -32,9 +32,14 @@ for (const tab of ['PAYOUTS','EXPENSES','CASH RECEIPTS JOURNAL','CASH DISBURSEME
 }
 const accounting = source('lib/models/accounting_books.dart');
 assert(accounting.includes('PayMongo settlement clearing') && accounting.includes('balanced'), 'Combined accounting journals missing');
-const booksUi = source('lib/ui/home.dart');
-for (const name of ['Cash Receipts Journal','Cash Disbursements Journal','General Journal','General Ledger','Imported PayMongo activity']) {
-  assert(booksUi.includes(name), `Missing dashboard or books view: ${name}`);
+const booksUi = source('lib/ui/accounting_books_page.dart');
+for (const name of ['Cash Receipts Journal','Cash Disbursements Journal','General Journal','General Ledger']) {
+  assert(booksUi.includes(name), `Missing accounting book view: ${name}`);
+}
+assert(source('lib/ui/home.dart').includes('Imported PayMongo activity'), 'PayMongo dashboard missing');
+assert(source('lib/ui/home.dart').includes('TaxFilingPage'), 'Tax Filing navigation missing');
+for (const item of ['Calendar','Monthly','Quarterly','Annual','2307 Certificates','e-Invoicing','Books of Accounts']) {
+  assert(source('lib/ui/tax_filing_page.dart').includes(item), `Missing tax section: ${item}`);
 }
 for (const tab of ['BUSINESS PROFILE','MASTER LISTS','COMPLIANCE TASKS']) {
   assert(excel.includes("'" + tab + "'"), "Excel business sheet missing: " + tab);
