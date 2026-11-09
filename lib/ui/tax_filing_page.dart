@@ -139,7 +139,9 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
     save: widget.save,
     addReminder: () => _editReminder(),
     editReminder: (r) => _editReminder(r),
+    addReminderForDate: (date) => _editReminder(null, date),
     addFiling: (date) => _editTax('Filing',
+      proposedDate: date,
       proposedPeriod: DateFormat('yyyy-MM').format(date)),
   );
 
@@ -326,7 +328,7 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
   }
 
   Future<void> _editTax(String kind, {TaxRecord? original,
-      String proposedPeriod = ''}) async {
+      String proposedPeriod = '', DateTime? proposedDate}) async {
     var name = original?.name ?? '';
     var ref = original?.reference ?? '';
     var period = original?.period ?? proposedPeriod;
@@ -335,7 +337,7 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
     var notes = original?.notes ?? '';
     var amount = original == null ? '' :
       (original.amountCentavos / 100).toStringAsFixed(2);
-    var date = original?.date ?? DateTime.now();
+    var date = original?.date ?? proposedDate ?? DateTime.now();
     DateTime? dueDate = original?.dueDate;
     String? errorText;
     final result = await showDialog<TaxRecord>(context: context,
@@ -439,10 +441,11 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
     ]));
   }
 
-  Future<void> _editReminder([BusinessReminder? original]) async {
+  Future<void> _editReminder([BusinessReminder? original,
+      DateTime? proposedDate]) async {
     var name = original?.title ?? '';
     var notes = original?.notes ?? '';
-    var due = original?.dueDate ?? DateTime.now();
+    var due = original?.dueDate ?? proposedDate ?? DateTime.now();
     String? error;
     final result = await showDialog<BusinessReminder>(context: context,
       builder: (d) => StatefulBuilder(builder: (d, refresh) => AlertDialog(
