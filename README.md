@@ -1,13 +1,15 @@
 # Hyperion Books — Flutter Web PWA
 
+**Business workflow update:** CPAlly-style management insights, local master lists, search, tax-task planner, bulk expense imports and private business profiles are included. See [Business workflows](docs/BUSINESS_WORKFLOWS.md) for scope and important accounting limitations.
+
 Personal bookkeeping for PayMongo and Google Play payouts, and expenses. **No Supabase, accounts, API tokens, or cloud database.** Hosted static app files do not contain financial entries.
 
-## Two things to enter
+## Basic records to enter
 
 1. **Payout:** date (tap to select with a calendar), PayMongo or Google Play, net amount received, optional note and optional gross amount from a processor statement.
 2. **Expense:** date (calendar), amount, description, and optional category.
 
-All other views are generated: dashboard, monthly summary, cash receipts/disbursements, general journal, general ledger, and Excel `.xlsx` reports. Amounts are stored as integer centavos.
+Other views are generated: dashboard, 7/30/90-day business trends, monthly summary, cash receipts/disbursements, general journal, general ledger, and Excel `.xlsx` reports. Amounts are stored as integer centavos. PayMongo transactions can be imported separately, as can expenses using a downloadable CSV template with stable references.
 
 ## Where entries live
 
@@ -77,3 +79,13 @@ Do not commit private transaction CSVs or financial backups into this repository
 ## Four accounting books and BIR scope
 
 The Books page and Excel export now contain separately named **Cash Receipts Journal**, **Cash Disbursements Journal**, **General Journal** and **General Ledger**, each populated from imported PayMongo customer payments and/or manual bank payouts and expenses as appropriate. They are provisional working records, **not automatically compliant or BIR-registered computerized books**. The [accounting and BIR scope](docs/ACCOUNTING_AND_BIR_SCOPE.md) documents the classification assumptions, official BIR references, and missing data that must be reconciled against invoices and bank statements before formal use.
+
+## New business tools and bulk expense CSV import
+
+The **Tools** tab includes a local business profile, customer/vendor/product and expense-category master lists, a manually maintained tax and compliance task planner with date pickers, and your existing backup/export functions. The global search button finds local PayMongo, payout, expense, list and task records; the top-bar + button provides quick entry/import actions. The dashboard shows management trends, costs by category, recent sales and expenses, and bank cash movement. These are not audited financial statements or verified taxable gross sales.
+
+For expenses, choose **Import expenses CSV** from Entries, Tools or Quick Record. Download the template from Tools. The CSV must have `Reference,Date,Amount,Description,Category` (Category optional). Each expense needs a unique stable Reference; reimporting the same IDs skips existing records. Different genuine expenses should have different references even when dates and amounts match. All imports happen in your browser.
+
+A JSON backup now uses schema version 3 and includes the business profile, lists and reminders. Backups from v1/v2 remain importable, but importing an old backup **replaces all local records and resets the new business workspace** because it has no such data. Export your current backup before restoring anything. Excel exports include separate business-list and task sheets which may contain private information.
+
+**Not yet implemented:** automated BIR submissions/forms or statutory DATs, real-time inventory/receivables, OCR invoice scanning, automatic tax deadlines, multi-business accounting, shared cloud data, or live bank feeds. Those require further work and potentially a backend.
