@@ -56,7 +56,9 @@ class LocalRepository {
           .toSet();
       for (final item in transactions) {
         if (usedIds.contains(item.id) ||
-            manualReferences.contains(item.id.toLowerCase())) continue;
+            manualReferences.contains(item.id.toLowerCase())) {
+          continue;
+        }
         await _paymongo.record(item.id).put(txn, item.toJson());
         usedIds.add(item.id);
         added++;
