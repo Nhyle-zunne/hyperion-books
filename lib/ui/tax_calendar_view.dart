@@ -12,10 +12,12 @@ class TaxCalendarView extends StatefulWidget {
   final BusinessWorkspace workspace;
   final Future<void> Function(BusinessWorkspace) save;
   final VoidCallback addReminder;
+  final ValueChanged<DateTime> addReminderForDate;
   final ValueChanged<BusinessReminder> editReminder;
   final ValueChanged<DateTime> addFiling;
   const TaxCalendarView({super.key, required this.workspace,
     required this.save, required this.addReminder,
+    required this.addReminderForDate,
     required this.editReminder, required this.addFiling});
 
   @override State<TaxCalendarView> createState() => _TaxCalendarViewState();
@@ -48,7 +50,8 @@ class _TaxCalendarViewState extends State<TaxCalendarView> {
       BirTaxCalendar.visibleFor(_audience, e)).toList();
 
   void _changeMonth(int delta) {
-    final d = DateTime(_viewing.year, _viewing.month + delta);
+    final d = _yearView ? DateTime(_viewing.year + delta, _viewing.month)
+      : DateTime(_viewing.year, _viewing.month + delta);
     if (d.year < 2020 || d.year > 2100) return;
     setState(() => _viewing = DateTime(d.year, d.month));
   }
@@ -471,6 +474,12 @@ class _TaxCalendarViewState extends State<TaxCalendarView> {
                   Navigator.pop(sheet);
                   widget.editReminder(reminder);
                 }),
+            OutlinedButton.icon(onPressed: () {
+              Navigator.pop(sheet);
+              widget.addReminderForDate(day);
+            }, icon: const Icon(Icons.add_alert_outlined),
+              label: const Text('Add reminder for this day')),
+            const SizedBox(height: 6),
             OutlinedButton.icon(onPressed: () {
               Navigator.pop(sheet);
               widget.addFiling(day);
