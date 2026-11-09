@@ -49,7 +49,7 @@ for (const route of ['tax-calendar','tax-monthly','tax-quarterly','tax-annual','
   assert(source('lib/ui/hyperion_sidebar.dart').includes(route), `Sidebar route missing: ${route}`);
 }
 const sidebar = source('lib/ui/hyperion_sidebar.dart');
-assert((sidebar.match(/_item\\('books', 'Books of Accounts'/g) ?? []).length === 1,
+assert(sidebar.split("_item('books', 'Books of Accounts'").length === 2,
   'Accounting must have exactly one Books of Accounts item');
 for (const duplicate of ["_item('tax-books'", "_item('journal'", "_item('ledger'"]) {
   assert(!sidebar.includes(duplicate), 'Redundant book navigation remains: ' + duplicate);
