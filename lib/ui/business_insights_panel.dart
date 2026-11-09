@@ -98,7 +98,7 @@ class _BusinessInsightsPanelState extends State<BusinessInsightsPanel> {
 
   Widget _box(Widget child) => Container(width: double.infinity,
     padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(color: Colors.white,
+    decoration: BoxDecoration(color: HyperionColors.card,
       border: Border.all(color: HyperionColors.border),
       borderRadius: BorderRadius.circular(17)),
     child: child);
