@@ -1,106 +1,46 @@
-# Hyperion Books
+# Hyperion Books — Flutter Web PWA
 
-A standalone **Flutter Web PWA** for private, simple PayMongo / Google Play payout tracking and expenses. The only regular entry forms are **Payout** and **Expense**. The overview, cash books, general journal, general ledger, monthly summary, and Excel `.xlsx` export are computed from those entries.
+Personal bookkeeping for PayMongo and Google Play payouts, and expenses. **No Supabase, accounts, API tokens, or cloud database.** Hosted static app files do not contain financial entries.
 
-**Status: source-code deliverable, not a hosted/deployed app.** Flutter SDK and an authenticated Supabase project were not available in the authoring runtime, so compilation and live cloud/offline browser testing still need to be performed on your machine or through the included GitHub Actions CI. No changes have been applied to the Hyperion maritime reviewer or its Supabase database.
+## Two things to enter
 
-## What works in the source
+1. **Payout:** date (tap to select with a calendar), PayMongo or Google Play, net amount received, optional note and optional gross amount from a processor statement.
+2. **Expense:** date (calendar), amount, description, and optional category.
 
-- Mobile, tablet and desktop-responsive Flutter Web UI using Material 3.
-- Real calendar popup via Flutter `showDatePicker` for payout/expense dates.
-- PayMongo or Google Play dropdown; amount received; optional note; optional gross amount (deductions computed from gross − net).
-- Expense date, description, peso amount and optional category.
-- All money stored as **integer centavos** to avoid rounding errors.
-- IndexedDB local-first records (`sembast_web`), so offline form changes are saved immediately.
-- Google OAuth with Supabase and private, account-bound cloud data.
-- Optimistic cloud revision / edit conflict detection: choose local or cloud copy instead of silent overwriting.
-- Soft deletes (tombstones) carried across devices.
-- Automatic cloud sync on save, app resume and every 4 minutes while open; manual Sync button.
-- If the cloud session expires while offline, the last-used account's cached records remain usable on that **trusted device**; reconnect Google before cloud sync.
-- Generated cash receipts, cash disbursements, general journal, general ledger and monthly summaries.
-- Multi-sheet Excel `.xlsx` export (READ ME, PAYOUTS, EXPENSES, CASH RECEIPTS, CASH DISBURSEMENTS, GENERAL JOURNAL, GENERAL LEDGER, MONTHLY SUMMARY).
-- Installable PWA manifest and a **custom service worker** that caches Flutter's compiled app shell including local CanvasKit.
+All other views are generated: dashboard, monthly summary, cash receipts/disbursements, general journal, general ledger, and Excel `.xlsx` reports. Amounts are stored as integer centavos.
 
-## Important bookkeeping disclaimer
+## Where entries live
 
-**A net payout is not necessarily gross revenue.** Payouts may represent accumulated sales, less fees, refunds, withholding and other adjustments. When gross is unknown, the app labels its income as *provisional payout receipts*. It does not manufacture invoice dates or numbers, nor certify these books as compliant BIR books. Keep payment-processor settlement statements, sales/invoice records and expense receipts for tax purposes, and reconcile gross collections separately.
+Each browser/PWA installation stores entries in **IndexedDB on that device**, accessible offline after the PWA shell is cached. **There is no automatic multi-device sync.** Each device has its own dataset. Use Settings → **Export JSON backup**, then Settings → **Import JSON backup** on another device to transfer the records. Import shows amounts and requires explicit confirmation because it **REPLACES** the target device's existing records. Export the receiving device's backup first! Excel exports are human-readable books and **cannot** be re-imported; the JSON file is the restorable backup.
 
-## Set up your own cloud database (one-time)
+Do not upload financial backups to GitHub. Neither IndexedDB nor the unencrypted JSON backup uses at-rest encryption. Use a device with a screen lock, keep backups in a private location, and make regular backups; clearing browser site data or losing the device may erase local records.
 
-Recommended: create a separate Supabase project for Hyperion Books, so it does not change your existing Hyperion reviewer.
+## GitHub Pages hosting
 
-1. Create a new Supabase project. Enable **Authentication → Providers → Google**. Add its OAuth client ID and secret per Supabase's dashboard instructions.
-2. In Supabase's **SQL Editor**, run `supabase/migrations/20261109_hyperion_books_private.sql` once. The table is **read-only for authenticated clients with RLS**; all writes go through the authenticated `hyperion_books_save` function with server-side owner checking and optimistic `version` protection.
-3. In **Authentication → URL Configuration**, set the Site URL to your eventual HTTPS app address (for example `https://books.your-domain.com`) and allow that address as an OAuth redirect. Add your exact development URL when testing, e.g. `http://localhost:4000`.
-4. Get **Project URL** and **publishable key** (legacy `anon` key is compatible). These are public web-client configuration values. **Never put the service-role key** into Flutter source, `--dart-define`, or public hosting secrets.
+Your `hyperion-books` repo is **private**. On GitHub Free, GitHub Pages requires a **public repository**. With GitHub Pro/Team, you can publish from private repos, but **the published site is still publicly accessible**. Never commit private bookkeeping data even if the repo is private. GitHub Pages is static hosting, not a financial database.
 
-## Run on a computer with Flutter installed
+If your plan supports Pages from this repo, use **Settings → Pages → Build and deployment → GitHub Actions**, and set repository **Settings → Secrets and variables → Actions → Variables → `ENABLE_GITHUB_PAGES` = `true`**. The `pages.yml` workflow then builds and publishes `https://<owner>.github.io/hyperion-books/`. Otherwise, leave the repository private and publish the static `build/web/` directory via another static host with a free tier, or make a separate public source-only repository (after review). **Do not change repository visibility solely to deploy without understanding the implications.**
 
-Requirements: recent stable Flutter SDK (recommended 3.50+), Dart 3.12+, Chrome, Node.js 20+.
+## Build locally
+
+Requires a recent stable Flutter SDK (current stable), Dart and Node.js 20+.
 
 ```bash
 flutter pub get
-flutter run -d chrome --web-port 4000 \
-  --dart-define=SUPABASE_URL=https://YOUR_PROJECT.supabase.co \
-  --dart-define=SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
-```
-
-The URL configured in Supabase's OAuth redirect allowlist must match the browser origin (including the port).
-
-### Release build (offline PWA)
-
-Mac/Linux/Git Bash:
-
-```bash
-export SUPABASE_URL=https://YOUR_PROJECT.supabase.co
-export SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
+flutter analyze
+flutter test
+node scripts/check_source.mjs
 bash scripts/build_web.sh
 ```
 
-Windows PowerShell:
+By default it builds for the GitHub Pages subpath `/hyperion-books/`. For a dedicated domain root use `BASE_HREF=/ bash scripts/build_web.sh`. The script produces `build/web` and generates `sw.js` by enumerating the compiled static assets; no credentials or environment secrets are required.
 
-```powershell
-flutter pub get
-flutter analyze
-flutter test
-flutter build web --release --web-content-hash --no-web-resources-cdn --dart-define="SUPABASE_URL=https://YOUR_PROJECT.supabase.co" --dart-define="SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY"
-node scripts/make_sw.mjs build/web
-Copy-Item web/_headers build/web/_headers -Force
-```
+The app runs on Android, iPhone/iPad, Windows, and Mac through an HTTPS browser and can be installed as a PWA. Install while online, wait for the service worker to cache the app, then test offline. iOS browsers may evict app storage; back up regularly.
 
-Upload the **contents** of `build/web/` to a new static hosting project (e.g. *separate* Cloudflare Pages project). Host from the root of an HTTPS origin, with an SPA navigation fallback to `/index.html`. Preserve the original hashed files for one release during upgrades if possible. Do not replace `hyperionmaritime.org`'s existing maritime reviewer.
+## Verification status
 
-Flutter does not automatically generate a functioning caching service worker in current versions. `scripts/make_sw.mjs` uses the official `precache_manifest.json` produced by `--web-content-hash` to create `build/web/sw.js`. `--no-web-resources-cdn` includes CanvasKit locally for offline use. The initial online visit must finish the worker installation before offline reloads can work.
+`flutter analyze`, `flutter test`, and a web build run in `.github/workflows/flutter.yml` on pushes and pull requests. **CI results must be checked** before considering a change tested. GitHub Pages publishing is opt-in and may be unavailable on a private GitHub Free repository.
 
-## Install on all devices
+## Accounting caveat
 
-- Android: visit the HTTPS app in Chrome, choose **Install app** or **Add to Home screen**.
-- iPhone / iPad: open in Safari, Share → **Add to Home Screen**.
-- Windows / Mac: open in Edge/Chrome, choose **Install** from the browser's address bar or menu.
-- One Google account owns the cloud entries; every device must initially open online and sign in. Devices keep **separate offline IndexedDB caches** that synchronize upon reconnecting.
-
-**Offline caveats:** private browsing, clearing site data, changing the site domain, device storage eviction or PWA reinstallation can delete local entries. Sync before switching devices, and export Excel backups regularly. Offline local mode relies on trust in the physical/browser device; it is **not locally encrypted or protected by a separate PIN**. Avoid shared computers.
-
-## Review and testing
-
-After `flutter pub get`, run:
-
-```bash
-flutter analyze
-flutter test
-```
-
-The included test suite checks integer-centavo parsing, balanced journal generation, gross/net deductions, month grouping, and edit identifiers. The CI workflow also builds a web release and generates the service worker with dummy configuration. On a deployed app, manually test:
-
-1. Sign in, add a ₱700 PayMongo payout, add a ₱50 expense, and verify ₱650 net movement.
-2. Turn off the internet; reopen the installed PWA; enter another expense, and verify it appears as pending.
-3. Reconnect and sync; sign in on a second device; verify both entries arrive.
-4. Edit the same item while each device is offline, then reconnect; verify the conflict choices appear (not silent overwrite).
-5. Export `.xlsx`, open in Excel, confirm journal debits equal credits and entries match the app.
-6. Sign out, then use a different Google account; no previous-account entries should appear.
-
-## Privacy, import, and limitations
-
-The user's prior Excel audit records are **not baked into the publicly distributed PWA bundle**. This avoids leaking private bookkeeping data to website visitors. Enter them privately after sign-in (or add a dedicated authenticated importer later).
-
-This is a purpose-built starter app, not yet a production-audited accounting system. It does **not** automatically fetch transactions from PayMongo or Google Play, send invoices, compute taxes, back up encrypted local data, or distinguish tax-period sales from settlement dates. For BIR filing, use actual transaction documents and a qualified adviser when required.
+Processor payouts may include sales from earlier dates and differ from gross sales because of fees, refunds, withholding, or other adjustments. This app records net cash movement and provisional journals; the reports are not independently certified BIR books of accounts or automatically tax-compliant. Keep underlying statements and receipts.
