@@ -84,6 +84,7 @@ void main() {
         workspace: const BusinessWorkspace(),
         save: (_) async {},
         addReminder: () {},
+        addReminderForDate: (_) {},
         editReminder: (_) {},
         addFiling: (_) {},
       ))));
