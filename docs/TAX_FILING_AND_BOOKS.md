@@ -42,7 +42,7 @@ The desktop navigation is a scrollable, hierarchical sidebar (a full drawer on p
 
 Use **Tax Filing** on the desktop navigation rail or the mobile bottom navigation. It includes:
 
-1. **Calendar** — month navigation, manually entered due-date reminders, completion checkboxes, and local filing history.
+1. **Calendar** — CPALLY-inspired Sunday-first month grid and year/upcoming views, month/year selectors, cadence filters (monthly/quarterly/annual), audience/category filter and Due Date Only toggle. Click deadlines to see filing-window opening dates, standard due dates, estimated weekend rollover, applicability, official source link, and save them as editable local reminders. Personal reminders, completion checkboxes and filing logs remain available.
 2. **Monthly** — monthly management totals and manually recorded filing references/status.
 3. **Quarterly** — quarterly management totals, a filing register, and examples of potentially relevant return categories.
 4. **Annual** — yearly management totals and a filing register.
@@ -57,7 +57,8 @@ Status selections (such as **Filed**, **Issued**, or **Received**) are user-ente
 - Monthly/quarterly/annual **tracked receipts** come from gross successful imported PayMongo payments and provisional receipts from manual Google Play/unsupported payouts. Later PayMongo-bank transfers are not counted as second sales.
 - Manually recorded expenses and PayMongo fees are shown separately. Refunds/adjustments are isolated for review; they are not silently netted into taxable income.
 - When the user's business profile explicitly selects **8% income tax (if elected)**, an *illustrative* year-to-date calculation displays 8% × max(0, tracked receipts − ₱250,000). It assumes an eligible purely self-employed taxpayer who qualifies for that reduction. It is **not** a calculation of tax due or payable and excludes credits, withholding, previous returns and other income.
-- No statutory filing deadline is populated automatically. BIR deadline extensions and changes, taxpayer-specific filing obligations and eligibility must be checked externally.
+- **Reference BIR filing dates are now generated automatically** for the selected year from the official BIR online-seller guide and related withholding-form filing rules. The schedule includes recurring 1701/1701A/1701-MS/1701Q, 1702Q/1702-RT, 2550Q, 2551Q, 0619-E/F, 1601-C/EQ/FQ, 1604-C/E/F, 2316 and conditional annual inventory-list dates. It is an intentionally scoped set, not every BIR return. For TY2025 individual annual ITRs due in 2026, RMC 30-2026's May 15, 2026 extension is included (confirmed by RMC 36-2026).
+- **Future-year dates are projections, not official calendars**. For weekend deadlines, the UI estimates the following Monday; it does not calculate Philippine holidays, exceptions, special RMC/RR deadlines, eFPS staggered-group filing dates, taxpayer-specific fiscal years, or filing applicability. Always verify using the latest official BIR Interactive Tax Calendar and current RDO guidance. Similar annual ITR forms are alternatives, not cumulative obligations.
 - Hyperion Books **does not** prepare/submit statutory BIR returns, issue BIR-registered electronic invoices, send 2307 certificates to BIR, or generate required .DAT submission files. Real official features require regulatory requirements, data validation and potentially an authorized integration.
 - Provisional accounting working papers are **not authorized computerized books**.
 
@@ -70,3 +71,11 @@ All tax records and reminders are stored in this browser's IndexedDB as part of 
 Run `node scripts/check_source.mjs`, `flutter analyze`, `flutter test`, and `flutter build web` for each change. Check actual GitHub Actions run results before treating a build as production-ready.
 
 Official form reference: [BIR 1701Q Schedule II and credit/payment sections](https://efps.bir.gov.ph/efps-war/EFPSWeb_war/forms2018Version/1701Q/1701q_v3_02.xhtml). Consult an accountant and your RDO to confirm which forms and deadlines apply.
+
+
+### Primary BIR calendar references
+
+- [RMC 110-2025: BIR 2026 Interactive Tax Calendar announced](https://bir-cdn.bir.gov.ph/BIR/pdf/RMC%20No.%20110-2025.pdf)
+- [BIR Online Sellers Guide: individual and corporate tax schedules](https://bir-cdn.bir.gov.ph/BIR/pdf/TAXPAYERS%20GUIDE%20FOR%20ONLINE%20SELLERS.pdf)
+- [RMC 36-2026: confirms RMC 30-2026 2025 annual ITR extension to May 15, 2026](https://bir-cdn.bir.gov.ph/BIR/pdf/RMC%20No.%2036-2026.pdf)
+- [BIR forms directory and filing notes](https://www.bir.gov.ph/bir-forms)
