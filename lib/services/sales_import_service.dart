@@ -82,7 +82,7 @@ class SalesImportService {
         final value = cell?.value;
         final text = switch (value) {
           null => '',
-          TextCellValue() => value.value,
+          TextCellValue() => _plainText(value.value),
           IntCellValue() => value.value.toString(),
           DoubleCellValue() => value.value.toString(),
           DateCellValue() =>
@@ -228,6 +228,12 @@ class SalesImportService {
     return SalesImportPreview(output.transactions, ignored + output.ignored,
       'CSV / Excel');
   }
+
+  /// The Excel 4.x TextCellValue holds a rich TextSpan rather than a String.
+  /// Preserve text exactly, including nested runs, when reading headings.
+  static String _plainText(TextSpan span) =>
+    (span.text ?? '') +
+    (span.children ?? const <TextSpan>[]).map(_plainText).join();
 
   static int _money(String raw, int row) {
     final cleaned = raw.trim().replaceAll(',', '').replaceAll('₱','');
