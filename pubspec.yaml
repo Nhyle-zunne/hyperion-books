@@ -1,6 +1,6 @@
 name: hyperion_books
-version: 0.2.0+1
-description: Offline-first personal payout and expense tracking, with manual backups.
+version: 0.3.0+2
+description: Offline-first business records, dashboards, expense imports, books and backups.
 publish_to: none
 
 environment:

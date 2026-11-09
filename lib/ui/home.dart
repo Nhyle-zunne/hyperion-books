@@ -7,10 +7,14 @@ import '../models/reports.dart';
 import '../services/export_service.dart';
 import '../services/backup_service.dart';
 import '../services/paymongo_csv_service.dart';
+import '../services/expense_csv_service.dart';
 import '../services/paymongo_import_plan.dart';
 import '../state/books_controller.dart';
 import 'entry_dialog.dart';
 import 'paymongo_screen.dart';
+import 'business_insights_panel.dart';
+import 'business_tools.dart';
+import 'record_search.dart';
 import 'hyperion_loading.dart';
 
 final _peso = NumberFormat.currency(locale: 'en_PH', symbol: '₱', decimalDigits: 2);
@@ -41,7 +45,8 @@ class _BooksHomeState extends State<BooksHome> {
 
   Future<void> _edit(BuildContext context, EntryKind kind, {BookEntry? initial}) async {
     final id = widget.controller.userId;
-    final value = await showEntryEditor(context, id, kind, initial: initial);
+    final value = await showEntryEditor(context, id, kind,
+      initial: initial, categories: widget.controller.workspace.expenseCategories);
     if (value == null || !context.mounted) return;
     try {
       await HyperionLoading.whileRunning('Saving entry', () => widget.controller.save(value));
@@ -73,7 +78,8 @@ class _BooksHomeState extends State<BooksHome> {
     try {
       await HyperionLoading.whileRunning(
         'Exporting Excel books', () => ExportService.export(widget.controller.report,
-          paymongo: widget.controller.paymongoTransactions));
+          paymongo: widget.controller.paymongoTransactions,
+          workspace: widget.controller.workspace));
       if (context.mounted) _message(context, 'Excel workbook exported.');
     } catch (error) {
       if (context.mounted) _message(context, 'Excel export failed: $error');
@@ -92,7 +98,7 @@ class _BooksHomeState extends State<BooksHome> {
           padding: const EdgeInsets.all(25), child: Text(ctrl.status, textAlign: TextAlign.center))));
       }
       final isWide = MediaQuery.sizeOf(context).width >= 850;
-      final title = const ['Overview', 'Transactions', 'Books & reports', 'PayMongo activity', 'Settings'][_page];
+      final title = const ['Overview', 'Transactions', 'Books & reports', 'PayMongo activity', 'Business tools'][_page];
       final body = switch (_page) {
         0 => _overview(context),
         1 => _transactions(context),
@@ -102,7 +108,11 @@ class _BooksHomeState extends State<BooksHome> {
           onImport: () => _importPayMongo(context),
           onExport: () => _export(context),
         ),
-        _ => _settings(context),
+        _ => BusinessTools(
+          workspace: ctrl.workspace,
+          save: ctrl.saveWorkspace,
+          backupPage: _settings(context),
+        ),
       };
       return Scaffold(
         appBar: AppBar(
@@ -149,10 +159,35 @@ class _BooksHomeState extends State<BooksHome> {
           ]),
           actions: [
             IconButton(
+              tooltip: 'Search local records',
+              onPressed: () => _searchRecords(context),
+              icon: const Icon(Icons.search_outlined)),
+            PopupMenuButton<String>(
+              tooltip: 'Quick record',
+              icon: const Icon(Icons.add_circle_outline),
+              onSelected: (action) {
+                if (action == 'payout') {
+                  _edit(context, EntryKind.payout);
+                } else if (action == 'expense') {
+                  _edit(context, EntryKind.expense);
+                } else if (action == 'csv') {
+                  _importPayMongo(context);
+                } else if (action == 'expenseCsv') {
+                  _importExpenses(context);
+                }
+              },
+              itemBuilder: (_) => const [
+                PopupMenuItem(value: 'payout', child: Text('Add bank payout')),
+                PopupMenuItem(value: 'expense', child: Text('Add expense')),
+                PopupMenuItem(value: 'csv', child: Text('Import PayMongo CSV')),
+                PopupMenuItem(value: 'expenseCsv', child: Text('Import expenses CSV')),
+              ],
+            ),
+            IconButton(
               tooltip: 'Back up your records',
               onPressed: () => _backup(context),
               icon: const Icon(Icons.backup_outlined)),
-            const SizedBox(width: 8),
+            const SizedBox(width: 5),
           ],
         ),
         body: Row(children: [
@@ -168,8 +203,8 @@ class _BooksHomeState extends State<BooksHome> {
                 selectedIcon: Icon(Icons.menu_book), label: Text('Books')),
               NavigationRailDestination(icon: Icon(Icons.receipt_long_outlined),
                 selectedIcon: Icon(Icons.receipt_long), label: Text('PayMongo')),
-              NavigationRailDestination(icon: Icon(Icons.settings_outlined),
-                selectedIcon: Icon(Icons.settings), label: Text('Settings')),
+              NavigationRailDestination(icon: Icon(Icons.business_center_outlined),
+                selectedIcon: Icon(Icons.business_center), label: Text('Tools')),
             ],
           ),
           Expanded(child: Center(child: ConstrainedBox(
@@ -185,7 +220,7 @@ class _BooksHomeState extends State<BooksHome> {
             NavigationDestination(icon: Icon(Icons.swap_vert), label: 'Entries'),
             NavigationDestination(icon: Icon(Icons.menu_book_outlined), label: 'Books'),
             NavigationDestination(icon: Icon(Icons.receipt_long_outlined), label: 'PayMongo'),
-            NavigationDestination(icon: Icon(Icons.settings_outlined), label: 'Settings'),
+            NavigationDestination(icon: Icon(Icons.business_center_outlined), label: 'Tools'),
           ]),
         floatingActionButton: _page == 1 ? FloatingActionButton.extended(
           backgroundColor: _green, foregroundColor: Colors.white,
@@ -193,6 +228,75 @@ class _BooksHomeState extends State<BooksHome> {
           icon: const Icon(Icons.add), label: const Text('Payout')) : null,
       );
     });
+  }
+
+  Future<void> _searchRecords(BuildContext context) =>
+      openRecordSearch(context,
+        entries: widget.controller.entries,
+        paymongo: widget.controller.paymongoTransactions,
+        workspace: widget.controller.workspace,
+        onEntries: () => _navigate(1),
+        onPayMongo: () => _navigate(3),
+        onTools: () => _navigate(4));
+
+  Future<void> _downloadExpenseTemplate(BuildContext context) async {
+    try {
+      await ExpenseCsvService.downloadTemplate();
+      if (context.mounted) _message(context, 'Expense CSV template downloaded.');
+    } catch (error) {
+      if (context.mounted) _message(context, 'Could not download template: $error');
+    }
+  }
+
+  Future<void> _importExpenses(BuildContext context) async {
+    try {
+      final records = await ExpenseCsvService.select();
+      if (records == null || !context.mounted) return;
+      final oldById = {
+        for (final entry in widget.controller.entries) entry.id: entry,
+      };
+      final novel = records.where((row) => !oldById.containsKey(row.id)).toList();
+      final conflicts = records.where((row) {
+        final old = oldById[row.id];
+        return old != null && (
+          old.amountCentavos != row.amountCentavos ||
+          old.dateKey != row.dateKey ||
+          old.description != row.description ||
+          old.category != row.category);
+      }).length;
+      final amount = novel.fold<int>(0, (s, r) => s + r.amountCentavos);
+      final skipped = records.length - novel.length;
+      final accept = await showDialog<bool>(context: context, builder: (dialog) =>
+        AlertDialog(
+          title: const Text('Import expense CSV?'),
+          content: Text(
+            'New expenses: ${novel.length}\n'
+            'Previously imported (skipped): $skipped\n'
+            'Same IDs with changed details (preserved): $conflicts\n'
+            'Total new expenses: ${php(amount)}\n\n'
+            'The Reference field is required to avoid duplicates. '
+            'Imported entries appear in your Expenses and accounting books. '
+            'Existing records are never overwritten.\n\n'
+            'Customer/vendor information is not sent to any server.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialog, false),
+              child: const Text('Cancel')),
+            if (novel.isNotEmpty)
+              FilledButton(onPressed: () => Navigator.pop(dialog, true),
+                child: Text('Import ${novel.length} expenses')),
+          ]));
+      if (accept != true || !context.mounted) return;
+      final count = await HyperionLoading.whileRunning(
+        'Importing expense CSV', () => widget.controller.importExpenses(novel));
+      if (context.mounted) {
+        _message(context,
+          'Imported $count expenses; skipped ${skipped + novel.length - count} existing.');
+      }
+    } catch (error) {
+      if (context.mounted) {
+        _message(context, 'Expense CSV import failed: $error');
+      }
+    }
   }
 
   Future<void> _importPayMongo(BuildContext context) async {
@@ -263,7 +367,8 @@ class _BooksHomeState extends State<BooksHome> {
     try {
       await HyperionLoading.whileRunning(
         'Exporting backup', () => BackupService.export(widget.controller.entries,
-          paymongo: widget.controller.paymongoTransactions));
+          paymongo: widget.controller.paymongoTransactions,
+          workspace: widget.controller.workspace));
       if (context.mounted) _message(context, 'JSON backup saved. Keep it somewhere safe.');
     } catch (error) {
       if (context.mounted) _message(context, 'Could not save backup: $error');
@@ -282,7 +387,7 @@ class _BooksHomeState extends State<BooksHome> {
           'and ${incoming.paymongo.length} imported PayMongo transactions.\n'
           'Payouts: ${php(summary.netPayouts)}\n'
           'Expenses: ${php(summary.totalExpenses)}\n\n'
-          'Your ${current.length} current entries and '
+          'Your ${current.length} current entries, business lists, reminders and '
           '${widget.controller.paymongoTransactions.length} imported PayMongo transactions '
           'will be REPLACED, not merged. '
           'Export a JSON backup of your current records first. '
@@ -297,7 +402,7 @@ class _BooksHomeState extends State<BooksHome> {
       if (accepted != true || !context.mounted) return;
       await HyperionLoading.whileRunning(
         'Restoring local books', () => widget.controller.restore(incoming.entries,
-          paymongo: incoming.paymongo));
+          paymongo: incoming.paymongo, workspace: incoming.workspace));
       if (context.mounted) {
         _message(context, 'Restored ${incoming.entries.length} entries and '
           '${incoming.paymongo.length} PayMongo transactions from backup.');
@@ -353,7 +458,14 @@ class _BooksHomeState extends State<BooksHome> {
           _welcomeCard(wide),
           const SizedBox(height: 20),
           _importedPanel(context, importedTotals, importedInPeriod.length),
-          const SizedBox(height: 19),
+          const SizedBox(height: 20),
+          BusinessInsightsPanel(
+            entries: widget.controller.entries,
+            transactions: widget.controller.paymongoTransactions,
+            onSales: () => _navigate(3),
+            onExpenses: () => _navigate(1),
+          ),
+          const SizedBox(height: 20),
           const Text('Bank and cash movements', style: TextStyle(
             color: _ink, fontWeight: FontWeight.w800, fontSize: 17)),
           const SizedBox(height: 6),
@@ -734,6 +846,8 @@ class _BooksHomeState extends State<BooksHome> {
           icon: const Icon(Icons.add), label: const Text('Expense')),
         OutlinedButton.icon(onPressed: () => _navigate(3),
           icon: const Icon(Icons.receipt_long_outlined), label: const Text('PayMongo CSV')),
+        OutlinedButton.icon(onPressed: () => _importExpenses(context),
+          icon: const Icon(Icons.upload_file_outlined), label: const Text('Import expenses CSV')),
       ]),
       const SizedBox(height: 10),
       if (entries.isEmpty) const _EmptyState('No matching entries', 'Use the buttons above to add your first transaction.'),
@@ -881,7 +995,9 @@ class _BooksHomeState extends State<BooksHome> {
         crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         const Text('Private device storage', style: TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
-        Text('${ctrl.entries.length} cash entries and '
+        Text('${ctrl.workspace.masters.length} master-list items, '
+          '${ctrl.workspace.reminders.length} reminders, '
+          '${ctrl.entries.length} cash entries and '
           '${ctrl.paymongoTransactions.length} imported PayMongo transactions in this browser.'),
         Text(ctrl.status),
         const SizedBox(height: 12),
@@ -898,6 +1014,10 @@ class _BooksHomeState extends State<BooksHome> {
             icon: const Icon(Icons.file_download_outlined), label: const Text('Export Excel books')),
           OutlinedButton.icon(onPressed: () => _importPayMongo(context),
             icon: const Icon(Icons.upload_file), label: const Text('Import PayMongo CSV')),
+          OutlinedButton.icon(onPressed: () => _importExpenses(context),
+            icon: const Icon(Icons.upload_file_outlined), label: const Text('Import expenses CSV')),
+          OutlinedButton.icon(onPressed: () => _downloadExpenseTemplate(context),
+            icon: const Icon(Icons.description_outlined), label: const Text('Expense CSV template')),
         ]),
       ]))),
       const SizedBox(height: 15),

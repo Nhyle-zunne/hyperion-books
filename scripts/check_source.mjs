@@ -5,6 +5,10 @@ const root = new URL('../', import.meta.url).pathname;
 const source = (file) => readFileSync(join(root, file), 'utf8');
 for (const file of [
   'lib/main.dart','lib/models/book_entry.dart','lib/models/reports.dart',
+  'lib/models/business_workspace.dart','lib/models/business_analytics.dart',
+  'lib/ui/business_insights_panel.dart','lib/ui/business_tools.dart',
+  'lib/ui/record_search.dart','lib/services/expense_csv_service.dart',
+  'test/business_workspace_test.dart','test/business_analytics_test.dart','test/expense_csv_test.dart',
   'lib/data/local_repository.dart','lib/state/books_controller.dart',
   'lib/services/backup_service.dart','lib/services/export_service.dart',
   'lib/ui/entry_dialog.dart','lib/ui/home.dart','lib/ui/hyperion_loading.dart','scripts/make_sw.mjs',
@@ -32,6 +36,12 @@ const booksUi = source('lib/ui/home.dart');
 for (const name of ['Cash Receipts Journal','Cash Disbursements Journal','General Journal','General Ledger','Imported PayMongo activity']) {
   assert(booksUi.includes(name), `Missing dashboard or books view: ${name}`);
 }
+for (const tab of ['BUSINESS PROFILE','MASTER LISTS','COMPLIANCE TASKS']) {
+  assert(excel.includes("'" + tab + "'"), "Excel business sheet missing: " + tab);
+}
+assert(source('lib/ui/home.dart').includes('BusinessInsightsPanel'), 'Dashboard insights missing');
+assert(source('lib/ui/home.dart').includes('ExpenseCsvService.select'), 'Expense CSV import missing');
+assert(source('lib/ui/home.dart').includes('openRecordSearch'), 'Global search missing');
 const report = source('lib/models/reports.dart');
 assert(report.includes('journalBalanced'), 'Double-entry accounting missing');
 assert(source('web/index.html').includes('serviceWorker.register'), 'Offline app worker missing');

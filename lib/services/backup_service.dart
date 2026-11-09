@@ -5,27 +5,32 @@ import 'package:file_selector/file_selector.dart';
 import 'package:intl/intl.dart';
 import '../models/book_entry.dart';
 import '../models/paymongo_transaction.dart';
+import '../models/business_workspace.dart';
 
 /// Restorable, unencrypted JSON (separate from the human-readable Excel export).
 class BooksBackup {
   final List<BookEntry> entries;
   final List<PayMongoTransaction> paymongo;
-  const BooksBackup(this.entries, this.paymongo);
+  final BusinessWorkspace workspace;
+  const BooksBackup(this.entries, this.paymongo,
+      {this.workspace = const BusinessWorkspace()});
 }
 
 class BackupService {
-  static const int schemaVersion = 2;
+  static const int schemaVersion = 3;
   static const int maxEntries = 100000;
   static const int maxBytes = 15 * 1024 * 1024;
 
   static String encode(Iterable<BookEntry> entries,
-      {Iterable<PayMongoTransaction> paymongo = const []}) =>
+      {Iterable<PayMongoTransaction> paymongo = const [],
+       BusinessWorkspace workspace = const BusinessWorkspace()}) =>
     const JsonEncoder.withIndent('  ').convert({
       'format': 'hyperion-books-backup',
       'schema_version': schemaVersion,
       'created_at': DateTime.now().toUtc().toIso8601String(),
       'entries': entries.map((e) => e.toBackupJson()).toList(),
       'paymongo': paymongo.map((e) => e.toJson()).toList(),
+      'workspace': workspace.toJson(),
     });
 
   /// Keep the old entry-only API for compatibility with existing tests/tools.
@@ -37,9 +42,11 @@ class BackupService {
     if (utf8.encode(contents).length > maxBytes) throw const FormatException('Backup too large');
     final object = jsonDecode(contents);
     if (object is! Map<String, dynamic> || object['format'] != 'hyperion-books-backup' ||
-        (object['schema_version'] != 1 && object['schema_version'] != schemaVersion) ||
+        ![1, 2, schemaVersion].contains(object['schema_version']) ||
         object['entries'] is! List ||
-        (object['schema_version'] == schemaVersion && object['paymongo'] is! List)) {
+        (object['schema_version'] != 1 && object['paymongo'] is! List) ||
+        (object['schema_version'] == schemaVersion &&
+            object['workspace'] is! Map<String, dynamic>)) {
       throw const FormatException('Not a supported Hyperion Books JSON backup');
     }
     final rawEntries = object['entries'] as List;
@@ -65,12 +72,18 @@ class BackupService {
       if (!paymongoIds.add(item.id)) throw const FormatException('Duplicate PayMongo ID');
       imported.add(item);
     }
-    return BooksBackup(entries, imported);
+    final workspace = object['schema_version'] == schemaVersion
+        ? BusinessWorkspace.fromJson(
+            object['workspace'] as Map<String, dynamic>)
+        : const BusinessWorkspace();
+    return BooksBackup(entries, imported, workspace: workspace);
   }
 
   static Future<void> export(List<BookEntry> entries,
-      {List<PayMongoTransaction> paymongo = const []}) async {
-    final bytes = Uint8List.fromList(utf8.encode(encode(entries, paymongo: paymongo)));
+      {List<PayMongoTransaction> paymongo = const [],
+       BusinessWorkspace workspace = const BusinessWorkspace()}) async {
+    final bytes = Uint8List.fromList(utf8.encode(encode(entries, paymongo: paymongo,
+      workspace: workspace)));
     await FileSaver.instance.saveFile(
       name: 'Hyperion_Books_BACKUP_${DateFormat('yyyyMMdd_HHmm').format(DateTime.now())}',
       bytes: bytes, fileExtension: 'json', mimeType: MimeType.custom,
