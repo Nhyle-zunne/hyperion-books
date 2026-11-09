@@ -14,6 +14,22 @@ This is an **original, Hyperion-themed implementation** of workflows visible in 
 - **Include voided entries** and **Include unverified** filter working-paper rows by local manual flags. Tap a reference number to mark it reviewed/verified or void it in draft reports. A void flag excludes the complete reference from draft book views without deleting the original transaction. Filtering recalculates the provisional ledger balances from all included historical entries. These flags **are not** official BIR verification, statutory void/reversal entries, or tamper-proof audit logs. Tax period management totals still use underlying source records.
 - Separate **full Excel export** from Tools includes all four books, raw PayMongo records, business lists and tax tracking items.
 
+## CPALLY-inspired navigation and report usability
+
+The desktop navigation is a scrollable, hierarchical sidebar (a full drawer on phones). It contains **Dashboard, Compliance, Sales, Purchases, Expenses, Tax Filing, Accounting, Master List, Bulk Import and My Business**. It deliberately **does not** contain Inbox or Help & Docs.
+
+- Purchases includes a product reference list, purchase records and business assets.
+- Expenses includes manually recorded daily expenses and a payroll reference register.
+- Accounting includes journal, ledger, financial, management and invoice aging working reports.
+- Master List links directly to editable local customers, vendors, products and expense categories.
+- Tax Filing links directly to its seven existing sections.
+
+**Books of Accounts UX:** controls, period filters and the actual report now share one vertical scroll page; the top section is no longer fixed above and covering the table. The transaction grid has an independently scrollable viewport with a permanently visible horizontal scrollbar, a vertical scrollbar and explicit left/right arrows. Click a source reference to view all PayMongo fields retained by Hyperion or the complete manual entry. Source CSV columns excluded for privacy are not recoverable in the app; retain the original CSV securely.
+
+**New local business data:** purchases, business assets and payroll entries are reference registers. They can be created, edited and removed. They do **not** automatically debit expenses, recognize payroll liabilities, value stock, calculate depreciation or appear as independent sales. Cash outflows must be recorded once separately under Entries → Expense. These registers are included in version 3 JSON backups and private Excel exports.
+
+**Accounting reports:** Financial Reports show source-based trial balance and provisional account balances, *not* certified annual financial statements. Management Reports reuse dashboard trend analysis. Aging Reports group manually recorded unpaid invoices by **optional payment due date**; invoices without a due date are reported separately and cannot be aged reliably. Neither invoice registers nor due dates prove that legal BIR invoices were issued.
+
 ## Tax Filing menu
 
 Use **Tax Filing** on the desktop navigation rail or the mobile bottom navigation. It includes:
