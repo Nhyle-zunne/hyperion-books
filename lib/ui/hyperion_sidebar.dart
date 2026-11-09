@@ -63,7 +63,6 @@ class HyperionSidebar extends StatelessWidget {
           Divider(height: 20),
           _item('bulk-import', 'Bulk Import', Icons.upload_file_outlined),
           _item('my-business', 'My Business', Icons.business_outlined),
-          _item('paymongo', 'PayMongo Activity', Icons.account_balance_wallet_outlined),
           _item('backups', 'Backups & Exports', Icons.backup_outlined),
         ],
       )),
