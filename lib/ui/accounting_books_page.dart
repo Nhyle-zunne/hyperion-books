@@ -23,8 +23,10 @@ class AccountingBooksPage extends StatefulWidget {
   final List<PayMongoTransaction> transactions;
   final BusinessWorkspace workspace;
   final Future<void> Function(BusinessWorkspace) save;
+  final int initialTab;
   const AccountingBooksPage({super.key, required this.entries,
-    required this.transactions, required this.workspace, required this.save});
+    required this.transactions, required this.workspace, required this.save,
+    this.initialTab = 0});
 
   @override State<AccountingBooksPage> createState() => _AccountingBooksPageState();
 }
@@ -37,7 +39,7 @@ class _ReportTable {
 }
 
 class _AccountingBooksPageState extends State<AccountingBooksPage> {
-  int _tab = 0;
+  late int _tab;
   bool _optional = false;
   bool _includeVoided = false;
   bool _includeUnverified = true;
@@ -68,6 +70,7 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
 
   @override void initState() {
     super.initState();
+    _tab = widget.initialTab.clamp(0, 3);
     final now = DateTime.now();
     _start = DateTime(now.year, now.month);
     _end = DateTime(now.year, now.month + 1, 0);
