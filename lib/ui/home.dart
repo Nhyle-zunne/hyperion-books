@@ -1154,7 +1154,7 @@ class _BooksHomeState extends State<BooksHome> {
 class _EmptyState extends StatelessWidget {
   final String title;
   final String subtitle;
-  _EmptyState(this.title, this.subtitle);
+  const _EmptyState(this.title, this.subtitle);
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 38), child: Column(children: [
