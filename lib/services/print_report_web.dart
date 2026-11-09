@@ -48,5 +48,10 @@ button{background:#042353;color:#fff;border:0;padding:10px 18px;border-radius:6p
   markup.write('<p class="notice">Provisional working records. Not BIR-registered computerized books. Verify with source documents.</p></body></html>');
   final blob = html.Blob([markup.toString()], 'text/html;charset=utf-8');
   final url = html.Url.createObjectUrlFromBlob(blob);
-  return html.window.open(url, '_blank') != null;
+  try {
+    html.window.open(url, '_blank');
+    return true;
+  } catch (_) {
+    return false;
+  }
 }
