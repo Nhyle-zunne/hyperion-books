@@ -47,11 +47,11 @@ class _SearchDialogState extends State<_SearchDialog> {
           e.kind == EntryKind.expense ? 'Expenses' : 'Payouts',
           widget.onEntries),
       for (final e in widget.paymongo)
-        _Hit('PayMongo ${e.type}',
+        _Hit('Sales ${e.type}',
           '${e.id} • ${DateFormat('yyyy-MM-dd HH:mm').format(e.occurredAt)}'
           ' • ${money(e.grossCentavos)} • ${money(e.netCentavos)}'
           ' • ${e.paymentMethod} ${e.status}',
-          'PayMongo', widget.onPayMongo),
+          'Sales', widget.onPayMongo),
       for (final m in widget.workspace.masters)
         _Hit(m.name, '${m.kind} • ${m.details}', 'Master lists',
           widget.onTools),
@@ -83,7 +83,7 @@ class _SearchDialogState extends State<_SearchDialog> {
           SingleChildScrollView(scrollDirection: Axis.horizontal,
             child: Row(children: [
               for (final x in [
-                'All', 'PayMongo', 'Payouts', 'Expenses',
+                'All', 'Sales', 'Payouts', 'Expenses',
                 'Master lists', 'Tax planner'])
                 Padding(padding: const EdgeInsets.only(right: 5),
                   child: ChoiceChip(label: Text(x),
