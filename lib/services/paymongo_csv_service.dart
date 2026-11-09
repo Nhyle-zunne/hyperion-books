@@ -137,6 +137,10 @@ class PayMongoCsvService {
     return d;
   }
 
+  /// Shared safe RFC4180 reader for local sales imports.
+  static List<List<String>> readRows(String text) =>
+      _parseCsv(text.replaceFirst('\uFEFF', ''));
+
   /// RFC 4180-style quoted CSV handling, including embedded commas/newlines.
   static List<List<String>> _parseCsv(String text) {
     final rows = <List<String>>[];
