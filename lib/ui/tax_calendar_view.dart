@@ -331,7 +331,7 @@ class _TaxCalendarViewState extends State<TaxCalendarView> {
                 Text('${filings.length} logged filing(s)',
                   style: TextStyle(color: HyperionColors.success, fontSize: 10)),
             ])),
-        )));
+        ));
   }
 
   Widget _eventPill(String code, BirCadence cadence) {
