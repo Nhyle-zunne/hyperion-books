@@ -7,6 +7,7 @@ import '../models/reports.dart';
 import '../services/export_service.dart';
 import '../services/backup_service.dart';
 import '../services/paymongo_csv_service.dart';
+import '../services/expense_csv_service.dart';
 import '../services/paymongo_import_plan.dart';
 import '../state/books_controller.dart';
 import 'entry_dialog.dart';
@@ -170,12 +171,15 @@ class _BooksHomeState extends State<BooksHome> {
                   _edit(context, EntryKind.expense);
                 } else if (action == 'csv') {
                   _importPayMongo(context);
+                } else if (action == 'expenseCsv') {
+                  _importExpenses(context);
                 }
               },
               itemBuilder: (_) => const [
                 PopupMenuItem(value: 'payout', child: Text('Add bank payout')),
                 PopupMenuItem(value: 'expense', child: Text('Add expense')),
                 PopupMenuItem(value: 'csv', child: Text('Import PayMongo CSV')),
+                PopupMenuItem(value: 'expenseCsv', child: Text('Import expenses CSV')),
               ],
             ),
             IconButton(
@@ -233,6 +237,66 @@ class _BooksHomeState extends State<BooksHome> {
         onEntries: () => _navigate(1),
         onPayMongo: () => _navigate(3),
         onTools: () => _navigate(4));
+
+  Future<void> _downloadExpenseTemplate(BuildContext context) async {
+    try {
+      await ExpenseCsvService.downloadTemplate();
+      if (context.mounted) _message(context, 'Expense CSV template downloaded.');
+    } catch (error) {
+      if (context.mounted) _message(context, 'Could not download template: $error');
+    }
+  }
+
+  Future<void> _importExpenses(BuildContext context) async {
+    try {
+      final records = await ExpenseCsvService.select();
+      if (records == null || !context.mounted) return;
+      final oldById = {
+        for (final entry in widget.controller.entries) entry.id: entry,
+      };
+      final novel = records.where((row) => !oldById.containsKey(row.id)).toList();
+      final conflicts = records.where((row) {
+        final old = oldById[row.id];
+        return old != null && (
+          old.amountCentavos != row.amountCentavos ||
+          old.dateKey != row.dateKey ||
+          old.description != row.description ||
+          old.category != row.category);
+      }).length;
+      final amount = novel.fold<int>(0, (s, r) => s + r.amountCentavos);
+      final skipped = records.length - novel.length;
+      final accept = await showDialog<bool>(context: context, builder: (dialog) =>
+        AlertDialog(
+          title: const Text('Import expense CSV?'),
+          content: Text(
+            'New expenses: ${novel.length}\n'
+            'Previously imported (skipped): $skipped\n'
+            'Same IDs with changed details (preserved): $conflicts\n'
+            'Total new expenses: ${php(amount)}\n\n'
+            'The Reference field is required to avoid duplicates. '
+            'Imported entries appear in your Expenses and accounting books. '
+            'Existing records are never overwritten.\n\n'
+            'Customer/vendor information is not sent to any server.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialog, false),
+              child: const Text('Cancel')),
+            if (novel.isNotEmpty)
+              FilledButton(onPressed: () => Navigator.pop(dialog, true),
+                child: Text('Import ${novel.length} expenses')),
+          ]));
+      if (accept != true || !context.mounted) return;
+      final count = await HyperionLoading.whileRunning(
+        'Importing expense CSV', () => widget.controller.importExpenses(novel));
+      if (context.mounted) {
+        _message(context,
+          'Imported $count expenses; skipped ${skipped + novel.length - count} existing.');
+      }
+    } catch (error) {
+      if (context.mounted) {
+        _message(context, 'Expense CSV import failed: $error');
+      }
+    }
+  }
 
   Future<void> _importPayMongo(BuildContext context) async {
     try {
@@ -781,6 +845,8 @@ class _BooksHomeState extends State<BooksHome> {
           icon: const Icon(Icons.add), label: const Text('Expense')),
         OutlinedButton.icon(onPressed: () => _navigate(3),
           icon: const Icon(Icons.receipt_long_outlined), label: const Text('PayMongo CSV')),
+        OutlinedButton.icon(onPressed: () => _importExpenses(context),
+          icon: const Icon(Icons.upload_file_outlined), label: const Text('Import expenses CSV')),
       ]),
       const SizedBox(height: 10),
       if (entries.isEmpty) const _EmptyState('No matching entries', 'Use the buttons above to add your first transaction.'),
@@ -947,6 +1013,10 @@ class _BooksHomeState extends State<BooksHome> {
             icon: const Icon(Icons.file_download_outlined), label: const Text('Export Excel books')),
           OutlinedButton.icon(onPressed: () => _importPayMongo(context),
             icon: const Icon(Icons.upload_file), label: const Text('Import PayMongo CSV')),
+          OutlinedButton.icon(onPressed: () => _importExpenses(context),
+            icon: const Icon(Icons.upload_file_outlined), label: const Text('Import expenses CSV')),
+          OutlinedButton.icon(onPressed: () => _downloadExpenseTemplate(context),
+            icon: const Icon(Icons.description_outlined), label: const Text('Expense CSV template')),
         ]),
       ]))),
       const SizedBox(height: 15),
