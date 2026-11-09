@@ -192,7 +192,9 @@ class _BusinessToolsState extends State<BusinessTools> {
               final parsedPrice = type == 'Product' && price.trim().isNotEmpty
                   ? parsePesos(price) : null;
               if (type == 'Product' && price.trim().isNotEmpty &&
-                  parsedPrice == null) return;
+                  parsedPrice == null) {
+                return;
+              }
               Navigator.pop(dialog, BusinessListItem(
                 id: original?.id ?? const Uuid().v4(), kind: type,
                 name: label.trim(), details: details.trim(),
