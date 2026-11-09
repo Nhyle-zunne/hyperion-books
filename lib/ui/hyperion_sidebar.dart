@@ -45,11 +45,9 @@ class HyperionSidebar extends StatelessWidget {
             _item('tax-annual', 'Annual', Icons.event_outlined, indent: true),
             _item('tax-2307', '2307 Certificates', Icons.description_outlined, indent: true),
             _item('tax-invoices', 'e-Invoicing', Icons.receipt_outlined, indent: true),
-            _item('tax-books', 'Books of Accounts', Icons.menu_book_outlined, indent: true),
           ]),
           _group('Accounting', Icons.calculate_outlined, 'accounting', [
-            _item('journal', 'Journal Entries', Icons.menu_book_outlined, indent: true),
-            _item('ledger', 'General Ledger', Icons.auto_stories_outlined, indent: true),
+            _item('books', 'Books of Accounts', Icons.menu_book_outlined, indent: true),
             _item('financial-reports', 'Financial Reports', Icons.bar_chart_outlined, indent: true),
             _item('management-reports', 'Management Reports', Icons.insights_outlined, indent: true),
             _item('aging-reports', 'Aging Reports', Icons.schedule_outlined, indent: true),
@@ -79,7 +77,7 @@ class HyperionSidebar extends StatelessWidget {
 
   Widget _group(String title, IconData icon, String key, List<Widget> children) {
     final active = selected.startsWith('$key-') ||
-        (key == 'accounting' && ['journal','ledger','financial-reports',
+        (key == 'accounting' && ['books','journal','ledger','financial-reports',
           'management-reports','aging-reports'].contains(selected)) ||
         (key == 'purchases' && ['product-to-sell','purchase-records','business-assets'].contains(selected)) ||
         (key == 'expenses' && ['daily-expenses','payroll'].contains(selected));
@@ -99,7 +97,7 @@ class HyperionSidebar extends StatelessWidget {
 
   Widget _item(String key, String label, IconData icon, {bool indent = false}) {
     final active = selected == key ||
-        (key == 'tax-books' && selected == 'books');
+        (key == 'books' && ['tax-books','journal','ledger'].contains(selected));
     return Padding(padding: const EdgeInsets.symmetric(vertical: 2),
       child: Material(
         color: active ? HyperionColors.selected : Colors.transparent,
