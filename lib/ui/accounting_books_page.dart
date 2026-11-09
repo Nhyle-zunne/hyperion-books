@@ -551,9 +551,9 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
     final active = _tab == index;
     return OutlinedButton(
       style: OutlinedButton.styleFrom(
-        backgroundColor: active ? HyperionColors.brand : Colors.white,
-        foregroundColor: active ? Colors.white : HyperionColors.brand,
-        side: BorderSide(color: active ? HyperionColors.brand : HyperionColors.border)),
+        backgroundColor: active ? HyperionColors.brandFill : HyperionColors.card,
+        foregroundColor: active ? HyperionColors.onBrandFill : HyperionColors.brand,
+        side: BorderSide(color: active ? HyperionColors.brandFill : HyperionColors.border)),
       onPressed: () => setState(() => _tab = index),
       child: Text(label));
   }
