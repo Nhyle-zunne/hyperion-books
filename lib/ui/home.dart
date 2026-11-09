@@ -222,8 +222,8 @@ class _BooksHomeState extends State<BooksHome> {
             'New adjustments/refunds: ${totals.adjustments}\n'
             'Already imported (skipped): $duplicates\n'
             'Unsuccessful / unsupported rows (skipped): ${preview.ignored}\n\n'
-            duplicateNotice
-            changedNotice
+            '$duplicateNotice'
+            '$changedNotice'
             'Gross new payment sales: ${php(totals.grossPaymentsCentavos)}\n'
             'PayMongo fees (including VAT): ${php(totals.paymentFeesCentavos)}\n'
             'VAT portion (already included): ${php(totals.paymentVatCentavos)}\n'
