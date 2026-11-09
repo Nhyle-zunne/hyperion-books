@@ -101,6 +101,8 @@ void main() {
       'gross=${find.text('Gross customer payments').evaluate().length}, '
       'count=${find.text('1 paid transactions').evaluate().length}');
     expect(find.text('Sales activity'), findsOneWidget);
+    expect(find.text('PayMongo Activity'), findsNothing);
+    expect(find.text('Imported PayMongo activity'), findsNothing);
     expect(find.text('Gross customer payments'), findsOneWidget);
     expect(find.text('1 paid transactions'), findsOneWidget);
     final dashboard = find.descendant(
