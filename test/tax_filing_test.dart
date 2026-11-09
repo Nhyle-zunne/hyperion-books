@@ -24,6 +24,18 @@ void main() {
     expect(restored.date, DateTime(2026, 10, 15));
   });
 
+  test('optional business TIN and address round trip for report headers', () {
+    const workspace = BusinessWorkspace(
+      businessName: 'Sample Business',
+      businessTin: '000-000-000-000',
+      businessAddress: 'Sample City, Philippines',
+    );
+    final saved = BackupService.decodeFull(BackupService.encode([],
+      workspace: workspace)).workspace;
+    expect(saved.businessTin, '000-000-000-000');
+    expect(saved.businessAddress, 'Sample City, Philippines');
+  });
+
   test('existing v3 workspace backups without tax records remain valid', () {
     final json = BackupService.encode([], workspace: const BusinessWorkspace(
       businessName: 'Example'));
