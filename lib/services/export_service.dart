@@ -60,13 +60,13 @@ class ExportService {
       'HYPERION BOOKS — ACCOUNTING WORKING PAPERS',
       'Four separate journals/ledgers: Cash Receipts Journal, Cash Disbursements Journal, General Journal and General Ledger.',
       'This Excel workbook is NOT a BIR-authorized computerized book or approved loose-leaf book. Confirm registration and approval requirements with your RDO.',
-      'Source records: imported sales CSV/Excel files, manually entered payouts and expenses. Dates and amounts require reconciliation against invoices and bank statements.',
+      'Source records: imported or manual sales, bank payouts and expenses. Dates and amounts require reconciliation with invoices and bank statements.',
       'Imported paid sale: Debit sales clearing (net), Debit processing fees (VAT already included), Credit provisional imported sales (gross).',
       'PayMongo bank payout (entered manually): Debit Cash/Bank, Credit PayMongo clearing; this is NOT a second sale.',
       'Fees include their VAT component; do not subtract or recognize VAT twice. Input VAT treatment depends on taxpayer status and documentation.',
       'Adjustments/refunds and gross/fee/net differences go into accounts labeled REVIEW until supporting documents justify their classification.',
       'Google Play payouts and PayMongo payouts without source transactions remain provisional/unmatched, not verified gross tax receipts.',
-      'A period-filtered ledger does NOT automatically carry in prior period balances. Missing opening balances can affect reconciliation.',
+      'The on-screen ledger carries earlier-period activity into the displayed balance. Verify opening balances and exclude voided references consistently.',
       'The Cash Receipts Journal separates gross imported sales, net settlement clearing and actual bank receipts. Do not sum these distinct columns as revenue.',
       'The General Journal includes all postings consolidated; do not also post the specialized journal sheets a second time.',
       'The reports are not a substitute for a registered set of books or verified invoices, official supporting documents and tax returns.',
@@ -86,47 +86,47 @@ class ExportService {
     addSheet(book, 'EXPENSES', ['Date','Category','Description','Amount PHP','Entry ID'],
       report.expenses.map((e) => [dateCell(e.date),t(e.category),t(e.description),
         amount(e.amountCentavos),t(e.id)]), widths:[17,20,48,20,40]);
+    // One concise format per book, aligned with the on-screen account view.
+    // Fees, processor clearing and bank cash remain separate to avoid
+    // treating transfers as additional revenue.
     addSheet(book, 'CASH RECEIPTS JOURNAL',
-      ['Date/time','Reference','Particulars','Collection channel',
-       'Gross collection PHP','Fees incl VAT PHP','Net to processor PHP',
-       'Bank received PHP','Classification'],
+      ['Date','Reference','Particulars','Gross PHP','Fees PHP',
+       'Bank / cash PHP','Clearing PHP'],
       books.cashReceipts.map((e) => [
-        t(stamp(e.date)), t(e.reference), t(e.particulars), t(e.channel),
+        dateCell(e.date), t(e.reference), t(e.particulars),
         moneyOrBlank(e.gross), moneyOrBlank(e.fees),
-        moneyOrBlank(e.processorNet), moneyOrBlank(e.bankReceived),
-        t(e.bankTransfer ? 'Internal transfer, not revenue' :
-          e.provisional ? 'Provisional; verify' : 'Customer collection'),
+        moneyOrBlank(e.bankReceived), moneyOrBlank(e.processorNet),
       ]),
-      widths: [24,40,51,35,23,22,24,22,34]);
+      widths: [18,36,55,20,20,23,23]);
     addSheet(book, 'CASH DISBURSEMENTS JOURNAL',
-      ['Date/time','Reference','Particulars / payee',
-       'Debit expense account','Cash/bank paid PHP'],
+      ['Date','Reference','Particulars / payee',
+       'Expense account','Paid PHP'],
       books.cashDisbursements.map((e) => [
-        t(stamp(e.date)), t(e.reference), t(e.particulars),
+        dateCell(e.date), t(e.reference), t(e.particulars),
         t(e.account), amount(e.amount),
-      ]), widths: [24,40,55,40,23]);
+      ]), widths: [18,38,54,40,22]);
     addSheet(book, 'GENERAL JOURNAL',
-      ['Date/time','Reference','Account','Particulars','Source',
-       'Debit PHP','Credit PHP'],
+      ['Date','Reference','Account / particulars','Debit PHP','Credit PHP'],
       books.journal.map((e) => [
-        t(stamp(e.date)),t(e.reference),t(e.account),t(e.particulars),
-        t(e.source),moneyOrBlank(e.debit),moneyOrBlank(e.credit),
-      ]), widths: [24,41,43,55,25,22,22]);
+        dateCell(e.date), t(e.reference),
+        t('${e.account} · ${e.particulars}'),
+        moneyOrBlank(e.debit), moneyOrBlank(e.credit),
+      ]), widths: [18,39,80,22,22]);
     final ledgerRows = <List<CellValue>>[];
     for (final account in books.ledger.keys.toList()..sort()) {
       for (final line in books.ledger[account]!) {
         ledgerRows.add([
-          t(account),t(stamp(line.posting.date)),t(line.posting.reference),
+          t(account), dateCell(line.posting.date), t(line.posting.reference),
           t(line.posting.particulars),
-          moneyOrBlank(line.posting.debit),moneyOrBlank(line.posting.credit),
-          moneyOrBlank(line.debitBalance),moneyOrBlank(line.creditBalance),
+          moneyOrBlank(line.posting.debit), moneyOrBlank(line.posting.credit),
+          amount(line.signedBalance),
         ]);
       }
     }
     addSheet(book, 'GENERAL LEDGER',
-      ['Account','Date/time','Reference','Particulars',
-       'Debit PHP','Credit PHP','Debit balance PHP','Credit balance PHP'],
-      ledgerRows, widths: [44,24,40,55,22,22,25,25]);
+      ['Account','Date','Reference','Particulars',
+       'Debit PHP','Credit PHP','Balance PHP (+Dr / -Cr)'],
+      ledgerRows, widths: [40,18,38,55,22,22,28]);
     final monthKeys = <String>{
       ...report.months.map((m) => m.month),
       ...imported.map((t) => t.month),
