@@ -14,13 +14,15 @@ class BusinessTools extends StatefulWidget {
 }
 
 class _BusinessToolsState extends State<BusinessTools> {
-  late final TextEditingController name, notes;
+  late final TextEditingController name, tin, address, notes;
   late String registration, tax;
   String kind = 'Customer';
 
   @override void initState() {
     super.initState();
     name = TextEditingController(text: widget.workspace.businessName);
+    tin = TextEditingController(text: widget.workspace.businessTin);
+    address = TextEditingController(text: widget.workspace.businessAddress);
     notes = TextEditingController(text: widget.workspace.notes);
     registration = widget.workspace.registrationStatus;
     tax = widget.workspace.taxStatus;
@@ -30,12 +32,18 @@ class _BusinessToolsState extends State<BusinessTools> {
     if (old.workspace.businessName != widget.workspace.businessName) {
       name.text = widget.workspace.businessName;
     }
+    if (old.workspace.businessTin != widget.workspace.businessTin) {
+      tin.text = widget.workspace.businessTin;
+    }
+    if (old.workspace.businessAddress != widget.workspace.businessAddress) {
+      address.text = widget.workspace.businessAddress;
+    }
     if (old.workspace.notes != widget.workspace.notes) {
       notes.text = widget.workspace.notes;
     }
   }
   @override void dispose() {
-    name.dispose(); notes.dispose();
+    name.dispose(); tin.dispose(); address.dispose(); notes.dispose();
     super.dispose();
   }
 
@@ -80,6 +88,10 @@ class _BusinessToolsState extends State<BusinessTools> {
     const SizedBox(height: 13),
     TextField(controller: name, maxLength: 180,
       decoration: const InputDecoration(labelText: 'Business name')),
+    TextField(controller: tin, maxLength: 40,
+      decoration: const InputDecoration(labelText: 'TIN (optional; not verified)')),
+    TextField(controller: address, maxLength: 400, maxLines: 2,
+      decoration: const InputDecoration(labelText: 'Registered business address (optional)')),
     DropdownButtonFormField<String>(initialValue: registration,
       isExpanded: true,
       decoration: const InputDecoration(labelText: 'Registration status'),
@@ -100,7 +112,9 @@ class _BusinessToolsState extends State<BusinessTools> {
     Align(alignment: Alignment.centerLeft,
       child: FilledButton.icon(icon: const Icon(Icons.save_outlined),
         onPressed: () => persist(widget.workspace.copyWith(
-          businessName: name.text.trim(), notes: notes.text,
+          businessName: name.text.trim(),
+          businessTin: tin.text.trim(),
+          businessAddress: address.text.trim(), notes: notes.text,
           registrationStatus: registration, taxStatus: tax)),
         label: const Text('Save profile'))),
   ]);
