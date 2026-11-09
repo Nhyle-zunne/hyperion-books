@@ -107,12 +107,24 @@ class PayMongoCsvService {
   }
 
   static DateTime _parseDateTime(String raw, int row) {
-    final match = RegExp(r'^(\d{1,2})/(\d{1,2})/(\d{4})\s+'
+    // PayMongo CSV exports use both ISO dates and slash-separated US dates.
+    // Preserve the wall-clock time: these files don't declare a timezone.
+    // E.g. 2026-11-04 13:51, 2026-11-04T13:51:00, 11/04/2026 13:51.
+    final iso = RegExp(r'^(\d{4})-(\d{1,2})-(\d{1,2})[ T]'
       r'(\d{1,2}):(\d{2})(?::(\d{2}))?$').firstMatch(raw);
-    if (match == null) throw FormatException('Invalid date/time on CSV row $row.');
-    final month = int.parse(match.group(1)!);
-    final day = int.parse(match.group(2)!);
-    final year = int.parse(match.group(3)!);
+    final monthFirst = iso == null
+      ? RegExp(r'^(\d{1,2})/(\d{1,2})/(\d{4})\s+'
+          r'(\d{1,2}):(\d{2})(?::(\d{2}))?$').firstMatch(raw)
+      : null;
+    final match = iso ?? monthFirst;
+    if (match == null) {
+      throw FormatException(
+        'Unsupported date/time on CSV row $row: expected '
+        'YYYY-MM-DD HH:MM or MM/DD/YYYY HH:MM.');
+    }
+    final year = int.parse(match.group(iso != null ? 1 : 3)!);
+    final month = int.parse(match.group(iso != null ? 2 : 1)!);
+    final day = int.parse(match.group(iso != null ? 3 : 2)!);
     final hour = int.parse(match.group(4)!);
     final minute = int.parse(match.group(5)!);
     final second = int.parse(match.group(6) ?? '0');
