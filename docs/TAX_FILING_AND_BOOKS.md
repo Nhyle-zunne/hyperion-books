@@ -8,6 +8,7 @@ This is an **original, Hyperion-themed implementation** of workflows visible in 
 - A covered-period picker defaults to the current calendar month. Select **All dates** to see every record. The filter is inclusive by local calendar date.
 - **Show optional columns** reveals source or classification information.
 - **Export to Excel** exports the current book, period, and visible columns, with currency amounts stored numerically.
+- A user-entered business name, optional TIN and business address appear in the report heading (and corresponding exports). Hyperion does not validate these details with BIR.
 - **Print Report** opens a separate, offline-capable printable HTML report in a new browser tab (browser pop-up permission may be required).
 - Ledger running balances carry forward earlier transactions, even when the display is filtered to a later period. Book classification is based on all imported PayMongo transactions, not just the selected date range.
 - **Include voided entries** and **Include unverified** filter working-paper rows by local manual flags. Tap a reference number to mark it reviewed/verified or void it in draft reports. A void flag excludes the complete reference from draft book views without deleting the original transaction. Filtering recalculates the provisional ledger balances from all included historical entries. These flags **are not** official BIR verification, statutory void/reversal entries, or tamper-proof audit logs. Tax period management totals still use underlying source records.
