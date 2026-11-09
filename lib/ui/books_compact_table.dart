@@ -39,7 +39,9 @@ class _BooksCompactTableState extends State<BooksCompactTable> {
     if (oldWidget.bookIndex != widget.bookIndex ||
         oldWidget.report.ledgerAccount != widget.report.ledgerAccount ||
         oldWidget.report.title != widget.report.title) {
-      if (_scroll.hasClients) _scroll.jumpTo(0);
+      if (_scroll.hasClients) {
+        _scroll.jumpTo(0);
+      }
     }
   }
 
