@@ -9,7 +9,6 @@ import '../services/report_printer.dart';
 
 const _navy = Color(0xFF112940);
 const _muted = Color(0xFF63748A);
-const _gold = Color(0xFFF2CB55);
 final _money = NumberFormat.currency(locale: 'en_PH', symbol: '₱');
 String _peso(int centavos) => centavos == 0 ? '' : _money.format(centavos / 100);
 String _stamp(DateTime d) => DateFormat('yyyy-MM-dd').format(d);
