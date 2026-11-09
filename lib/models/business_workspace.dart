@@ -132,7 +132,8 @@ class TaxRecord {
 }
 
 class BusinessWorkspace {
-  final String businessName, registrationStatus, taxStatus, notes;
+  final String businessName, businessTin, businessAddress,
+      registrationStatus, taxStatus, notes;
   final List<BusinessListItem> masters;
   final List<BusinessReminder> reminders;
   final List<TaxRecord> taxRecords;
@@ -140,6 +141,8 @@ class BusinessWorkspace {
 
   const BusinessWorkspace({
     this.businessName = '',
+    this.businessTin = '',
+    this.businessAddress = '',
     this.registrationStatus = 'Not specified',
     this.taxStatus = 'Not specified',
     this.notes = '',
@@ -151,7 +154,8 @@ class BusinessWorkspace {
   });
 
   BusinessWorkspace copyWith({
-    String? businessName, String? registrationStatus,
+    String? businessName, String? businessTin, String? businessAddress,
+    String? registrationStatus,
     String? taxStatus, String? notes,
     List<BusinessListItem>? masters,
     List<BusinessReminder>? reminders,
@@ -160,6 +164,8 @@ class BusinessWorkspace {
     List<String>? voidedReferences,
   }) => BusinessWorkspace(
     businessName: businessName ?? this.businessName,
+    businessTin: businessTin ?? this.businessTin,
+    businessAddress: businessAddress ?? this.businessAddress,
     registrationStatus: registrationStatus ?? this.registrationStatus,
     taxStatus: taxStatus ?? this.taxStatus,
     notes: notes ?? this.notes,
@@ -181,6 +187,8 @@ class BusinessWorkspace {
 
   Map<String, Object?> toJson() => {
     'business_name': businessName,
+    'business_tin': businessTin,
+    'business_address': businessAddress,
     'registration_status': registrationStatus,
     'tax_status': taxStatus,
     'notes': notes,
@@ -193,6 +201,8 @@ class BusinessWorkspace {
 
   factory BusinessWorkspace.fromJson(Map<String, dynamic> json) {
     final name = json['business_name'] ?? '';
+    final tin = json['business_tin'] ?? '';
+    final address = json['business_address'] ?? '';
     final reg = json['registration_status'] ?? 'Not specified';
     final tax = json['tax_status'] ?? 'Not specified';
     final notes = json['notes'] ?? '';
@@ -202,6 +212,8 @@ class BusinessWorkspace {
     final rawVerified = json['verified_references'] ?? [];
     final rawVoided = json['voided_references'] ?? [];
     if (name is! String || name.length > 180 ||
+        tin is! String || tin.length > 40 ||
+        address is! String || address.length > 400 ||
         reg is! String || !registrationStatuses.contains(reg) ||
         tax is! String || !taxStatuses.contains(tax) ||
         notes is! String || notes.length > 3000 ||
@@ -262,7 +274,8 @@ class BusinessWorkspace {
       return List.unmodifiable(result);
     }
     return BusinessWorkspace(
-      businessName: name.trim(), registrationStatus: reg,
+      businessName: name.trim(), businessTin: tin.trim(),
+      businessAddress: address.trim(), registrationStatus: reg,
       taxStatus: tax, notes: notes,
       masters: List.unmodifiable(masters),
       reminders: List.unmodifiable(reminders),
