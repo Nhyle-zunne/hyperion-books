@@ -31,7 +31,7 @@ class CompliancePage extends StatelessWidget {
       (label: 'Tax classification selected',
         detail: 'Reference only; obligations are not verified automatically',
         done: workspace.taxStatus != 'Not specified', route: 'my-business'),
-      (label: 'Payments imported', detail: 'Sales spreadsheet source references available',
+      (label: 'Sales recorded', detail: 'Imported or manual sale references available',
         done: transactions.isNotEmpty, route: 'sales'),
       (label: 'Books with entries', detail: 'At least one provisional journal posting',
         done: books.journal.isNotEmpty, route: 'tax-books'),
