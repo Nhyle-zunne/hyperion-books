@@ -25,12 +25,12 @@ void main() {
       onExport: () {},
     ))));
     await tester.pumpAndSettle();
-    expect(find.text('PayMongo transactions'), findsOneWidget);
-    expect(find.text('Gross payment sales'), findsOneWidget);
-    expect(find.text('Net payments'), findsOneWidget);
-    expect(find.text('Import PayMongo CSV'), findsOneWidget);
+    expect(find.text('Sales'), findsOneWidget);
+    expect(find.text('Gross sales'), findsOneWidget);
+    expect(find.text('Net sales after fees'), findsOneWidget);
+    expect(find.text('Import Sales CSV / Excel'), findsOneWidget);
     expect(tester.takeException(), isNull);
-    await tester.tap(find.text('Import PayMongo CSV'));
+    await tester.tap(find.text('Import Sales CSV / Excel'));
     expect(imports, 1);
     expect(tester.takeException(), isNull);
   });
