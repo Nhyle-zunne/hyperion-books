@@ -15,13 +15,13 @@ class HyperionBooksApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const green = Color(0xFF16865B);
+    const navy = Color(0xFF042353);
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Hyperion Books',
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: green,
+        colorScheme: ColorScheme.fromSeed(seedColor: navy,
           brightness: Brightness.light, surface: const Color(0xFFF6F8FB)),
         scaffoldBackgroundColor: const Color(0xFFF4F7FA),
         appBarTheme: const AppBarTheme(backgroundColor: Colors.white,
