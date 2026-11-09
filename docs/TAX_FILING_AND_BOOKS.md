@@ -1,3 +1,11 @@
+## Light & dark mode
+
+Hyperion Books uses the same two-state preference behavior as Hyperion PWA: **Light** by default, and a persistent switch to **Dark**. On desktop, use the moon/sun icon in the top bar or the labeled control at the foot of the sidebar. On narrow phones, open the hamburger menu and use the sidebar Light/Dark switch.
+
+The preference is stored in the browser under `hyperion-books-ui-theme-v1` via local shared preferences, independent from bookkeeping records. It survives normal page reloads, works offline, and is not transmitted with CSV files or financial exports. It does not sync between different devices or browsers. Clearing site storage resets the selection to Light.
+
+Dark colors match Hyperion PWA's deep slate background/card/elevated surfaces, readable light text and green accent with Hyperion's navy/anchor identity retained.
+
 # Hyperion Books — Books of Accounts & Tax Filing (local-first)
 
 This is an **original, Hyperion-themed implementation** of workflows visible in CPAlly's sample Books of Accounts screen and its Tax Filing menu. No third-party source code or private demo records are included.
