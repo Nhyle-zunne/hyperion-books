@@ -235,244 +235,230 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
     }
   }
 
-  @override Widget build(BuildContext context) {
+  static const _tabNames = ['Journal', 'Ledger', 'Cash receipts', 'Cash disbursements'];
+
+  String _hint() => switch (_tab) {
+    0 => 'Debits and credits by account, with original transaction references.',
+    1 => 'One account at a time. Dr/Cr shows the balance side; B/F carries '
+        'approved earlier activity into the selected period.',
+    2 => 'Bank / cash is money received. Clearing is still held by the '
+        'processor. Transfers are not extra sales; never add these columns as revenue.',
+    _ => 'Only recorded payments, not unpaid purchases or draft bills.',
+  };
+
+  @override
+  Widget build(BuildContext context) {
     final books = AccountingBooks.fromSources(
       widget.entries, widget.transactions);
     final report = _table(books);
     return LayoutBuilder(builder: (context, viewport) {
-      final narrow = viewport.maxWidth < 700;
-      final dataHeight = (viewport.maxHeight * .58).clamp(240.0, 560.0);
-      final buttonStyle = OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10));
+      final narrow = viewport.maxWidth < 740;
+      final spacing = narrow ? 10.0 : 16.0;
+      final gridHeight = (viewport.maxHeight * .61).clamp(260.0, 580.0);
       return Scrollbar(
         controller: _pageScroll, thumbVisibility: true,
-        child: ListView(controller: _pageScroll,
-          padding: EdgeInsets.symmetric(
-            horizontal: narrow ? 10 : 20, vertical: narrow ? 10 : 16),
+        child: ListView(
+          controller: _pageScroll,
+          padding: EdgeInsets.fromLTRB(spacing, 12, spacing, 28),
           children: [
-            // All controls live in the SAME vertical scroll flow as the report:
-            // no fixed header can cover the date filter or transaction table.
-            Card(child: Padding(padding: EdgeInsets.all(narrow ? 12 : 17),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(children: [
-                  Expanded(child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('Books of Accounts', style: TextStyle(
-                        fontSize: 21, fontWeight: FontWeight.w900, color: HyperionColors.brand)),
-                      SizedBox(height: 3),
-                      Text('Four journals and ledgers · local working papers',
-                        style: TextStyle(fontSize: 12, color: HyperionColors.muted)),
-                    ])),
-                  if (!narrow) Icon(Icons.menu_book_outlined,
-                    color: HyperionColors.brand, size: 26),
-                ]),
-                SizedBox(height: 12),
-                Wrap(spacing: 7, runSpacing: 8, children: [
-                  for (var i = 0; i < 4; i++)
-                    _tabButton(i, [
-                      'Journal', 'Ledger', 'Cash Receipt', 'Cash Disbursement'][i]),
-                ]),
-                SizedBox(height: 10),
-                Wrap(spacing: 8, runSpacing: 8, children: [
-                  FilledButton.icon(
-                    onPressed: _exporting ? null : () => _export(report),
-                    icon: Icon(Icons.table_view_outlined, size: 17),
-                    label: Text('Export to Excel')),
-                  OutlinedButton.icon(
-                    onPressed: () => _print(report),
-                    icon: Icon(Icons.print_outlined, size: 17),
-                    label: Text('Print Report')),
-                ]),
-              ]))),
-            SizedBox(height: 10),
-            Card(child: Padding(padding: const EdgeInsets.all(12),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('COVERED PERIOD', style: TextStyle(
-                  fontSize: 11, letterSpacing: .7,
-                  color: HyperionColors.muted, fontWeight: FontWeight.w900)),
-                SizedBox(height: 8),
-                Wrap(spacing: 8, runSpacing: 8,
-                  crossAxisAlignment: WrapCrossAlignment.center, children: [
-                    OutlinedButton.icon(style: buttonStyle,
-                      onPressed: () => _pick(true),
-                      icon: Icon(Icons.calendar_today_outlined, size: 15),
-                      label: Text(_start == null ? 'Start date' : _stamp(_start!))),
-                    Text('to', style: TextStyle(color: HyperionColors.muted)),
-                    OutlinedButton.icon(style: buttonStyle,
-                      onPressed: () => _pick(false),
-                      icon: Icon(Icons.calendar_today_outlined, size: 15),
-                      label: Text(_end == null ? 'End date' : _stamp(_end!))),
-                    TextButton(onPressed: () => setState(() => _all = !_all),
-                      child: Text(_all ? 'Use selected period' : 'Show all dates')),
+            Card(child: Padding(
+              padding: EdgeInsets.all(narrow ? 12 : 15),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (narrow) ...[
+                    _header(),
+                    const SizedBox(height: 8),
+                    _actions(report),
+                  ] else
+                    Row(children: [
+                      Expanded(child: _header()),
+                      _actions(report),
+                    ]),
+                  const SizedBox(height: 10),
+                  Wrap(spacing: 7, runSpacing: 7, children: [
+                    for (var i = 0; i < _tabNames.length; i++)
+                      ChoiceChip(
+                        label: Text(_tabNames[i],
+                          style: const TextStyle(fontSize: 12)),
+                        selected: _tab == i,
+                        onSelected: (_) => setState(() => _tab = i),
+                      ),
                   ]),
-                SizedBox(height: 6),
-                Wrap(spacing: 8, runSpacing: 4, children: [
-                  FilterChip(label: Text('Optional columns'),
-                    selected: _optional,
-                    onSelected: (v) => setState(() => _optional = v)),
-                  FilterChip(label: Text('Include voided'),
-                    selected: _includeVoided,
-                    onSelected: (v) => setState(() => _includeVoided = v)),
-                  FilterChip(label: Text('Include unverified'),
-                    selected: _includeUnverified,
-                    onSelected: (v) => setState(() => _includeUnverified = v)),
-                ]),
-              ]))),
-            SizedBox(height: 10),
+                  Divider(height: 17, color: HyperionColors.border),
+                  Text('COVERED PERIOD', style: TextStyle(
+                    fontSize: 10, fontWeight: FontWeight.w900,
+                    color: HyperionColors.muted, letterSpacing: .8)),
+                  const SizedBox(height: 6),
+                  Wrap(spacing: 7, runSpacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: () => _pick(true),
+                        icon: const Icon(Icons.event_outlined, size: 15),
+                        label: Text(_start == null ? 'From' : _stamp(_start!),
+                          style: const TextStyle(fontSize: 12))),
+                      Text('to', style: TextStyle(
+                        fontSize: 12, color: HyperionColors.muted)),
+                      OutlinedButton.icon(
+                        onPressed: () => _pick(false),
+                        icon: const Icon(Icons.event_outlined, size: 15),
+                        label: Text(_end == null ? 'Until' : _stamp(_end!),
+                          style: const TextStyle(fontSize: 12))),
+                      TextButton(
+                        onPressed: () => setState(() => _all = !_all),
+                        child: Text(_all ? 'Use selected period' : 'Show all dates')),
+                      TextButton.icon(
+                        onPressed: () => setState(
+                          () => _showReviewFilters = !_showReviewFilters),
+                        icon: Icon(_showReviewFilters
+                          ? Icons.expand_less : Icons.tune_outlined,
+                          size: 16),
+                        label: const Text('Review filters')),
+                    ],
+                  ),
+                  if (_showReviewFilters) ...[
+                    const SizedBox(height: 7),
+                    Wrap(spacing: 8, runSpacing: 5, children: [
+                      FilterChip(label: const Text('Include voided'),
+                        selected: _includeVoided,
+                        onSelected: (v) => setState(() => _includeVoided = v)),
+                      FilterChip(label: const Text('Include unverified'),
+                        selected: _includeUnverified,
+                        onSelected: (v) => setState(
+                          () => _includeUnverified = v)),
+                    ]),
+                  ],
+                  if (_tab == 1 && report.ledgerAccounts.isNotEmpty) ...[
+                    const SizedBox(height: 11),
+                    DropdownButtonFormField<String>(
+                      key: ValueKey('ledger-${report.ledgerAccount}'),
+                      isExpanded: true,
+                      initialValue: report.ledgerAccount,
+                      decoration: const InputDecoration(
+                        isDense: true,
+                        labelText: 'Ledger account (one folio at a time)',
+                        prefixIcon: Icon(Icons.account_balance_outlined,
+                          size: 18)),
+                      items: [
+                        for (final name in report.ledgerAccounts)
+                          DropdownMenuItem(value: name, child: Text(name,
+                            maxLines: 1, overflow: TextOverflow.ellipsis)),
+                      ],
+                      onChanged: (value) => setState(
+                        () => _ledgerAccount = value),
+                    ),
+                  ],
+                ],
+              ),
+            )),
+            const SizedBox(height: 10),
             Card(clipBehavior: Clip.antiAlias,
-              child: Padding(padding: EdgeInsets.all(narrow ? 10 : 16),
+              child: Padding(
+                padding: EdgeInsets.all(narrow ? 10 : 14),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Center(child: Column(children: [
-                      Text(widget.workspace.businessName.trim().isEmpty
-                        ? 'HYPERION BOOKS'
-                        : widget.workspace.businessName.trim(),
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: HyperionColors.brand,
-                          fontWeight: FontWeight.w900, fontSize: 16)),
-                      if (widget.workspace.businessTin.isNotEmpty ||
-                          widget.workspace.businessAddress.isNotEmpty)
-                        Padding(padding: const EdgeInsets.only(top: 3),
-                          child: Text([
-                            if (widget.workspace.businessTin.isNotEmpty)
-                              'TIN ${widget.workspace.businessTin}',
-                            if (widget.workspace.businessAddress.isNotEmpty)
-                              widget.workspace.businessAddress,
-                          ].join(' · '),
+                    Text(widget.workspace.businessName.trim().isEmpty
+                      ? 'HYPERION BOOKS'
+                      : widget.workspace.businessName.trim(),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: HyperionColors.brand,
+                        fontSize: 13, fontWeight: FontWeight.w900)),
+                    if (widget.workspace.businessTin.isNotEmpty ||
+                        widget.workspace.businessAddress.isNotEmpty)
+                      Padding(padding: const EdgeInsets.only(top: 3),
+                        child: Text([
+                          if (widget.workspace.businessTin.isNotEmpty)
+                            'TIN ${widget.workspace.businessTin}',
+                          if (widget.workspace.businessAddress.isNotEmpty)
+                            widget.workspace.businessAddress,
+                        ].join(' · '),
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: HyperionColors.muted, fontSize: 11))),
-                      SizedBox(height: 9),
-                      Text(report.title, style: TextStyle(
-                        color: HyperionColors.brand, fontWeight: FontWeight.w900, fontSize: 17)),
-                      SizedBox(height: 3),
-                      Text('For the period $_period',
+                          style: TextStyle(fontSize: 10.5,
+                            color: HyperionColors.muted))),
+                    const SizedBox(height: 6),
+                    Text(report.title, textAlign: TextAlign.center,
+                      style: TextStyle(color: HyperionColors.brand,
+                        fontSize: 17, fontWeight: FontWeight.w900)),
+                    if (report.ledgerAccount != null)
+                      Text(report.ledgerAccount!,
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: HyperionColors.muted, fontSize: 12)),
-                      SizedBox(height: 3),
-                      Text('${report.rows.length} visible journal/ledger lines',
-                        style: TextStyle(color: HyperionColors.muted, fontSize: 11)),
-                    ])),
-                    SizedBox(height: 13),
-                    if (report.rows.isEmpty)
-                      Padding(padding: EdgeInsets.symmetric(vertical: 28),
-                        child: Center(child: Text(
-                          'No records in this period. Select “Show all dates” or import transactions.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: HyperionColors.muted))))
-                    else ...[
-                      // Keep the horizontal track visible even when there are
-                      // hundreds of rows; the report has its own vertical pane.
-                      Row(children: [
-                        Icon(Icons.swipe, color: HyperionColors.muted, size: 17),
-                        SizedBox(width: 5),
-                        Expanded(child: Text(
-                          'Drag the bottom scrollbar or use arrows to see every column. '
-                          'Select a reference to view the complete transaction.',
-                          style: TextStyle(fontSize: 11, color: HyperionColors.muted))),
-                        IconButton(tooltip: 'Scroll table left',
-                          onPressed: () => _scrollTable(-320),
-                          icon: Icon(Icons.chevron_left)),
-                        IconButton(tooltip: 'Scroll table right',
-                          onPressed: () => _scrollTable(320),
-                          icon: Icon(Icons.chevron_right)),
-                      ]),
-                      SizedBox(height: dataHeight,
-                        child: LayoutBuilder(builder: (context, size) =>
-                          Scrollbar(
-                            controller: _tableHorizontal,
-                            thumbVisibility: true,
-                            trackVisibility: true,
-                            interactive: true,
-                            scrollbarOrientation: ScrollbarOrientation.bottom,
-                            child: SingleChildScrollView(
-                              controller: _tableHorizontal,
-                              scrollDirection: Axis.horizontal,
-                              child: ConstrainedBox(
-                                constraints: BoxConstraints(minWidth: size.maxWidth),
-                                child: Scrollbar(
-                                  controller: _tableVertical,
-                                  thumbVisibility: true,
-                                  trackVisibility: true,
-                                  interactive: true,
-                                  child: SingleChildScrollView(
-                                    controller: _tableVertical,
-                                    scrollDirection: Axis.vertical,
-                                    child: DataTable(
-                                      dataRowMinHeight: 46,
-                                      dataRowMaxHeight: 96,
-                                      headingRowColor: WidgetStateProperty.all(
-                                        HyperionColors.elevated),
-                                      headingTextStyle: TextStyle(
-                                        fontWeight: FontWeight.w900, color: HyperionColors.brand),
-                                      columnSpacing: narrow ? 16 : 25,
-                                      columns: [
-                                        for (final header in report.headers)
-                                          DataColumn(label: Text(header)),
-                                      ],
-                                      rows: [
-                                        for (final row in report.rows)
-                                          DataRow(cells: [
-                                            for (var i = 0; i < row.length; i++)
-                                              DataCell(ConstrainedBox(
-                                                constraints: BoxConstraints(
-                                                  maxWidth: i == 4 ? 380 : 260),
-                                                child: i == (_tab == 1 ? 3 : 0) &&
-                                                    row[i].isNotEmpty && row[i] != 'TOTAL'
-                                                  ? Text(row[i],
-                                                      style: TextStyle(
-                                                        color: HyperionColors.brand,
-                                                        decoration: TextDecoration.underline,
-                                                        fontSize: 12))
-                                                  : SelectableText(row[i],
-                                                      style: TextStyle(fontSize: 12))),
-                                                onTap: i == (_tab == 1 ? 3 : 0) &&
-                                                    row[i].isNotEmpty && row[i] != 'TOTAL'
-                                                  ? () => _manageReference(row[i]) : null),
-                                          ]),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        )),
-                      SizedBox(height: 4),
-                      Text('Horizontal and vertical report scrollbars are separate.',
-                        style: TextStyle(color: HyperionColors.muted, fontSize: 10)),
-                    ],
-                  ]))),
+                        style: TextStyle(color: HyperionColors.ink,
+                          fontSize: 12, fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 3),
+                    Text('For the period $_period  ·  '
+                      '${report.rows.length - report.summaryRows.length} rows',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 11,
+                        color: HyperionColors.muted)),
+                    const SizedBox(height: 7),
+                    Text(_hint(), textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 10.5,
+                        color: HyperionColors.muted, height: 1.3)),
+                    const SizedBox(height: 10),
+                    BooksCompactTable(
+                      key: ValueKey('book-$_tab-${report.ledgerAccount}'),
+                      report: report, bookIndex: _tab,
+                      height: gridHeight,
+                      onOpenReference: _manageReference,
+                    ),
+                    const SizedBox(height: 7),
+                    Text('Select a reference to see the full source details '
+                      'and review flags. All amounts are PHP.',
+                      style: TextStyle(fontSize: 10.5,
+                        color: HyperionColors.muted)),
+                  ],
+                ),
+              ),
+            ),
             if (books.warnings.isNotEmpty) ...[
-              SizedBox(height: 10),
+              const SizedBox(height: 9),
               Card(child: ExpansionTile(
-                title: Text('Reconciliation notices (${books.warnings.length})'),
+                title: Text('Reconciliation notices (${books.warnings.length})',
+                  style: const TextStyle(fontSize: 12,
+                    fontWeight: FontWeight.w700)),
                 children: [
                   for (final warning in books.warnings)
                     ListTile(dense: true, title: Text(warning,
-                      style: TextStyle(fontSize: 12))),
+                      style: const TextStyle(fontSize: 12))),
                 ],
               )),
             ],
-            SizedBox(height: 8),
-            Padding(padding: EdgeInsets.all(8), child: Text(
-              'DRAFT WORKING PAPERS ONLY · Not BIR-registered computerized books. '
-              'Review and void flags affect reports only. Retain and reconcile '
-              'original invoices, PayMongo records and bank statements.',
-              style: TextStyle(color: HyperionColors.muted, fontSize: 11))),
-            SizedBox(height: 20),
-          ]),
+            const SizedBox(height: 10),
+            Text('DRAFT WORKING PAPERS · Not BIR-registered computerized or '
+              'approved loose-leaf books. Retain and reconcile source invoices, '
+              'sales files and bank statements. Confirm official formats and '
+              'registration requirements with your RDO.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 10.5,
+                color: HyperionColors.muted)),
+          ],
+        ),
       );
     });
   }
 
-  Widget _tabButton(int index, String label) {
-    final active = _tab == index;
-    return OutlinedButton(
-      style: OutlinedButton.styleFrom(
-        backgroundColor: active ? HyperionColors.brandFill : HyperionColors.card,
-        foregroundColor: active ? HyperionColors.onBrandFill : HyperionColors.brand,
-        side: BorderSide(color: active ? HyperionColors.brandFill : HyperionColors.border)),
-      onPressed: () => setState(() => _tab = index),
-      child: Text(label));
-  }
+  Widget _header() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text('Books of Accounts', style: TextStyle(
+        fontSize: 19, fontWeight: FontWeight.w900,
+        color: HyperionColors.brand)),
+      const SizedBox(height: 2),
+      Text('Four books · compact columns · full details on demand',
+        style: TextStyle(fontSize: 11, color: HyperionColors.muted)),
+    ],
+  );
+
+  Widget _actions(BookTableData report) => Wrap(
+    spacing: 7, runSpacing: 7, children: [
+      FilledButton.icon(
+        onPressed: _exporting ? null : () => _export(report),
+        icon: const Icon(Icons.file_download_outlined, size: 16),
+        label: const Text('Export to Excel')),
+      OutlinedButton.icon(
+        onPressed: () => _print(report),
+        icon: const Icon(Icons.print_outlined, size: 16),
+        label: const Text('Print Report')),
+    ],
+  );
 }
