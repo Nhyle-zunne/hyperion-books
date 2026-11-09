@@ -8,7 +8,6 @@ class DailyBusinessMetric {
   final int processingFees;
   final int manualExpenses;
   final int bankPayouts;
-  final int manualDirectReceipts;
   final int payments;
   final int adjustments;
 
@@ -21,7 +20,7 @@ class DailyBusinessMetric {
 
   int get trackedReceipts => grossPaymongo + provisionalGooglePlay;
   int get trackedCosts => processingFees + manualExpenses;
-  int get cashMovement => bankPayouts + manualDirectReceipts - manualExpenses;
+  int get cashMovement => bankPayouts - manualExpenses;
 }
 
 class BusinessAnalytics {
@@ -37,6 +36,7 @@ class BusinessAnalytics {
   final int fees;
   final int manualExpenses;
   final int bankPayouts;
+  final int manualDirectReceipts;
   final int salesCount;
   final int adjustmentNet;
   final int adjustmentsCount;
@@ -57,7 +57,7 @@ class BusinessAnalytics {
   int get trackedReceipts => grossPaymongo + provisionalGooglePlay;
   int get trackedCosts => fees + manualExpenses;
   int get indicativeResult => trackedReceipts - trackedCosts;
-  int get cashMovement => bankPayouts - manualExpenses;
+  int get cashMovement => bankPayouts + manualDirectReceipts - manualExpenses;
 
   factory BusinessAnalytics.fromSources({
     required Iterable<BookEntry> entries,
