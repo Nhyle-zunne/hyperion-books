@@ -84,7 +84,7 @@ void main() {
 
   testWidgets('dashboard renders on desktop without overflow',
       (tester) async => expectDashboardAtSize(tester, const Size(1280, 900)));
-  testWidgets('imported PayMongo CSV activity appears on dashboard',
+  testWidgets('imported sales CSV activity appears on dashboard',
       (tester) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(1280, 900);
@@ -97,10 +97,10 @@ void main() {
     await tester.pumpWidget(MaterialApp(home: BooksHome(controller: fixture)));
     await tester.pumpAndSettle();
     // ignore: avoid_print
-    print('IMPORT MARKERS: activity=${find.text('Imported PayMongo activity').evaluate().length}, '
+    print('IMPORT MARKERS: activity=${find.text('Sales activity').evaluate().length}, '
       'gross=${find.text('Gross customer payments').evaluate().length}, '
       'count=${find.text('1 paid transactions').evaluate().length}');
-    expect(find.text('Imported PayMongo activity'), findsOneWidget);
+    expect(find.text('Sales activity'), findsOneWidget);
     expect(find.text('Gross customer payments'), findsOneWidget);
     expect(find.text('1 paid transactions'), findsOneWidget);
     final dashboard = find.descendant(
