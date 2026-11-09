@@ -102,7 +102,8 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
         4 => _register('2307'),
         5 => _register('Invoice'),
         _ => AccountingBooksPage(entries: widget.entries,
-          transactions: widget.transactions, workspace: widget.workspace),
+          transactions: widget.transactions, workspace: widget.workspace,
+          save: widget.save),
       }),
     ]);
   }
