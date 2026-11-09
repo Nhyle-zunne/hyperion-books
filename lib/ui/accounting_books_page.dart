@@ -22,8 +22,9 @@ class AccountingBooksPage extends StatefulWidget {
   final List<BookEntry> entries;
   final List<PayMongoTransaction> transactions;
   final BusinessWorkspace workspace;
+  final Future<void> Function(BusinessWorkspace) save;
   const AccountingBooksPage({super.key, required this.entries,
-    required this.transactions, required this.workspace});
+    required this.transactions, required this.workspace, required this.save});
 
   @override State<AccountingBooksPage> createState() => _AccountingBooksPageState();
 }
@@ -38,6 +39,8 @@ class _ReportTable {
 class _AccountingBooksPageState extends State<AccountingBooksPage> {
   int _tab = 0;
   bool _optional = false;
+  bool _includeVoided = false;
+  bool _includeUnverified = true;
   DateTime? _start;
   DateTime? _end;
   bool _all = false;
@@ -77,10 +80,14 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
         '${_end == null ? "Present" : _stamp(_end!)}';
   }
 
+  bool _allowed(String ref) =>
+      (_includeVoided || !widget.workspace.voidedReferences.contains(ref)) &&
+      (_includeUnverified || widget.workspace.verifiedReferences.contains(ref));
+
   _ReportTable _table(AccountingBooks books) {
     switch (_tab) {
       case 0:
-        final postings = books.journal.where((p) => _within(p.date)).toList();
+        final postings = books.journal.where((p) => _within(p.date) && _allowed(p.reference)).toList();
         final rows = <List<String>>[
           for (final p in postings) [
             p.reference, _stamp(p.date), _code(p.account), _account(p.account),
@@ -102,25 +109,32 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
         ], rows);
       case 1:
         final rows = <List<String>>[];
-        final accounts = books.ledger.keys.toList()..sort();
-        for (final account in accounts) {
-          for (final p in books.ledger[account]!) {
-            if (!_within(p.posting.date)) continue;
-            rows.add([
-              _code(account), _account(account), _stamp(p.posting.date),
-              p.posting.reference, p.posting.particulars,
-              if (_optional) p.posting.source,
-              _peso(p.posting.debit), _peso(p.posting.credit),
-              _peso(p.debitBalance), _peso(p.creditBalance),
-            ]);
-          }
+        // Calculate running balances from all permitted transactions before
+        // applying the date filter, so earlier account activity carries forward.
+        final balances = <String,int>{};
+        for (final p in books.journal.where((p) => _allowed(p.reference))) {
+          final balance = (balances[p.account] ?? 0) + p.debit - p.credit;
+          balances[p.account] = balance;
+          if (!_within(p.date)) continue;
+          rows.add([
+            _code(p.account), _account(p.account), _stamp(p.date),
+            p.reference, p.particulars,
+            if (_optional) p.source,
+            _peso(p.debit), _peso(p.credit),
+            _peso(balance > 0 ? balance : 0),
+            _peso(balance < 0 ? -balance : 0),
+          ]);
         }
+        rows.sort((a,b) {
+          final group = a.first.compareTo(b.first);
+          return group != 0 ? group : a[2].compareTo(b[2]);
+        });
         return _ReportTable('General Ledger', [
           'GL Code', 'GL Account', 'Date', 'Reference No.', 'Description',
           if (_optional) 'Source', 'Debit', 'Credit', 'Debit balance', 'Credit balance',
         ], rows);
       case 2:
-        final receipts = books.cashReceipts.where((e) => _within(e.date)).toList();
+        final receipts = books.cashReceipts.where((e) => _within(e.date) && _allowed(e.reference)).toList();
         return _ReportTable('Cash Receipts Journal', [
           'Reference No.', 'Date', 'Description',
           if (_optional) 'Collection channel',
@@ -137,7 +151,7 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
           ],
         ]);
       default:
-        final paid = books.cashDisbursements.where((e) => _within(e.date)).toList();
+        final paid = books.cashDisbursements.where((e) => _within(e.date) && _allowed(e.reference)).toList();
         return _ReportTable('Cash Disbursements Journal', [
           'Reference No.', 'Date', 'Description',
           'GL Code', 'Expense account', 'Cash / bank paid',
@@ -147,6 +161,53 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
             _code(e.account), _account(e.account), _peso(e.amount),
           ],
         ]);
+    }
+  }
+
+  Future<void> _manageReference(String ref) async {
+    final verified = widget.workspace.verifiedReferences.contains(ref);
+    final voided = widget.workspace.voidedReferences.contains(ref);
+    final choice = await showDialog<String>(context: context, builder: (d) =>
+      AlertDialog(
+        title: const Text('Review source reference'),
+        content: Column(mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start, children: [
+            SelectableText(ref, style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            const Text('Verification and voiding here are manual working-paper flags, '
+              'not BIR confirmation or permanent source deletion.',
+              style: TextStyle(fontSize: 12)),
+            const SizedBox(height: 8),
+            ListTile(
+              leading: Icon(verified ? Icons.verified : Icons.verified_outlined),
+              title: Text(verified ? 'Remove manual verification' : 'Mark manually verified'),
+              onTap: () => Navigator.pop(d, 'verify')),
+            ListTile(
+              leading: Icon(voided ? Icons.restore : Icons.block_outlined),
+              title: Text(voided ? 'Restore to working reports' : 'Void in working reports'),
+              onTap: () => Navigator.pop(d, 'void')),
+          ]),
+        actions: [TextButton(onPressed: () => Navigator.pop(d),
+          child: const Text('Cancel'))]));
+    if (choice == null) return;
+    final next = choice == 'verify'
+      ? widget.workspace.copyWith(verifiedReferences: [
+          for (final id in widget.workspace.verifiedReferences)
+            if (id != ref) id,
+          if (!verified) ref,
+        ])
+      : widget.workspace.copyWith(voidedReferences: [
+          for (final id in widget.workspace.voidedReferences)
+            if (id != ref) id,
+          if (!voided) ref,
+        ]);
+    try {
+      await widget.save(next);
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Book review flag saved locally. Back up your records.')));
+    } catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Could not save flag: $error')));
     }
   }
 
@@ -239,18 +300,20 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
                 title: const Text('Show optional columns'),
                 value: _optional,
                 onChanged: (v) => setState(() => _optional = v ?? false)),
-              const CheckboxListTile(
+              CheckboxListTile(
                 dense: true, contentPadding: EdgeInsets.zero,
                 controlAffinity: ListTileControlAffinity.leading,
-                title: Text('Include voided entries'),
-                subtitle: Text('Not available: deleted entries are removed from local records.'),
-                value: false, onChanged: null),
-              const CheckboxListTile(
+                title: const Text('Include voided entries'),
+                subtitle: const Text('Includes references manually marked void in draft reports.'),
+                value: _includeVoided,
+                onChanged: (v) => setState(() => _includeVoided = v ?? false)),
+              CheckboxListTile(
                 dense: true, contentPadding: EdgeInsets.zero,
                 controlAffinity: ListTileControlAffinity.leading,
-                title: Text('Include unverified'),
-                subtitle: Text('On by default; source-level verification tracking is not available yet.'),
-                value: true, onChanged: null),
+                title: const Text('Include unverified'),
+                subtitle: const Text('Turn off to show manually verified references only.'),
+                value: _includeUnverified,
+                onChanged: (v) => setState(() => _includeUnverified = v ?? true)),
             ]))),
           const SizedBox(height: 15),
           Card(child: Padding(padding: const EdgeInsets.all(16),
@@ -286,11 +349,19 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
                     rows: [
                       for (final row in table.rows)
                         DataRow(cells: [
-                          for (final value in row)
+                          for (var index = 0; index < row.length; index++)
                             DataCell(ConstrainedBox(
                               constraints: const BoxConstraints(maxWidth: 250),
-                              child: SelectableText(value,
-                                style: const TextStyle(fontSize: 12)))),
+                              child: index == (_tab == 1 ? 3 : 0) &&
+                                  row[index].isNotEmpty && row[index] != 'TOTAL'
+                                ? Text(row[index], style: const TextStyle(
+                                    fontSize: 12, color: _navy,
+                                    decoration: TextDecoration.underline))
+                                : SelectableText(row[index],
+                                    style: const TextStyle(fontSize: 12))),
+                              onTap: index == (_tab == 1 ? 3 : 0) &&
+                                  row[index].isNotEmpty && row[index] != 'TOTAL'
+                                ? () => _manageReference(row[index]) : null),
                         ]),
                     ],
                   )),
@@ -309,7 +380,7 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
               ]))),
           const SizedBox(height: 6),
           const Text('DRAFT WORKING PAPERS ONLY · Not BIR-registered computerized books. '
-            'These tables do not establish invoice validity, account verification '
+            'Book verification and void flags are local working-paper annotations only; these tables do not establish invoice validity, account verification '
             'or filing compliance. Period-filtered ledger balances include earlier '
             'postings; reconcile against source invoices and bank statements.',
             style: TextStyle(color: _muted, fontSize: 11)),
