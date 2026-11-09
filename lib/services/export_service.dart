@@ -51,7 +51,6 @@ class ExportService {
     if (!books.balanced) {
       throw StateError('Combined accounting journal is not balanced. Export cancelled.');
     }
-    String stamp(DateTime d) => DateFormat('yyyy-MM-dd HH:mm').format(d);
     CellValue moneyOrBlank(int value) => value == 0 ? t('') : amount(value);
     final book = Excel.createExcel();
     book.rename('Sheet1', 'READ ME');
