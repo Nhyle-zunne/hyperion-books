@@ -201,6 +201,7 @@ class _BooksHomeState extends State<BooksHome> {
           transactions: ctrl.paymongoTransactions,
           onImport: () => _importSales(context),
           onExport: () => _export(context),
+          onTemplate: () => _downloadSalesTemplate(context),
         ),
         'compliance' => CompliancePage(
           workspace: ctrl.workspace,
@@ -552,7 +553,7 @@ class _BooksHomeState extends State<BooksHome> {
             'Unpaid / unsupported rows (skipped): ${preview.ignored}\n\n'
             '$duplicateNotice'
             '$changedNotice'
-            'Gross new payment sales: ${php(totals.grossPaymentsCentavos)}\n'
+            'Gross new sales: ${php(totals.grossPaymentsCentavos)}\n'
             'Processing fees (including VAT): ${php(totals.paymentFeesCentavos)}\n'
             'VAT portion (already included): ${php(totals.paymentVatCentavos)}\n'
             'Net new payment activity, including adjustments: '
