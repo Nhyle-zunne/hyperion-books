@@ -70,7 +70,7 @@ class _BooksCompactTableState extends State<BooksCompactTable> {
       final mobile = constraints.maxWidth < 630;
       return Column(children: [
         if (!mobile) _desktopRow(
-          data.headers, const [], header: true, summary: false),
+          data.headers, header: true, summary: false),
         SizedBox(height: widget.height,
           child: Scrollbar(
             controller: _scroll,
@@ -93,7 +93,7 @@ class _BooksCompactTableState extends State<BooksCompactTable> {
                         : () => widget.onOpenReference(ref),
                       child: mobile
                         ? _mobileRow(data.headers, row, summary)
-                        : _desktopRow(row, const [],
+                        : _desktopRow(row,
                             header: false, summary: summary,
                             striped: index.isOdd),
                     ),
@@ -107,7 +107,7 @@ class _BooksCompactTableState extends State<BooksCompactTable> {
     });
   }
 
-  Widget _desktopRow(List<String> cells, List<String> unused,
+  Widget _desktopRow(List<String> cells,
       {required bool header, required bool summary, bool striped = false}) {
     final weights = columnFlex[widget.bookIndex];
     return Container(
