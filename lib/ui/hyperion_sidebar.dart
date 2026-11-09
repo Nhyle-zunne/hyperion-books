@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
+import '../theme/hyperion_theme.dart';
 
-const _navy = Color(0xFF042353);
-const _ink = Color(0xFF112940);
-const _muted = Color(0xFF61738B);
 
 /// Original, Hyperion-themed navigation for local business and tax workflows.
 /// Inbox and Help & Docs are intentionally excluded.
@@ -15,16 +13,16 @@ class HyperionSidebar extends StatelessWidget {
   @override Widget build(BuildContext context) => Material(
     color: Colors.white,
     child: SizedBox(width: 250, child: Column(children: [
-      const Padding(padding: EdgeInsets.fromLTRB(18, 16, 12, 10),
+      Padding(padding: EdgeInsets.fromLTRB(18, 16, 12, 10),
         child: Row(children: [
-          Icon(Icons.dashboard_customize_outlined, size: 18, color: _navy),
+          Icon(Icons.dashboard_customize_outlined, size: 18, color: HyperionColors.brand),
           SizedBox(width: 9),
           Expanded(child: Text('BUSINESS WORKSPACE',
             maxLines: 2, overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 12, fontWeight: FontWeight.w900, color: _ink))),
+              fontSize: 12, fontWeight: FontWeight.w900, color: HyperionColors.ink))),
         ])),
-      const Divider(height: 1),
+      Divider(height: 1),
       Expanded(child: ListView(
         padding: const EdgeInsets.fromLTRB(8, 10, 8, 12),
         children: [
@@ -62,20 +60,20 @@ class HyperionSidebar extends StatelessWidget {
             _item('master-products', 'Products', Icons.category_outlined, indent: true),
             _item('master-categories', 'Expense Categories', Icons.label_outline, indent: true),
           ]),
-          const Divider(height: 20),
+          Divider(height: 20),
           _item('bulk-import', 'Bulk Import', Icons.upload_file_outlined),
           _item('my-business', 'My Business', Icons.business_outlined),
           _item('paymongo', 'PayMongo Activity', Icons.account_balance_wallet_outlined),
           _item('backups', 'Backups & Exports', Icons.backup_outlined),
         ],
       )),
-      const Divider(height: 1),
-      const Padding(padding: EdgeInsets.all(12),
+      Divider(height: 1),
+      Padding(padding: EdgeInsets.all(12),
         child: Row(children: [
-          Icon(Icons.cloud_off_outlined, size: 18, color: _navy),
+          Icon(Icons.cloud_off_outlined, size: 18, color: HyperionColors.brand),
           SizedBox(width: 9),
           Expanded(child: Text('Stored on this device · export backups',
-            style: TextStyle(color: _muted, fontSize: 11))),
+            style: TextStyle(color: HyperionColors.muted, fontSize: 11))),
         ])),
     ])));
 
@@ -91,9 +89,9 @@ class HyperionSidebar extends StatelessWidget {
       tilePadding: const EdgeInsets.symmetric(horizontal: 10),
       childrenPadding: const EdgeInsets.only(left: 8),
       dense: true, visualDensity: VisualDensity.compact,
-      leading: Icon(icon, size: 19, color: _ink),
+      leading: Icon(icon, size: 19, color: HyperionColors.ink),
       title: Text(title, style: TextStyle(
-        color: active ? _navy : _ink, fontWeight: FontWeight.w700,
+        color: active ? HyperionColors.brand : HyperionColors.ink, fontWeight: FontWeight.w700,
         fontSize: 13)),
       children: children,
     );
@@ -104,16 +102,16 @@ class HyperionSidebar extends StatelessWidget {
         (key == 'tax-books' && selected == 'books');
     return Padding(padding: const EdgeInsets.symmetric(vertical: 2),
       child: Material(
-        color: active ? const Color(0xFFE8EFFC) : Colors.transparent,
+        color: active ? HyperionColors.selected : Colors.transparent,
         borderRadius: BorderRadius.circular(9),
         child: ListTile(
           dense: true,
           visualDensity: VisualDensity.compact,
           contentPadding: EdgeInsets.symmetric(horizontal: indent ? 10 : 11),
           leading: Icon(icon, size: indent ? 17 : 19,
-            color: active ? _navy : _muted),
+            color: active ? HyperionColors.brand : HyperionColors.muted),
           title: Text(label, style: TextStyle(
-            color: active ? _navy : _ink,
+            color: active ? HyperionColors.brand : HyperionColors.ink,
             fontWeight: active ? FontWeight.w800 : FontWeight.w500,
             fontSize: indent ? 12.5 : 13)),
           onTap: () => onSelect(key),
