@@ -8,6 +8,7 @@ import '../models/business_workspace.dart';
 import '../models/paymongo_transaction.dart';
 import '../models/tax_period_summary.dart';
 import 'accounting_books_page.dart';
+import 'tax_calendar_view.dart';
 
 final _php = NumberFormat.currency(locale: 'en_PH', symbol: '₱');
 String _pesos(int c) => _php.format(c / 100);
@@ -133,65 +134,14 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
       icon: Icon(Icons.chevron_right)),
   ]);
 
-  Widget _calendar() {
-    final tasks = widget.workspace.reminders.where((r) =>
-      r.dueDate.year == viewing.year && r.dueDate.month == viewing.month).toList()
-      ..sort((a,b) => a.dueDate.compareTo(b.dueDate));
-    final filings = widget.workspace.taxRecords.where((r) =>
-      r.kind == 'Filing' && r.date.year == viewing.year &&
-      r.date.month == viewing.month).toList()
-      ..sort((a,b) => a.date.compareTo(b.date));
-    final allTasks = widget.workspace.reminders;
-    final lateTasks = allTasks.where((r) =>
-      !r.completed && r.dueDate.isBefore(DateTime.now())).length;
-    return ListView(padding: const EdgeInsets.all(16), children: [
-      _panel([
-        Text('Tax Calendar', style: TextStyle(fontSize: 19,
-          color: HyperionColors.ink, fontWeight: FontWeight.w900)),
-        Text('Only dates you enter appear here; no filing deadline is inferred.',
-          style: TextStyle(color: HyperionColors.muted, fontSize: 12)),
-        _periodPicker(),
-        Wrap(spacing: 8, children: [
-          FilledButton.icon(onPressed: busy ? null : () => _editReminder(),
-            icon: Icon(Icons.add), label: Text('Add reminder')),
-          OutlinedButton.icon(onPressed: busy ? null :
-            () => _editTax('Filing', proposedPeriod: periodKey),
-            icon: Icon(Icons.description_outlined),
-            label: Text('Record filing')),
-        ]),
-      ]),
-      SizedBox(height: 12),
-      _panel([
-        Text('${tasks.length} reminders · ${filings.length} filing logs this month',
-          style: TextStyle(color: HyperionColors.ink, fontWeight: FontWeight.w800)),
-        if (lateTasks > 0) Text('$lateTasks open reminders are past their manually selected dates.',
-          style: TextStyle(fontSize: 12, color: HyperionColors.warning)),
-        if (tasks.isEmpty && filings.isEmpty)
-          Padding(padding: EdgeInsets.all(18),
-            child: Text('No items recorded for this month.')),
-        for (final task in tasks)
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: Checkbox(value: task.completed, onChanged: busy ? null :
-              (v) => _save(widget.workspace.copyWith(reminders: [
-                for (final item in widget.workspace.reminders)
-                  if (item.id == task.id)
-                    item.copyWith(completed: v ?? false)
-                  else item,
-              ]))),
-            title: Text(task.title),
-            subtitle: Text('${DateFormat('MMM d, yyyy').format(task.dueDate)} · Reminder'),
-            trailing: IconButton(tooltip: 'Edit reminder',
-              onPressed: () => _editReminder(task),
-              icon: Icon(Icons.edit_outlined))),
-        for (final filing in filings) _taxTile(filing),
-      ]),
-      SizedBox(height: 12),
-      Text('Manual calendar only. Filing dates, holiday extensions, '
-        'registration obligations and actual BIR acceptance must be checked '
-        'outside this app.', style: TextStyle(color: HyperionColors.muted, fontSize: 12)),
-    ]);
-  }
+  Widget _calendar() => TaxCalendarView(
+    workspace: widget.workspace,
+    save: widget.save,
+    addReminder: () => _editReminder(),
+    editReminder: (r) => _editReminder(r),
+    addFiling: (date) => _editTax('Filing',
+      proposedPeriod: DateFormat('yyyy-MM').format(date)),
+  );
 
   Widget _periodOverview() {
     final s = TaxPeriodSummary.between(entries: widget.entries,
