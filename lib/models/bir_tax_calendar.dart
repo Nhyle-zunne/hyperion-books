@@ -97,12 +97,12 @@ class BirTaxCalendar {
         final month = quarter * 3;
         final period = 'Q$quarter $y';
         final opened = DateTime(y, month + 1);
-        final VATandPT = DateTime(y, month + 1, 25);
+        final vatAndPt = DateTime(y, month + 1, 25);
         add('2550Q', 'Quarterly VAT return', BirCadence.quarterly,
-          period, opened, VATandPT, 'vat',
+          period, opened, vatAndPt, 'vat',
           notes: 'VAT-registered taxpayers; fiscal quarters may differ.');
         add('2551Q', 'Quarterly percentage tax', BirCadence.quarterly,
-          period, opened, VATandPT, 'percentage',
+          period, opened, vatAndPt, 'percentage',
           notes: 'Only if subject to percentage tax; 8% election can replace it.');
         add('1601-EQ', 'Expanded withholding quarterly return',
           BirCadence.quarterly, period, opened,
