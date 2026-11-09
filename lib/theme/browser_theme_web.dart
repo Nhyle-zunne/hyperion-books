@@ -7,5 +7,7 @@ void applyBrowserTheme(bool dark) {
   final background = dark ? '#0B1220' : '#EEF2F6';
   html.document.querySelector('meta[name="theme-color"]')
     ?.setAttribute('content', background);
+  html.document.documentElement?.setAttribute('data-initial-theme',
+    dark ? 'dark' : 'light');
   html.document.body?.style.backgroundColor = background;
 }
