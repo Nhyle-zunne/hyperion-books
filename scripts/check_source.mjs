@@ -44,7 +44,10 @@ assert(source('lib/ui/home.dart').includes('SalesImportService.select'), 'Generi
 assert(source('lib/services/sales_import_service.dart').includes('parseWorkbook'), 'Sales XLSX parser missing');
 assert(source('lib/ui/home.dart').includes('TaxFilingPage'), 'Tax Filing navigation missing');
 assert(source('lib/ui/home.dart').includes('HyperionSidebar'), 'Business sidebar missing');
-assert(source('lib/ui/accounting_books_page.dart').includes('ScrollbarOrientation.bottom'), 'Horizontal Books scrollbar missing');
+assert(source('lib/ui/accounting_books_page.dart').includes('BooksCompactTable'),
+  'Compact no-horizontal-scroll book view missing');
+assert(source('lib/models/book_table_view.dart').includes('Balance (₱)'),
+  'Per-account compact ledger columns missing');
 for (const route of ['tax-calendar','tax-monthly','tax-quarterly','tax-annual','tax-2307','tax-invoices','books','financial-reports','management-reports','aging-reports','purchase-records','business-assets','payroll','bulk-import']) {
   assert(source('lib/ui/hyperion_sidebar.dart').includes(route), `Sidebar route missing: ${route}`);
 }
