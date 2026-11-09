@@ -922,6 +922,7 @@ class _BooksHomeState extends State<BooksHome> {
     entries: widget.controller.entries,
     transactions: widget.controller.paymongoTransactions,
     workspace: widget.controller.workspace,
+    save: widget.controller.saveWorkspace,
   );
 
   Widget _settings(BuildContext context) {
