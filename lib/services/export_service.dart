@@ -132,19 +132,23 @@ class ExportService {
     }.toList()..sort();
     final byMonth = {for (final m in report.months) m.month: m};
     addSheet(book, 'MONTHLY SUMMARY',
-      ['Month','Imported gross sales PHP','Imported fees PHP',
-       'Imported net payments PHP','Adjustments/refunds PHP',
+      ['Month','Recorded gross sales PHP','Processing fees PHP',
+       'Net sales payments PHP','Adjustments/refunds PHP',
        'Manual bank payouts PHP','Manual expenses PHP',
-       'Manual cash movement PHP'],
+       'Payouts + direct sales - expenses PHP'],
       monthKeys.map((key) {
         final m = byMonth[key];
         final p = PayMongoTotals.fromTransactions(
           imported.where((t) => t.month == key));
+        final directCash = imported.where((t) =>
+            t.month == key && t.isManual && t.isPayment)
+            .fold<int>(0, (n, t) => n + t.netCentavos);
         return [
           t(key),amount(p.grossPaymentsCentavos),
           amount(p.paymentFeesCentavos),amount(p.netPaymentsCentavos),
           amount(p.adjustmentsNetCentavos),amount(m?.payoutNet ?? 0),
-          amount(m?.expenses ?? 0),amount(m?.netCashFlow ?? 0),
+          amount(m?.expenses ?? 0),
+          amount((m?.netCashFlow ?? 0) + directCash),
         ];
       }), widths: [17,28,23,29,26,29,26,29]);
     addSheet(book, 'RECONCILIATION NOTES',
