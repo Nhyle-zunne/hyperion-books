@@ -1,53 +1,13 @@
 # Hyperion Books — Start here
 
-This is a standalone Flutter **Web PWA source project**, not an installed or hosted application.
+This is a Flutter Web PWA with **no Supabase or Google sign-in**.
 
-## What you will use
+1. Download and extract `Hyperion_Books_GitHub_Only_Source.zip` from the ChatGPT conversation.
+2. Upload **all contents** of the extracted folder to the GitHub repository root (not the ZIP alone, not inside an extra parent directory).
+3. The Flutter source needs `lib/`, `web/`, `scripts/`, `test/`, `docs/`, `pubspec.yaml` and `.github/workflows/`.
+4. Check the GitHub Actions build for successful `flutter analyze`, `flutter test`, and web build.
+5. To host on GitHub Pages, you must be eligible to publish from this repo. GitHub Free requires a public repository; the current repository is private.
+6. If eligible: Settings → Pages → Source: GitHub Actions. Settings → Secrets and variables → Actions → Variables: `ENABLE_GITHUB_PAGES=true`. No secrets are needed.
+7. Once published: add payouts or expenses (calendar picker), view generated books, and export Excel. Export a **JSON backup** often for recovery and transfer. Import **REPLACES** all records on that device after confirmation.
 
-1. Open the app on your phone or PC, sign in once with Google while online.
-2. Add a **PayMongo** or **Google Play** payout with date and amount.
-3. Add an **expense** with date, amount and description.
-4. The **Dashboard, Cash Books, General Journal, General Ledger, and monthly summary** generate automatically.
-5. Open **Books → Excel** to download an `.xlsx` backup.
-6. Once initially loaded online, the PWA shell and IndexedDB records work offline. Later sign-ins and syncing need an internet connection.
-
-## To go live
-
-A developer or a computer with Flutter 3.50+ (Dart 3.12+) must:
-
-1. Install Flutter, Chrome, and Node.js 20+. Run `flutter doctor` to verify.
-2. In the project folder, run `flutter pub get`, `flutter analyze`, `flutter test`.
-3. Create a **new** Supabase project for Hyperion Books and enable Google OAuth in its Auth settings. Configure its Site URL and redirect allowlist for your app domain.
-4. Run `supabase/migrations/20261109_hyperion_books_private.sql` in the new project's SQL Editor.
-5. Build with your project's **public** URL and publishable key (not any secret/service-role key):
-
-   **Windows PowerShell**:
-   ```powershell
-   flutter build web --release --web-content-hash --no-web-resources-cdn --dart-define="SUPABASE_URL=https://YOUR-PROJECT.supabase.co" --dart-define="SUPABASE_PUBLISHABLE_KEY=YOUR-PUBLISHABLE-KEY"
-   node scripts/make_sw.mjs build/web
-   Copy-Item web/_headers build/web/_headers -Force
-   ```
-
-   **macOS/Linux (bash)**:
-   ```bash
-   export SUPABASE_URL=https://YOUR-PROJECT.supabase.co
-   export SUPABASE_PUBLISHABLE_KEY=YOUR-PUBLISHABLE-KEY
-   bash scripts/build_web.sh
-   ```
-
-6. Upload the **contents** of `build/web/` to a fresh HTTPS hosting site (for example a new Cloudflare Pages project). Do not replace the existing Hyperion reviewer app. Configure SPA route fallback and cache-control headers.
-7. Visit the site once online, allow it to finish loading, then install it from the browser menu.
-
-For more details read `README.md` and `docs/SECURITY_AND_SYNC.md`.
-
-## Tests performed for this delivery
-
-- JavaScript syntax check on `scripts/make_sw.mjs`.
-- Service-worker generation with a synthetic Flutter 3.50-style precache manifest.
-- Static verification of date picker, payout/expense forms, journal, seven Excel sheets, private RLS and account-bound RPC, IndexedDB storage and revision-conflict guards.
-
-**Not yet performed:** `flutter analyze`, `flutter test`, actual Flutter production compilation, connected Supabase tests, two-device sync tests, or a live PWA offline-browser test. Do these before entering important financial records.
-
-## Accounting note
-
-Net payouts are cash receipts for personal tracking, **not necessarily gross sales** for tax reporting. The generated journal and ledger are provisional, not automatically BIR-compliant official books.
+No automatic multi-device synchronization. Records stay in each device's browser storage. Never upload private financial backups to GitHub.

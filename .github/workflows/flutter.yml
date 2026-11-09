@@ -1,0 +1,25 @@
+name: Validate Hyperion Books (local-only)
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter --version
+      - run: node scripts/check_source.mjs
+      - run: node --check scripts/make_sw.mjs
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+      - name: Compile Flutter Web for GitHub Pages path
+        run: flutter build web --release --web-content-hash --no-web-resources-cdn --base-href=/hyperion-books/
+      - name: Generate offline service worker
+        run: node scripts/make_sw.mjs build/web
