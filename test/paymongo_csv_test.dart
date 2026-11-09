@@ -131,8 +131,8 @@ void main() {
     ];
     expect(row1.length, 28);
     expect(row2.length, 28);
-    final result = PayMongoCsvService.parse(csvHeader +
-      '${row1.join(',')}\n${row2.join(',')}\n');
+    final result = PayMongoCsvService.parse(
+      '${csvHeader}${row1.join(',')}\n${row2.join(',')}\n');
     expect(result.transactions.length, 2);
     expect(result.transactions.first.id, 'adj_synthetic01');
     expect(result.transactions.first.occurredAt, DateTime(2026, 11, 4, 6, 49));
@@ -155,8 +155,9 @@ void main() {
     expect(result.transactions.last.occurredAt, DateTime(2026, 11, 4, 13, 51, 59));
     for (final bad in ['2026-02-30 12:00', '2026-11-04 25:00',
       '2026-13-04 13:51', '2026-11-04 13:60', '2026-11-04']) {
-      expect(() => PayMongoCsvService.parse(header +
-        'pay_bad0001,Payment,PHP,10,0,0,10,Paid,$bad,qrph,\n'), throwsFormatException);
+      expect(() => PayMongoCsvService.parse(
+        '${header}pay_bad0001,Payment,PHP,10,0,0,10,Paid,$bad,qrph,\n'),
+        throwsFormatException);
     }
   });
 }
