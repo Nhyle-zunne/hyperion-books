@@ -6,7 +6,7 @@ import '../models/paymongo_transaction.dart';
 import '../models/reports.dart';
 import '../services/export_service.dart';
 import '../services/backup_service.dart';
-import '../services/paymongo_csv_service.dart';
+import '../services/sales_import_service.dart';
 import '../services/expense_csv_service.dart';
 import '../services/paymongo_import_plan.dart';
 import '../state/books_controller.dart';
@@ -45,7 +45,7 @@ class _BooksHomeState extends State<BooksHome> {
       0 => 'dashboard',
       1 => 'entries',
       2 => 'books',
-      3 => 'paymongo',
+      3 => 'sales',
       4 => 'my-business',
       5 => 'tax-calendar',
       _ => 'dashboard',
@@ -58,7 +58,7 @@ class _BooksHomeState extends State<BooksHome> {
       'dashboard' => 0,
       'entries' || 'daily-expenses' => 1,
       'books' || 'tax-books' || 'journal' || 'ledger' => 2,
-      'paymongo' || 'sales' => 3,
+      'sales' => 3,
       'my-business' || 'product-to-sell' || 'master-customers' ||
       'master-vendors' || 'master-products' || 'master-categories' ||
       'backups' => 4,
@@ -80,7 +80,6 @@ class _BooksHomeState extends State<BooksHome> {
     'dashboard': 'Dashboard',
     'entries': 'Transactions',
     'books': 'Books of Accounts',
-    'paymongo': 'PayMongo Activity',
     'my-business': 'My Business',
     'backups': 'Backups & Exports',
     'compliance': 'Compliance',
@@ -197,10 +196,10 @@ class _BooksHomeState extends State<BooksHome> {
             transactions: ctrl.paymongoTransactions,
             workspace: ctrl.workspace, save: ctrl.saveWorkspace,
             initialTab: _route == 'ledger' ? 1 : 0),
-        'paymongo' || 'sales' => PayMongoScreen(
+        'sales' => PayMongoScreen(
           key: ValueKey(_route),
           transactions: ctrl.paymongoTransactions,
-          onImport: () => _importPayMongo(context),
+          onImport: () => _importSales(context),
           onExport: () => _export(context),
         ),
         'compliance' => CompliancePage(
@@ -320,7 +319,7 @@ class _BooksHomeState extends State<BooksHome> {
                 } else if (action == 'expense') {
                   _edit(context, EntryKind.expense);
                 } else if (action == 'csv') {
-                  _importPayMongo(context);
+                  _importSales(context);
                 } else if (action == 'expenseCsv') {
                   _importExpenses(context);
                 }
@@ -328,7 +327,7 @@ class _BooksHomeState extends State<BooksHome> {
               itemBuilder: (_) => [
                 PopupMenuItem(value: 'payout', child: Text('Add bank payout')),
                 PopupMenuItem(value: 'expense', child: Text('Add expense')),
-                PopupMenuItem(value: 'csv', child: Text('Import PayMongo CSV')),
+                PopupMenuItem(value: 'csv', child: Text('Import sales CSV / Excel')),
                 PopupMenuItem(value: 'expenseCsv', child: Text('Import expenses CSV')),
               ],
             ),
@@ -389,15 +388,18 @@ class _BooksHomeState extends State<BooksHome> {
       SizedBox(height: 14),
       Card(child: Padding(padding: const EdgeInsets.all(15),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('PAYMONGO TRANSACTIONS', style: TextStyle(
+          Text('SALES TRANSACTIONS', style: TextStyle(
             color: HyperionColors.ink, fontWeight: FontWeight.w900)),
           SizedBox(height: 7),
           Text('${widget.controller.paymongoTransactions.length} imported records '
             'in this browser'),
           SizedBox(height: 10),
-          FilledButton.icon(onPressed: () => _importPayMongo(context),
+          FilledButton.icon(onPressed: () => _importSales(context),
             icon: Icon(Icons.upload_file_outlined),
-            label: Text('Import PayMongo CSV')),
+            label: Text('Import sales CSV / Excel')),
+          OutlinedButton.icon(onPressed: () => _downloadSalesTemplate(context),
+            icon: Icon(Icons.description_outlined),
+            label: Text('Sales CSV template')),
         ]))),
       SizedBox(height: 10),
       Card(child: Padding(padding: const EdgeInsets.all(15),
@@ -511,9 +513,18 @@ class _BooksHomeState extends State<BooksHome> {
     }
   }
 
-  Future<void> _importPayMongo(BuildContext context) async {
+  Future<void> _downloadSalesTemplate(BuildContext context) async {
     try {
-      final preview = await PayMongoCsvService.select();
+      await SalesImportService.downloadTemplate();
+      if (context.mounted) _message(context, 'Sales import CSV template downloaded.');
+    } catch (error) {
+      if (context.mounted) _message(context, 'Could not download sales template: $error');
+    }
+  }
+
+  Future<void> _importSales(BuildContext context) async {
+    try {
+      final preview = await SalesImportService.select();
       if (preview == null || !context.mounted) return;
       final plan = PayMongoImportPlan.prepare(
         incoming: preview.transactions,
@@ -523,30 +534,30 @@ class _BooksHomeState extends State<BooksHome> {
       final duplicates = plan.alreadyImported;
       final totals = PayMongoTotals.fromTransactions(newRows);
       final duplicateNotice = newRows.isEmpty
-          ? 'All successful transactions in this CSV were already imported. '
+          ? 'All eligible transactions in this file were already imported. '
             'No records will be changed.\n\n'
           : '';
       final changedNotice = plan.conflictingExisting == 0
           ? ''
           : '${plan.conflictingExisting} existing transaction ID(s) have different '
-            'details in this export. Their previously saved values will NOT '
+            'details in this file. Their previously saved values will NOT '
             'be overwritten.\n\n';
       final proceed = await showDialog<bool>(context: context, builder: (dialog) =>
         AlertDialog(
-          title: Text('Import PayMongo transactions?'),
+          title: Text('Import sales transactions?'),
           content: SingleChildScrollView(child: Text(
             'New successful payments: ${totals.payments}\n'
             'New adjustments/refunds: ${totals.adjustments}\n'
             'Already imported (skipped): $duplicates\n'
-            'Unsuccessful / unsupported rows (skipped): ${preview.ignored}\n\n'
+            'Unpaid / unsupported rows (skipped): ${preview.ignored}\n\n'
             '$duplicateNotice'
             '$changedNotice'
             'Gross new payment sales: ${php(totals.grossPaymentsCentavos)}\n'
-            'PayMongo fees (including VAT): ${php(totals.paymentFeesCentavos)}\n'
+            'Processing fees (including VAT): ${php(totals.paymentFeesCentavos)}\n'
             'VAT portion (already included): ${php(totals.paymentVatCentavos)}\n'
             'Net new payment activity, including adjustments: '
             '${php(totals.activityNetCentavos)}\n\n'
-            'Records are sorted by the exact date/time shown in the CSV. '
+            'Records are sorted by the exact date/time shown in the file. '
             'Only transaction IDs, amounts, type, status and method are kept: '
             'customer names/emails are not saved.\n\n'
             'These are customer transactions, NOT bank payouts. '
@@ -564,14 +575,14 @@ class _BooksHomeState extends State<BooksHome> {
         ));
       if (proceed != true || !context.mounted) return;
       final added = await HyperionLoading.whileRunning(
-        'Importing PayMongo transactions', () => widget.controller.importPayMongo(newRows));
+        'Importing sales transactions', () => widget.controller.importPayMongo(newRows));
       if (context.mounted) {
         final skipped = duplicates + (newRows.length - added);
-        _message(context, 'Imported $added new PayMongo transactions; '
+        _message(context, 'Imported $added new sales transactions; '
           'skipped $skipped already imported. Export a JSON backup.');
       }
     } catch (error) {
-      if (context.mounted) _message(context, 'PayMongo CSV import failed: $error');
+      if (context.mounted) _message(context, 'Sales spreadsheet import failed: $error');
     }
   }
 
@@ -596,11 +607,11 @@ class _BooksHomeState extends State<BooksHome> {
       final accepted = await showDialog<bool>(context: context, builder: (dialogContext) => AlertDialog(
         title: Text('Replace all local records?'),
         content: Text('This JSON backup contains ${incoming.entries.length} payout/expense entries '
-          'and ${incoming.paymongo.length} imported PayMongo transactions.\n'
+          'and ${incoming.paymongo.length} imported sales transactions.\n'
           'Payouts: ${php(summary.netPayouts)}\n'
           'Expenses: ${php(summary.totalExpenses)}\n\n'
           'Your ${current.length} current entries, business lists, reminders and '
-          '${widget.controller.paymongoTransactions.length} imported PayMongo transactions '
+          '${widget.controller.paymongoTransactions.length} imported sales transactions '
           'will be REPLACED, not merged. '
           'Export a JSON backup of your current records first. '
           'This will not change other devices.'),
@@ -617,7 +628,7 @@ class _BooksHomeState extends State<BooksHome> {
           paymongo: incoming.paymongo, workspace: incoming.workspace));
       if (context.mounted) {
         _message(context, 'Restored ${incoming.entries.length} entries and '
-          '${incoming.paymongo.length} PayMongo transactions from backup.');
+          '${incoming.paymongo.length} sales transactions from backup.');
       }
     } catch (error) {
       if (context.mounted) _message(context, 'Backup import failed: $error');
@@ -748,7 +759,7 @@ class _BooksHomeState extends State<BooksHome> {
           Expanded(child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Imported PayMongo activity', style: TextStyle(
+              Text('Sales activity', style: TextStyle(
                 fontSize: 17, fontWeight: FontWeight.w800, color: HyperionColors.ink)),
               SizedBox(height: 3),
               Text('Customer collections, fees and adjustments — not bank deposits',
@@ -758,7 +769,7 @@ class _BooksHomeState extends State<BooksHome> {
         ]),
         SizedBox(height: 15),
         if (rows == 0) ...[
-          Text('No PayMongo transactions in this period. Import a CSV to see sales activity.',
+          Text('No sales in this period. Import a CSV or Excel file to get started.',
             style: TextStyle(fontSize: 12.5, color: HyperionColors.muted)),
           SizedBox(height: 9),
         ] else ...[
@@ -776,7 +787,7 @@ class _BooksHomeState extends State<BooksHome> {
                 'VAT portion: ${php(totals.paymentVatCentavos)}')),
               SizedBox(width: width, child: _activityKpi(
                 'Net customer payments', php(totals.netPaymentsCentavos),
-                'Held/settled via PayMongo')),
+                'Before bank transfers')),
               SizedBox(width: width, child: _activityKpi(
                 'Adjustments / refunds', php(totals.adjustmentsNetCentavos),
                 '${totals.adjustments} review items')),
@@ -787,11 +798,11 @@ class _BooksHomeState extends State<BooksHome> {
         Wrap(spacing: 10, runSpacing: 8, children: [
           TextButton.icon(onPressed: () => _navigate(3),
             icon: Icon(Icons.visibility_outlined, size: 18),
-            label: Text(rows == 0 ? 'View PayMongo activity' :
+            label: Text(rows == 0 ? 'View sales' :
               'View $rows transactions')),
-          OutlinedButton.icon(onPressed: () => _importPayMongo(context),
+          OutlinedButton.icon(onPressed: () => _importSales(context),
             icon: Icon(Icons.upload_file_outlined, size: 17),
-            label: Text('Import CSV')),
+            label: Text('Import CSV / Excel')),
         ]),
       ],
     ));
@@ -1003,7 +1014,7 @@ class _BooksHomeState extends State<BooksHome> {
       Text('Net deposits by payment platform',
         style: TextStyle(color: HyperionColors.muted, fontSize: 11.5)),
       SizedBox(height: 18),
-      _sourceBar('PayMongo', paymongo, report.netPayouts, HyperionColors.accent),
+      _sourceBar('Payment processors', paymongo, report.netPayouts, HyperionColors.accent),
       SizedBox(height: 16),
       _sourceBar('Google Play', play, report.netPayouts, HyperionColors.chartBlue),
       Divider(height: 28, color: HyperionColors.border),
@@ -1059,7 +1070,7 @@ class _BooksHomeState extends State<BooksHome> {
         OutlinedButton.icon(onPressed: () => _edit(context, EntryKind.expense),
           icon: Icon(Icons.add), label: Text('Expense')),
         OutlinedButton.icon(onPressed: () => _navigate(3),
-          icon: Icon(Icons.receipt_long_outlined), label: Text('PayMongo CSV')),
+          icon: Icon(Icons.receipt_long_outlined), label: Text('Sales imports')),
         OutlinedButton.icon(onPressed: () => _importExpenses(context),
           icon: Icon(Icons.upload_file_outlined), label: Text('Import expenses CSV')),
       ]),
@@ -1111,7 +1122,7 @@ class _BooksHomeState extends State<BooksHome> {
         Text('${ctrl.workspace.masters.length} master-list items, '
           '${ctrl.workspace.reminders.length} reminders, '
           '${ctrl.entries.length} cash entries and '
-          '${ctrl.paymongoTransactions.length} imported PayMongo transactions in this browser.'),
+          '${ctrl.paymongoTransactions.length} imported sales transactions in this browser.'),
         Text(ctrl.status),
         SizedBox(height: 12),
         Text('To move records between devices, export a JSON backup here, '
@@ -1125,8 +1136,10 @@ class _BooksHomeState extends State<BooksHome> {
             icon: Icon(Icons.restore_page_outlined), label: Text('Import JSON backup')),
           OutlinedButton.icon(onPressed: () => _export(context),
             icon: Icon(Icons.file_download_outlined), label: Text('Export Excel books')),
-          OutlinedButton.icon(onPressed: () => _importPayMongo(context),
-            icon: Icon(Icons.upload_file), label: Text('Import PayMongo CSV')),
+          OutlinedButton.icon(onPressed: () => _importSales(context),
+            icon: Icon(Icons.upload_file), label: Text('Import sales CSV / Excel')),
+          OutlinedButton.icon(onPressed: () => _downloadSalesTemplate(context),
+            icon: Icon(Icons.description_outlined), label: Text('Sales CSV template')),
           OutlinedButton.icon(onPressed: () => _importExpenses(context),
             icon: Icon(Icons.upload_file_outlined), label: Text('Import expenses CSV')),
           OutlinedButton.icon(onPressed: () => _downloadExpenseTemplate(context),
