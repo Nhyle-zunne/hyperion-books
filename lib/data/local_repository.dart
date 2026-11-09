@@ -49,10 +49,56 @@ class LocalRepository {
       var added = 0;
       for (final item in transactions) {
         if (await _paymongo.record(item.id).get(txn) != null) continue;
+        // When a manual bank receipt uses the same external reference,
+        // importing the same transaction must not create a second sale.
+        final manualMatch = await _paymongo.find(txn, finder: Finder(
+          filter: Filter.equals('reference', item.id),
+        ));
+        if (manualMatch.any((row) =>
+            PayMongoTransaction.fromJson(row.value).isManual)) continue;
         await _paymongo.record(item.id).put(txn, item.toJson());
         added++;
       }
       return added;
+    });
+  }
+
+  /// Directly received sales are not payouts. Preserve their origin and
+  /// reject duplicate bank references (including references from CSV imports).
+  Future<void> saveManualSale(PayMongoTransaction sale) async {
+    if (!sale.isManual || !sale.isPayment) {
+      throw ArgumentError('Only manually received sales can be edited here.');
+    }
+    PayMongoTransaction.fromJson(sale.toJson()); // Validate all backup fields.
+    await db.transaction((txn) async {
+      final current = await _paymongo.record(sale.id).get(txn);
+      if (current != null && !PayMongoTransaction.fromJson(current).isManual) {
+        throw StateError('Imported sales cannot be edited manually.');
+      }
+      final ref = sale.reference.trim().toLowerCase();
+      if (ref.isNotEmpty) {
+        final rows = await _paymongo.find(txn);
+        for (final row in rows) {
+          if (row.key == sale.id) continue;
+          final other = PayMongoTransaction.fromJson(row.value);
+          if (other.id.toLowerCase() == ref ||
+              (other.reference.isNotEmpty &&
+               other.reference.trim().toLowerCase() == ref)) {
+            throw StateError('Reference already exists in your sales records.');
+          }
+        }
+      }
+      await _paymongo.record(sale.id).put(txn, sale.toJson());
+    });
+  }
+
+  Future<void> removeManualSale(String id) async {
+    await db.transaction((txn) async {
+      final raw = await _paymongo.record(id).get(txn);
+      if (raw == null || !PayMongoTransaction.fromJson(raw).isManual) {
+        throw StateError('Only manual sales can be deleted.');
+      }
+      await _paymongo.record(id).delete(txn);
     });
   }
 
