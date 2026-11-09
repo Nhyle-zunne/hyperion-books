@@ -4,6 +4,12 @@
 
 Personal bookkeeping for PayMongo and Google Play payouts, and expenses. **No Supabase, accounts, API tokens, or cloud database.** Hosted static app files do not contain financial entries.
 
+## Books of Accounts and Tax Filing workspace
+
+The Books tab now has four CPAlly-inspired report views with an inclusive covered-period filter, additional columns, selected-report Excel export and an offline-printable view. The **Tax Filing** navigation area includes Calendar, Monthly, Quarterly, Annual, 2307 Certificates, an invoice register, and a Books shortcut. Filing logs, manual invoice references and withholding certificate records are saved locally and included in backup and Excel export. See [Books and tax scope](docs/TAX_FILING_AND_BOOKS.md).
+
+**Important:** This is a bookkeeping and preparation tool, not an official e-filing or e-invoicing service. The date planner is manual, forms are not submitted to BIR, and all accounting and tax amounts require verification.
+
 ## Basic records to enter
 
 1. **Payout:** date (tap to select with a calendar), PayMongo or Google Play, net amount received, optional note and optional gross amount from a processor statement.
