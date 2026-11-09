@@ -368,7 +368,7 @@ class _BooksHomeState extends State<BooksHome> {
             NavigationDestination(icon: Icon(Icons.more_horiz), label: 'More'),
           ]),
         floatingActionButton: _page == 1 ? FloatingActionButton.extended(
-          backgroundColor: HyperionColors.accent, foregroundColor: Colors.white,
+          backgroundColor: HyperionColors.accent, foregroundColor: HyperionColors.onAccent,
           onPressed: () => _edit(context, _route == 'daily-expenses'
             ? EntryKind.expense : EntryKind.payout),
           icon: Icon(Icons.add),
@@ -874,7 +874,7 @@ class _BooksHomeState extends State<BooksHome> {
             Wrap(spacing: 10, runSpacing: 10, children: [
               FilledButton.icon(onPressed: () => _edit(context, EntryKind.payout),
                 style: FilledButton.styleFrom(
-                  backgroundColor: HyperionColors.accent, foregroundColor: Colors.white),
+                  backgroundColor: HyperionColors.accent, foregroundColor: HyperionColors.onAccent),
                 icon: Icon(Icons.add_circle_outline, size: 18),
                 label: Text('Add payout')),
               OutlinedButton.icon(onPressed: () => _edit(context, EntryKind.expense),
