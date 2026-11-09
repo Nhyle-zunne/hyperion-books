@@ -4,7 +4,7 @@ import 'package:hyperion_books/models/paymongo_transaction.dart';
 import 'package:hyperion_books/ui/paymongo_screen.dart';
 
 void main() {
-  testWidgets('PayMongo import activity view fits mobile and keeps sales separate',
+  testWidgets('General Sales view fits mobile and exposes imports and template',
       (tester) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(360, 760);
@@ -13,6 +13,7 @@ void main() {
       tester.view.resetDevicePixelRatio();
     });
     var imports = 0;
+    var templates = 0;
     final sample = PayMongoTransaction(
       id: 'pay_test0001', type: 'Payment', status: 'Paid',
       paymentMethod: 'qrph', occurredAt: DateTime(2026, 11, 5, 23, 12),
@@ -23,15 +24,20 @@ void main() {
       transactions: [sample],
       onImport: () => imports++,
       onExport: () {},
+      onTemplate: () => templates++,
     ))));
     await tester.pumpAndSettle();
     expect(find.text('Sales'), findsOneWidget);
     expect(find.text('Gross sales'), findsOneWidget);
     expect(find.text('Net sales after fees'), findsOneWidget);
     expect(find.text('Import Sales CSV / Excel'), findsOneWidget);
+    expect(find.textContaining('PayMongo'), findsNothing);
+    expect(find.text('Sales CSV template'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.tap(find.text('Import Sales CSV / Excel'));
     expect(imports, 1);
+    await tester.tap(find.text('Sales CSV template'));
+    expect(templates, 1);
     expect(tester.takeException(), isNull);
   });
 }
