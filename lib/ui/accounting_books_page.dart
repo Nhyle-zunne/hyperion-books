@@ -345,7 +345,7 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
                     if (widget.workspace.businessAddress.isNotEmpty)
                       widget.workspace.businessAddress,
                   ].join(' · '),
-                  style: const TextStyle(color: _subtle, fontSize: 12))),
+                  style: const TextStyle(color: _muted, fontSize: 12))),
               const SizedBox(height: 5),
               Text(table.title, style: const TextStyle(
                 color: _navy, fontWeight: FontWeight.w800, fontSize: 16)),
