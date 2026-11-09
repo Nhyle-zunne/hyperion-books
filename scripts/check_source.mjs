@@ -7,6 +7,8 @@ for (const file of [
   'lib/main.dart','lib/models/book_entry.dart','lib/models/reports.dart',
   'lib/models/business_workspace.dart','lib/models/business_analytics.dart',
   'lib/ui/business_insights_panel.dart','lib/ui/business_tools.dart',
+  'lib/ui/hyperion_sidebar.dart','lib/ui/operation_records_page.dart',
+  'lib/ui/business_reports_page.dart','lib/ui/accounting_books_page.dart',
   'lib/ui/record_search.dart','lib/services/expense_csv_service.dart',
   'test/business_workspace_test.dart','test/business_analytics_test.dart','test/expense_csv_test.dart',
   'lib/data/local_repository.dart','lib/state/books_controller.dart',
@@ -38,6 +40,14 @@ for (const name of ['Cash Receipts Journal','Cash Disbursements Journal','Genera
 }
 assert(source('lib/ui/home.dart').includes('Imported PayMongo activity'), 'PayMongo dashboard missing');
 assert(source('lib/ui/home.dart').includes('TaxFilingPage'), 'Tax Filing navigation missing');
+assert(source('lib/ui/home.dart').includes('HyperionSidebar'), 'Business sidebar missing');
+assert(source('lib/ui/accounting_books_page.dart').includes('ScrollbarOrientation.bottom'), 'Horizontal Books scrollbar missing');
+for (const route of ['tax-calendar','tax-monthly','tax-quarterly','tax-annual','tax-2307','tax-invoices','tax-books','journal','ledger','financial-reports','management-reports','aging-reports','purchase-records','business-assets','payroll','bulk-import']) {
+  assert(source('lib/ui/hyperion_sidebar.dart').includes(route), `Sidebar route missing: ${route}`);
+}
+for (const excluded of ["_item('inbox'", "_item('help'"]) {
+  assert(!source('lib/ui/hyperion_sidebar.dart').includes(excluded), 'Excluded menu item present');
+}
 for (const item of ['Calendar','Monthly','Quarterly','Annual','2307 Certificates','e-Invoicing','Books of Accounts']) {
   assert(source('lib/ui/tax_filing_page.dart').includes(item), `Missing tax section: ${item}`);
 }
