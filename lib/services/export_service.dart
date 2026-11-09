@@ -190,4 +190,48 @@ class ExportService {
       customMimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     );
   }
+  /// Exports exactly the currently selected book, period and visible columns.
+  /// Monetary cells are numeric in Excel; the HTML/Flutter UI only formats them.
+  static Future<void> exportBookTable(
+    String title, List<String> headers, List<List<String>> rows, {
+    required String period,
+    required String businessName,
+  }) async {
+    final workbook = Excel.createExcel();
+    workbook.rename('Sheet1', 'READ ME');
+    final info = workbook['READ ME'];
+    for (final note in [
+      'HYPERION BOOKS — DRAFT ACCOUNTING REPORT',
+      'Business: ${businessName.trim().isEmpty ? "Not specified" : businessName}',
+      'Book: $title',
+      'Covered period: $period',
+      'Transactions are derived from local entries and PayMongo CSV imports.',
+      'These are not BIR-registered computerized books or proof of tax filing.',
+      'The displayed ledger running balances include prior-period transactions.',
+      'Preserve invoices and bank statements; reconcile all provisional entries.',
+    ]) { info.appendRow([t(note)]); }
+    info.setColumnWidth(0, 110);
+    final monetary = {
+      'Debit', 'Credit', 'Debit balance', 'Credit balance',
+      'Gross collection', 'Fees incl. VAT', 'Processor net',
+      'Bank received', 'Cash / bank paid',
+    };
+    final reportRows = rows.map((row) => [
+      for (var i = 0; i < headers.length; i++)
+        if (monetary.contains(headers[i]) && row[i].trim().isNotEmpty)
+          amount(((double.tryParse(row[i].replaceAll('₱', '')
+             .replaceAll(',', '').trim()) ?? 0) * 100).round())
+        else t(row[i]),
+    ]);
+    addSheet(workbook, title.toUpperCase(), headers, reportRows,
+      widths: List<double>.filled(headers.length, 25));
+    final bytes = workbook.save();
+    if (bytes == null) throw StateError('Excel could not generate the workbook');
+    await FileSaver.instance.saveFile(
+      name: 'Hyperion_Books_${DateFormat('yyyyMMdd').format(DateTime.now())}_${title.replaceAll(" ", "_")}',
+      bytes: Uint8List.fromList(bytes), fileExtension: 'xlsx',
+      mimeType: MimeType.custom,
+      customMimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  }
+
 }
