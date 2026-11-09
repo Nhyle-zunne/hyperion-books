@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../theme/hyperion_theme.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../models/book_entry.dart';
@@ -8,9 +9,6 @@ import '../models/paymongo_transaction.dart';
 import '../models/tax_period_summary.dart';
 import 'accounting_books_page.dart';
 
-const _navy = Color(0xFF042353);
-const _ink = Color(0xFF112940);
-const _subtle = Color(0xFF62768D);
 final _php = NumberFormat.currency(locale: 'en_PH', symbol: '₱');
 String _pesos(int c) => _php.format(c / 100);
 
@@ -48,7 +46,7 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
     try {
       await widget.save(next);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Saved in this browser. Export a backup to protect this data.')));
       }
     } catch (error) {
@@ -93,16 +91,16 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Container(color: Colors.white, padding: const EdgeInsets.fromLTRB(18, 17, 18, 14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Tax Filing', style: TextStyle(color: _ink,
+          Text('Tax Filing', style: TextStyle(color: HyperionColors.ink,
             fontSize: 22, fontWeight: FontWeight.w900)),
-          const SizedBox(height: 4),
-          const Text('Local preparation, filing logs and supporting records',
-            style: TextStyle(color: _subtle, fontSize: 12)),
-          const SizedBox(height: 14),
+          SizedBox(height: 4),
+          Text('Local preparation, filing logs and supporting records',
+            style: TextStyle(color: HyperionColors.muted, fontSize: 12)),
+          SizedBox(height: 14),
           SingleChildScrollView(scrollDirection: Axis.horizontal,
             child: Row(children: [
               for (var i = 0; i < sections.length; i++) ...[
-                _choice(i), const SizedBox(width: 7),
+                _choice(i), SizedBox(width: 7),
               ],
             ])),
         ])),
@@ -121,18 +119,18 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
   Widget _choice(int i) => OutlinedButton(
     onPressed: () => setState(() => section = i),
     style: OutlinedButton.styleFrom(
-      backgroundColor: section == i ? _navy : Colors.white,
-      foregroundColor: section == i ? Colors.white : _navy,
-      side: BorderSide(color: section == i ? _navy : const Color(0xFFDAE3ED))),
+      backgroundColor: section == i ? HyperionColors.brand : Colors.white,
+      foregroundColor: section == i ? Colors.white : HyperionColors.brand,
+      side: BorderSide(color: section == i ? HyperionColors.brand : HyperionColors.border)),
     child: Text(sections[i]));
 
   Widget _periodPicker() => Row(mainAxisSize: MainAxisSize.min, children: [
     IconButton(tooltip: 'Previous period', onPressed: () => _step(-1),
-      icon: const Icon(Icons.chevron_left)),
-    Text(periodLabel, style: const TextStyle(fontSize: 16,
-      fontWeight: FontWeight.w900, color: _navy)),
+      icon: Icon(Icons.chevron_left)),
+    Text(periodLabel, style: TextStyle(fontSize: 16,
+      fontWeight: FontWeight.w900, color: HyperionColors.brand)),
     IconButton(tooltip: 'Next period', onPressed: () => _step(1),
-      icon: const Icon(Icons.chevron_right)),
+      icon: Icon(Icons.chevron_right)),
   ]);
 
   Widget _calendar() {
@@ -148,28 +146,28 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
       !r.completed && r.dueDate.isBefore(DateTime.now())).length;
     return ListView(padding: const EdgeInsets.all(16), children: [
       _panel([
-        const Text('Tax Calendar', style: TextStyle(fontSize: 19,
-          color: _ink, fontWeight: FontWeight.w900)),
-        const Text('Only dates you enter appear here; no filing deadline is inferred.',
-          style: TextStyle(color: _subtle, fontSize: 12)),
+        Text('Tax Calendar', style: TextStyle(fontSize: 19,
+          color: HyperionColors.ink, fontWeight: FontWeight.w900)),
+        Text('Only dates you enter appear here; no filing deadline is inferred.',
+          style: TextStyle(color: HyperionColors.muted, fontSize: 12)),
         _periodPicker(),
         Wrap(spacing: 8, children: [
           FilledButton.icon(onPressed: busy ? null : () => _editReminder(),
-            icon: const Icon(Icons.add), label: const Text('Add reminder')),
+            icon: Icon(Icons.add), label: Text('Add reminder')),
           OutlinedButton.icon(onPressed: busy ? null :
             () => _editTax('Filing', proposedPeriod: periodKey),
-            icon: const Icon(Icons.description_outlined),
-            label: const Text('Record filing')),
+            icon: Icon(Icons.description_outlined),
+            label: Text('Record filing')),
         ]),
       ]),
-      const SizedBox(height: 12),
+      SizedBox(height: 12),
       _panel([
         Text('${tasks.length} reminders · ${filings.length} filing logs this month',
-          style: const TextStyle(color: _ink, fontWeight: FontWeight.w800)),
+          style: TextStyle(color: HyperionColors.ink, fontWeight: FontWeight.w800)),
         if (lateTasks > 0) Text('$lateTasks open reminders are past their manually selected dates.',
-          style: const TextStyle(fontSize: 12, color: Color(0xFF9B5939))),
+          style: TextStyle(fontSize: 12, color: HyperionColors.warning)),
         if (tasks.isEmpty && filings.isEmpty)
-          const Padding(padding: EdgeInsets.all(18),
+          Padding(padding: EdgeInsets.all(18),
             child: Text('No items recorded for this month.')),
         for (final task in tasks)
           ListTile(
@@ -185,13 +183,13 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
             subtitle: Text('${DateFormat('MMM d, yyyy').format(task.dueDate)} · Reminder'),
             trailing: IconButton(tooltip: 'Edit reminder',
               onPressed: () => _editReminder(task),
-              icon: const Icon(Icons.edit_outlined))),
+              icon: Icon(Icons.edit_outlined))),
         for (final filing in filings) _taxTile(filing),
       ]),
-      const SizedBox(height: 12),
-      const Text('Manual calendar only. Filing dates, holiday extensions, '
+      SizedBox(height: 12),
+      Text('Manual calendar only. Filing dates, holiday extensions, '
         'registration obligations and actual BIR acceptance must be checked '
-        'outside this app.', style: TextStyle(color: _subtle, fontSize: 12)),
+        'outside this app.', style: TextStyle(color: HyperionColors.muted, fontSize: 12)),
     ]);
   }
 
@@ -208,66 +206,66 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
     return ListView(padding: const EdgeInsets.all(16), children: [
       _panel([
         Text('${sections[section]} Tax Working Papers',
-          style: const TextStyle(fontSize: 19, color: _ink,
+          style: TextStyle(fontSize: 19, color: HyperionColors.ink,
             fontWeight: FontWeight.w900)),
         _periodPicker(),
         Text('Coverage: ${DateFormat('MMM d, yyyy').format(first)} – '
           '${DateFormat('MMM d, yyyy').format(last)}',
-          style: const TextStyle(color: _subtle, fontSize: 12)),
-        const SizedBox(height: 13),
+          style: TextStyle(color: HyperionColors.muted, fontSize: 12)),
+        SizedBox(height: 13),
         Wrap(spacing: 10, runSpacing: 10, children: [
           _metric('Tracked gross receipts', s.trackedReceipts),
           _metric('Processor fees', s.processorFees),
           _metric('Manual expenses', s.manualExpenses),
           _metric('Bank cash movement', s.bankMovement),
         ]),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         Text('${s.paymentCount} imported PayMongo customer payments; '
           'other receipts are provisional. PayMongo bank transfers are '
           'not counted twice.',
-          style: const TextStyle(color: _subtle, fontSize: 12)),
+          style: TextStyle(color: HyperionColors.muted, fontSize: 12)),
         if (s.adjustmentsPendingReview != 0) Text(
           'Refunds/adjustments require review: ${_pesos(s.adjustmentsPendingReview)}',
-          style: const TextStyle(color: Color(0xFF985E31), fontSize: 12)),
+          style: TextStyle(color: HyperionColors.warning, fontSize: 12)),
       ]),
-      const SizedBox(height: 12),
+      SizedBox(height: 12),
       if (eightPercent) _panel([
-        const Text('8% income tax — illustration only', style: TextStyle(
-          fontWeight: FontWeight.w900, color: _ink)),
-        const SizedBox(height: 6),
+        Text('8% income tax — illustration only', style: TextStyle(
+          fontWeight: FontWeight.w900, color: HyperionColors.ink)),
+        SizedBox(height: 6),
         Text('Year-to-date tracked receipts: ${_pesos(ytd.trackedReceipts)}'),
         Text('Illustration: 8% × max(₱0, tracked receipts − ₱250,000) = '
           '${_pesos(illustration)}'),
-        const SizedBox(height: 6),
-        const Text('This example assumes an eligible purely self-employed '
+        SizedBox(height: 6),
+        Text('This example assumes an eligible purely self-employed '
           'individual who elected the 8% method and qualifies for the '
           '₱250,000 reduction. Do not use as a filing amount. It excludes '
           'refund adjustments, tax credits, previous payments and other '
           'income and relies on provisional source records.',
-          style: TextStyle(fontSize: 12, color: _subtle)),
+          style: TextStyle(fontSize: 12, color: HyperionColors.muted)),
       ]),
-      if (eightPercent) const SizedBox(height: 12),
+      if (eightPercent) SizedBox(height: 12),
       _panel([
         Row(children: [
           Expanded(child: Text('Filing log — $periodKey',
-            style: const TextStyle(color: _ink,
+            style: TextStyle(color: HyperionColors.ink,
               fontWeight: FontWeight.w900, fontSize: 16))),
           FilledButton.icon(
             onPressed: busy ? null : () => _editTax('Filing',
               proposedPeriod: periodKey),
-            icon: const Icon(Icons.add), label: const Text('Add record')),
+            icon: Icon(Icons.add), label: Text('Add record')),
         ]),
-        const SizedBox(height: 7),
+        SizedBox(height: 7),
         if (entries.isEmpty)
-          const Text('No filing records saved for this period.',
-            style: TextStyle(color: _subtle)),
+          Text('No filing records saved for this period.',
+            style: TextStyle(color: HyperionColors.muted)),
         for (final record in entries) _taxTile(record),
       ]),
-      const SizedBox(height: 12),
+      SizedBox(height: 12),
       _panel([
-        const Text('Filing guide', style: TextStyle(
-          fontWeight: FontWeight.w900, color: _ink)),
-        const SizedBox(height: 7),
+        Text('Filing guide', style: TextStyle(
+          fontWeight: FontWeight.w900, color: HyperionColors.ink)),
+        SizedBox(height: 7),
         Text(section == 1
           ? 'Common monthly withholding/remittance forms include 0619-E, '
             '0619-F and 1601-C when applicable. Requirements depend on registration.'
@@ -276,13 +274,13 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
             '2551Q or 2550Q where applicable. Q4 treatment differs by tax type.'
           : 'Annual returns vary by taxpayer type (for example, 1701/1701A '
             'for eligible individuals or 1702 variants for corporations).'),
-        const SizedBox(height: 7),
-        const Text('These are references, not automatically assigned '
+        SizedBox(height: 7),
+        Text('These are references, not automatically assigned '
           'obligations. The app does not create or submit official BIR returns, '
           'verify tax credits or generate statutory .DAT attachments.',
-          style: TextStyle(fontSize: 12, color: _subtle)),
+          style: TextStyle(fontSize: 12, color: HyperionColors.muted)),
       ]),
-      const SizedBox(height: 24),
+      SizedBox(height: 24),
     ]);
   }
 
@@ -292,45 +290,45 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
     return ListView(padding: const EdgeInsets.all(16), children: [
       _panel([
         Text(kind == '2307' ? '2307 Certificates' : 'e-Invoicing',
-          style: const TextStyle(color: _ink,
+          style: TextStyle(color: HyperionColors.ink,
             fontSize: 19, fontWeight: FontWeight.w900)),
-        const SizedBox(height: 6),
+        SizedBox(height: 6),
         Text(kind == '2307'
           ? 'Track certificates received from customers or issued to vendors.'
           : 'Maintain a manual invoice reference register and draft list.',
-          style: const TextStyle(color: _subtle, fontSize: 12)),
-        const SizedBox(height: 13),
+          style: TextStyle(color: HyperionColors.muted, fontSize: 12)),
+        SizedBox(height: 13),
         FilledButton.icon(
           onPressed: busy ? null : () => _editTax(kind),
-          icon: const Icon(Icons.add), label: Text(kind == '2307'
+          icon: Icon(Icons.add), label: Text(kind == '2307'
             ? 'Add 2307 record' : 'Add invoice record')),
       ]),
-      const SizedBox(height: 12),
+      SizedBox(height: 12),
       _panel([
-        Text('${records.length} saved records', style: const TextStyle(
-          fontWeight: FontWeight.w900, color: _ink)),
-        const SizedBox(height: 8),
+        Text('${records.length} saved records', style: TextStyle(
+          fontWeight: FontWeight.w900, color: HyperionColors.ink)),
+        SizedBox(height: 8),
         if (records.isEmpty)
-          const Text('No records yet. Add an entry manually.',
-            style: TextStyle(color: _subtle)),
+          Text('No records yet. Add an entry manually.',
+            style: TextStyle(color: HyperionColors.muted)),
         for (final record in records) _taxTile(record),
       ]),
-      const SizedBox(height: 12),
+      SizedBox(height: 12),
       Text(kind == '2307'
         ? 'Records and withheld amounts are user-entered and not validated '
           'against BIR systems. Retain the actual signed 2307 documents.'
         : 'An invoice record here is NOT a BIR-authorized invoice or official '
           'electronic invoice. Hyperion Books does not issue invoice numbers '
           'on your behalf or transmit data to BIR.',
-        style: const TextStyle(color: _subtle, fontSize: 12)),
+        style: TextStyle(color: HyperionColors.muted, fontSize: 12)),
     ]);
   }
 
   Widget _taxTile(TaxRecord item) => Card(
-    color: const Color(0xFFF7F9FC), elevation: 0,
+    color: HyperionColors.elevated, elevation: 0,
     child: ListTile(
       title: Text(item.name, maxLines: 2, overflow: TextOverflow.ellipsis,
-        style: const TextStyle(color: _ink, fontWeight: FontWeight.w700)),
+        style: TextStyle(color: HyperionColors.ink, fontWeight: FontWeight.w700)),
       subtitle: Text([
         item.reference, item.period, item.direction, item.status,
         DateFormat('MMM d, yyyy').format(item.date),
@@ -338,7 +336,7 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
       trailing: PopupMenuButton<String>(onSelected: (action) {
         if (action == 'edit') { _editTax(item.kind, original: item); }
         else { _remove(item); }
-      }, itemBuilder: (_) => const [
+      }, itemBuilder: (_) => [
         PopupMenuItem(value: 'edit', child: Text('Edit')),
         PopupMenuItem(value: 'delete', child: Text('Delete')),
       ]),
@@ -347,13 +345,13 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
 
   Widget _metric(String label, int value) => Container(
     width: 205, padding: const EdgeInsets.all(13),
-    decoration: BoxDecoration(color: const Color(0xFFF3F6FB),
+    decoration: BoxDecoration(color: HyperionColors.elevated,
       borderRadius: BorderRadius.circular(12)),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(label, style: const TextStyle(color: _subtle, fontSize: 12)),
-      const SizedBox(height: 4),
-      Text(_pesos(value), style: const TextStyle(
-        fontWeight: FontWeight.w900, color: _navy, fontSize: 16)),
+      Text(label, style: TextStyle(color: HyperionColors.muted, fontSize: 12)),
+      SizedBox(height: 4),
+      Text(_pesos(value), style: TextStyle(
+        fontWeight: FontWeight.w900, color: HyperionColors.brand, fontSize: 16)),
     ]));
   Widget _panel(List<Widget> children) => Card(child: Padding(
     padding: const EdgeInsets.all(16), child: Column(
@@ -361,13 +359,13 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
 
   Future<void> _remove(TaxRecord item) async {
     final okay = await showDialog<bool>(context: context, builder: (d) =>
-      AlertDialog(title: const Text('Delete local record?'),
-        content: const Text('This removes only the Hyperion Books registry item.'),
+      AlertDialog(title: Text('Delete local record?'),
+        content: Text('This removes only the Hyperion Books registry item.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(d, false),
-            child: const Text('Cancel')),
+            child: Text('Cancel')),
           FilledButton(onPressed: () => Navigator.pop(d, true),
-            child: const Text('Delete')),
+            child: Text('Delete')),
         ]));
     if (okay == true) {
       await _save(widget.workspace.copyWith(taxRecords: [
@@ -406,64 +404,64 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
                 ? 'Invoice reference (manual)' : 'Filing reference / receipt'),
               onChanged: (v) => ref = v),
             TextFormField(initialValue: period, maxLength: 40,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Covered period (e.g. 2026-Q3)'),
               onChanged: (v) => period = v),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             OutlinedButton.icon(onPressed: () async {
               final chosen = await showDatePicker(context: d, initialDate: date,
                 firstDate: DateTime(2000), lastDate: DateTime(2100));
               if (chosen != null) refresh(() => date = chosen);
-            }, icon: const Icon(Icons.event),
+            }, icon: Icon(Icons.event),
               label: Text(DateFormat('MMM d, yyyy').format(date))),
             if (kind == 'Invoice') ...[
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               OutlinedButton.icon(onPressed: () async {
                 final chosen = await showDatePicker(context: d,
                   initialDate: dueDate ?? date, firstDate: DateTime(2000),
                   lastDate: DateTime(2100));
                 if (chosen != null) refresh(() => dueDate = chosen);
-              }, icon: const Icon(Icons.schedule_outlined),
+              }, icon: Icon(Icons.schedule_outlined),
                 label: Text(dueDate == null ? 'Set payment due date' :
                   'Due: ${DateFormat('MMM d, yyyy').format(dueDate!)}')),
               if (dueDate != null) TextButton(
                 onPressed: () => refresh(() => dueDate = null),
-                child: const Text('Clear due date')),
+                child: Text('Clear due date')),
             ],
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             TextFormField(initialValue: amount,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               decoration: InputDecoration(labelText: kind == '2307'
                 ? 'Tax withheld PHP' : kind == 'Invoice'
                 ? 'Invoice amount PHP' : 'Tax paid PHP (if known)'),
               onChanged: (v) => amount = v),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             DropdownButtonFormField<String>(
               initialValue: status, isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Manually recorded status'),
+              decoration: InputDecoration(labelText: 'Manually recorded status'),
               items: [
                 for (final s in taxRecordStatuses)
                   DropdownMenuItem(value: s, child: Text(s)),
               ], onChanged: (v) => refresh(() => status = v ?? status)),
             if (kind == '2307') ...[
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
               DropdownButtonFormField<String>(initialValue: direction,
-                decoration: const InputDecoration(labelText: 'Certificate direction'),
-                items: const [
+                decoration: InputDecoration(labelText: 'Certificate direction'),
+                items: [
                   DropdownMenuItem(value: 'Incoming', child: Text('Received from customer')),
                   DropdownMenuItem(value: 'Outgoing', child: Text('Issued to vendor')),
                 ], onChanged: (v) => refresh(() => direction = v ?? direction)),
             ],
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             TextFormField(initialValue: notes, maxLength: 1500, maxLines: 3,
-              decoration: const InputDecoration(labelText: 'Notes / source document'),
+              decoration: InputDecoration(labelText: 'Notes / source document'),
               onChanged: (v) => notes = v),
             if (errorText != null) Text(errorText!,
-              style: const TextStyle(color: Colors.red, fontSize: 12)),
+              style: TextStyle(color: Colors.red, fontSize: 12)),
           ]))),
         actions: [
           TextButton(onPressed: () => Navigator.pop(d),
-            child: const Text('Cancel')),
+            child: Text('Cancel')),
           FilledButton(onPressed: () {
             final parsed = amount.trim().isEmpty ? 0 : parsePesos(amount);
             if (name.trim().isEmpty || name.length > 180 ||
@@ -476,12 +474,12 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
               return;
             }
             Navigator.pop(d, TaxRecord(
-              id: original?.id ?? const Uuid().v4(),
+              id: original?.id ?? Uuid().v4(),
               kind: kind, name: name.trim(), reference: ref.trim(),
               date: date, dueDate: dueDate, period: period.trim(), status: status,
               direction: direction, notes: notes.trim(),
               amountCentavos: parsed));
-          }, child: const Text('Save locally')),
+          }, child: Text('Save locally')),
         ])));
     if (result == null) return;
     await _save(widget.workspace.copyWith(taxRecords: [
@@ -501,34 +499,34 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
         title: Text(original == null ? 'New reminder' : 'Edit reminder'),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
           TextFormField(initialValue: name, maxLength: 160,
-            decoration: const InputDecoration(labelText: 'Task name'),
+            decoration: InputDecoration(labelText: 'Task name'),
             onChanged: (v) => name = v),
           TextFormField(initialValue: notes, maxLength: 1000,
-            decoration: const InputDecoration(labelText: 'Notes'),
+            decoration: InputDecoration(labelText: 'Notes'),
             onChanged: (v) => notes = v),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           OutlinedButton.icon(onPressed: () async {
             final chosen = await showDatePicker(context: d, initialDate: due,
               firstDate: DateTime(2000), lastDate: DateTime(2100));
             if (chosen != null) refresh(() => due = chosen);
-          }, icon: const Icon(Icons.event),
+          }, icon: Icon(Icons.event),
             label: Text(DateFormat('MMM d, yyyy').format(due))),
           if (error != null) Text(error!,
-            style: const TextStyle(color: Colors.red)),
+            style: TextStyle(color: Colors.red)),
         ]),
         actions: [
           TextButton(onPressed: () => Navigator.pop(d),
-            child: const Text('Cancel')),
+            child: Text('Cancel')),
           FilledButton(onPressed: () {
             if (name.trim().isEmpty || name.length > 160 || notes.length > 1000) {
               refresh(() => error = 'Provide a valid task title.');
               return;
             }
             Navigator.pop(d, BusinessReminder(
-              id: original?.id ?? const Uuid().v4(),
+              id: original?.id ?? Uuid().v4(),
               title: name.trim(), notes: notes,
               dueDate: due, completed: original?.completed ?? false));
-          }, child: const Text('Save')),
+          }, child: Text('Save')),
         ])));
     if (result == null) return;
     await _save(widget.workspace.copyWith(reminders: [
