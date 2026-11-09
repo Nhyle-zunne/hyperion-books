@@ -8,18 +8,23 @@ class BusinessTools extends StatefulWidget {
   final BusinessWorkspace workspace;
   final Future<void> Function(BusinessWorkspace) save;
   final Widget backupPage;
+  final int initialTab;
+  final String initialKind;
   const BusinessTools({super.key, required this.workspace,
-    required this.save, required this.backupPage});
+    required this.save, required this.backupPage,
+    this.initialTab = 0, this.initialKind = 'Customer'});
   @override State<BusinessTools> createState() => _BusinessToolsState();
 }
 
 class _BusinessToolsState extends State<BusinessTools> {
   late final TextEditingController name, tin, address, notes;
   late String registration, tax;
-  String kind = 'Customer';
+  late String kind;
 
   @override void initState() {
     super.initState();
+    kind = businessListKinds.contains(widget.initialKind)
+      ? widget.initialKind : 'Customer';
     name = TextEditingController(text: widget.workspace.businessName);
     tin = TextEditingController(text: widget.workspace.businessTin);
     address = TextEditingController(text: widget.workspace.businessAddress);
@@ -66,7 +71,8 @@ class _BusinessToolsState extends State<BusinessTools> {
     padding: const EdgeInsets.all(18), children: content);
 
   @override Widget build(BuildContext context) => DefaultTabController(
-    length: 4, child: Column(children: [
+    length: 4, initialIndex: widget.initialTab.clamp(0, 3),
+    child: Column(children: [
       const Padding(padding: EdgeInsets.all(14), child: Align(
         alignment: Alignment.centerLeft,
         child: Text('Business tools', style: TextStyle(
