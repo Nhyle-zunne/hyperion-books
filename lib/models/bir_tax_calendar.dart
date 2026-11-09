@@ -145,7 +145,10 @@ class BirTaxCalendar {
       add('1701-MS', 'Micro/small individual annual ITR',
         BirCadence.annual, '$y', filingOpen, annualDue, 'individual',
         source: birAnnualExtension,
-        notes: 'Only eligible micro/small individual taxpayers; alternative form.',
+        notes: y == 2025
+          ? 'Only eligible micro/small individual taxpayers; alternative form. '
+            '$reason'
+          : 'Only eligible micro/small individual taxpayers; alternative form.',
         override: y == 2025);
       add('1702-RT', 'Corporate annual ITR (calendar year)',
         BirCadence.annual, '$y', filingOpen, normalAnnual, 'corporate',
