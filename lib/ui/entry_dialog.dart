@@ -3,10 +3,11 @@ import 'package:intl/intl.dart';
 import '../models/book_entry.dart';
 
 Future<BookEntry?> showEntryEditor(BuildContext context, String userId,
-    EntryKind kind, {BookEntry? initial}) {
+    EntryKind kind, {BookEntry? initial, List<String>? categories}) {
   return showDialog<BookEntry>(
     context: context,
-    builder: (context) => _EntryEditor(userId: userId, kind: kind, initial: initial),
+    builder: (context) => _EntryEditor(userId: userId, kind: kind,
+      initial: initial, categories: categories),
   );
 }
 
@@ -14,7 +15,9 @@ class _EntryEditor extends StatefulWidget {
   final String userId;
   final EntryKind kind;
   final BookEntry? initial;
-  const _EntryEditor({required this.userId, required this.kind, this.initial});
+  final List<String>? categories;
+  const _EntryEditor({required this.userId, required this.kind,
+    this.initial, this.categories});
   @override
   State<_EntryEditor> createState() => _EntryEditorState();
 }
@@ -161,8 +164,12 @@ class _EntryEditorState extends State<_EntryEditor> {
               DropdownButtonFormField<String>(
                 initialValue: _category,
                 decoration: const InputDecoration(labelText: 'Category (optional)'),
-                items: const ['General','Software','Advertising','Equipment','Bank fees','Professional services','Other']
-                  .map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                items: {
+                  ...?widget.categories,
+                  _category,
+                  'General', 'Software', 'Advertising', 'Equipment',
+                  'Bank fees', 'Professional services', 'Other',
+                }.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
                 onChanged: (v) => setState(() => _category = v ?? 'General'),
               ),
             ],
