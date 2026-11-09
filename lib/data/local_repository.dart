@@ -56,6 +56,21 @@ class LocalRepository {
     });
   }
 
+  /// Atomic expense import: never overwrites an existing entry/reference.
+  Future<int> importExpenses(List<BookEntry> expenses) =>
+      db.transaction((txn) async {
+        var added = 0;
+        for (final e in expenses) {
+          if (e.kind != EntryKind.expense) {
+            throw ArgumentError('Only expense records may be imported.');
+          }
+          if (await _records.record(e.id).get(txn) != null) continue;
+          await _records.record(e.id).put(txn, e.toLocalJson());
+          added++;
+        }
+        return added;
+      });
+
   Future<void> upsert(BookEntry entry) async {
     await _records.record(entry.id).put(db, entry.toLocalJson());
   }
