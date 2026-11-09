@@ -67,8 +67,10 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
     if (chosen == null) return;
     final other = begin ? _end : _start;
     if (other != null && (begin ? chosen.isAfter(other) : chosen.isBefore(other))) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('The beginning date must not be after the ending date.')));
+      }
       return;
     }
     setState(() { _all = false; if (begin) { _start = chosen; } else { _end = chosen; } });
@@ -203,11 +205,15 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
         ]);
     try {
       await widget.save(next);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Book review flag saved locally. Back up your records.')));
+      }
     } catch (error) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Could not save flag: $error')));
+      }
     }
   }
 
@@ -218,11 +224,15 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
       await ExportService.exportBookTable(
         table.title, table.headers, table.rows,
         period: _period, businessName: widget.workspace.businessName);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Selected book exported to Excel.')));
+      }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Excel export failed: $e')));
+      }
     } finally {
       if (mounted) setState(() => _exporting = false);
     }
