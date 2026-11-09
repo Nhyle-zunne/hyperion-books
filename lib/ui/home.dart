@@ -11,6 +11,7 @@ import '../services/expense_csv_service.dart';
 import '../services/paymongo_import_plan.dart';
 import '../state/books_controller.dart';
 import 'entry_dialog.dart';
+import 'manual_sale_dialog.dart';
 import 'paymongo_screen.dart';
 import 'business_insights_panel.dart';
 import 'business_tools.dart';
@@ -142,6 +143,42 @@ class _BooksHomeState extends State<BooksHome> {
     }
   }
 
+  Future<void> _manualSale(BuildContext context,
+      {PayMongoTransaction? initial}) async {
+    final sale = await showManualSaleEditor(context, initial: initial);
+    if (sale == null || !context.mounted) return;
+    try {
+      await HyperionLoading.whileRunning(
+        'Saving manual sale', () => widget.controller.saveManualSale(sale));
+      if (context.mounted) _message(context, 'Sale saved locally. Back up your records.');
+    } catch (error) {
+      if (context.mounted) _message(context, 'Could not save sale: $error');
+    }
+  }
+
+  Future<void> _deleteManualSale(BuildContext context,
+      PayMongoTransaction sale) async {
+    final confirmed = await showDialog<bool>(
+      context: context, builder: (dialog) => AlertDialog(
+        title: const Text('Delete manual sale?'),
+        content: const Text('This removes the sale from your reports and draft books '
+          'on this device. This cannot be undone without a backup.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialog, false),
+            child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(dialog, true),
+            child: const Text('Delete')),
+        ],
+      ));
+    if (confirmed != true || !context.mounted) return;
+    try {
+      await HyperionLoading.whileRunning(
+        'Deleting manual sale', () => widget.controller.removeManualSale(sale));
+    } catch (error) {
+      if (context.mounted) _message(context, 'Could not delete sale: $error');
+    }
+  }
+
   Future<void> _delete(BuildContext context, BookEntry entry) async {
     final confirmed = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
       title: Text('Delete entry?'),
@@ -202,6 +239,9 @@ class _BooksHomeState extends State<BooksHome> {
           onImport: () => _importSales(context),
           onExport: () => _export(context),
           onTemplate: () => _downloadSalesTemplate(context),
+          onAddManual: () => _manualSale(context),
+          onEditManual: (sale) => _manualSale(context, initial: sale),
+          onDeleteManual: (sale) => _deleteManualSale(context, sale),
         ),
         'compliance' => CompliancePage(
           workspace: ctrl.workspace,
@@ -315,7 +355,9 @@ class _BooksHomeState extends State<BooksHome> {
               tooltip: 'Quick record',
               icon: Icon(Icons.add_circle_outline),
               onSelected: (action) {
-                if (action == 'payout') {
+                if (action == 'sale') {
+                  _manualSale(context);
+                } else if (action == 'payout') {
                   _edit(context, EntryKind.payout);
                 } else if (action == 'expense') {
                   _edit(context, EntryKind.expense);
@@ -326,6 +368,7 @@ class _BooksHomeState extends State<BooksHome> {
                 }
               },
               itemBuilder: (_) => [
+                PopupMenuItem(value: 'sale', child: Text('Add manual sale')),
                 PopupMenuItem(value: 'payout', child: Text('Add bank payout')),
                 PopupMenuItem(value: 'expense', child: Text('Add expense')),
                 PopupMenuItem(value: 'csv', child: Text('Import sales CSV / Excel')),
@@ -367,7 +410,11 @@ class _BooksHomeState extends State<BooksHome> {
             NavigationDestination(icon: Icon(Icons.account_balance_outlined), label: 'Tax Filing'),
             NavigationDestination(icon: Icon(Icons.more_horiz), label: 'More'),
           ]),
-        floatingActionButton: _page == 1 ? FloatingActionButton.extended(
+        floatingActionButton: _route == 'sales' ? FloatingActionButton.extended(
+          backgroundColor: HyperionColors.accent,
+          foregroundColor: HyperionColors.onAccent,
+          onPressed: () => _manualSale(context),
+          icon: Icon(Icons.add), label: Text('Sale')) : _page == 1 ? FloatingActionButton.extended(
           backgroundColor: HyperionColors.accent, foregroundColor: HyperionColors.onAccent,
           onPressed: () => _edit(context, _route == 'daily-expenses'
             ? EntryKind.expense : EntryKind.payout),
@@ -660,6 +707,9 @@ class _BooksHomeState extends State<BooksHome> {
     final play = selected.payouts.where((e) => e.platform == 'Google Play')
       .fold<int>(0, (sum, e) => sum + e.amountCentavos);
     final deductions = selected.payouts.fold<int>(0, (sum, e) => sum + e.deductionCentavos);
+    final directReceipts = importedInPeriod.where(
+      (t) => t.isManual && t.isPayment).fold<int>(
+        0, (sum, t) => sum + t.netCentavos);
     return LayoutBuilder(builder: (context, constraints) {
       // The expanded 250px business sidebar reduces the available content width.
       // Stack dashboard panels until the content area itself is comfortably wide.
@@ -695,8 +745,9 @@ class _BooksHomeState extends State<BooksHome> {
           Text('Bank and cash movements', style: TextStyle(
             color: HyperionColors.ink, fontWeight: FontWeight.w800, fontSize: 17)),
           SizedBox(height: 6),
-          Text('These totals come from manually entered bank payouts and expenses, '
-            'not from imported customer payments.', style: TextStyle(
+          Text('Cash movement includes separately recorded payouts, direct manual '
+            'bank/cash sales and expenses. Imported processor collections '
+            'are not additional bank deposits.', style: TextStyle(
               fontSize: 12, color: HyperionColors.muted)),
           SizedBox(height: 13),
           LayoutBuilder(builder: (context, size) {
@@ -710,8 +761,8 @@ class _BooksHomeState extends State<BooksHome> {
               SizedBox(width: cardWidth, child: _statCard('Expenses paid', php(selected.totalExpenses),
                 '${selected.expenses.length} recorded expenses',
                 Icons.north_east, HyperionColors.danger)),
-              SizedBox(width: cardWidth, child: _statCard('Net cash movement', php(selected.netCashMovement),
-                'Manual bank payouts minus expenses',
+              SizedBox(width: cardWidth, child: _statCard('Net cash movement', php(selected.netCashMovement + directReceipts),
+                'Payouts + direct sales − expenses',
                 Icons.account_balance_wallet_outlined, HyperionColors.ink)),
             ]);
           }),
@@ -763,14 +814,14 @@ class _BooksHomeState extends State<BooksHome> {
               Text('Sales activity', style: TextStyle(
                 fontSize: 17, fontWeight: FontWeight.w800, color: HyperionColors.ink)),
               SizedBox(height: 3),
-              Text('Customer collections, fees and adjustments — not bank deposits',
+              Text('Imported collections and directly received sales',
                 style: TextStyle(fontSize: 11.5, color: HyperionColors.muted)),
             ],
           )),
         ]),
         SizedBox(height: 15),
         if (rows == 0) ...[
-          Text('No sales in this period. Import a CSV or Excel file to get started.',
+          Text('No sales in this period. Add a sale manually or import a CSV / Excel file.',
             style: TextStyle(fontSize: 12.5, color: HyperionColors.muted)),
           SizedBox(height: 9),
         ] else ...[
@@ -788,7 +839,7 @@ class _BooksHomeState extends State<BooksHome> {
                 'VAT portion: ${php(totals.paymentVatCentavos)}')),
               SizedBox(width: width, child: _activityKpi(
                 'Net customer payments', php(totals.netPaymentsCentavos),
-                'Before bank transfers')),
+                'Imported settlements or direct receipts')),
               SizedBox(width: width, child: _activityKpi(
                 'Adjustments / refunds', php(totals.adjustmentsNetCentavos),
                 '${totals.adjustments} review items')),
@@ -801,6 +852,8 @@ class _BooksHomeState extends State<BooksHome> {
             icon: Icon(Icons.visibility_outlined, size: 18),
             label: Text(rows == 0 ? 'View sales' :
               'View $rows transactions')),
+          FilledButton.icon(onPressed: () => _manualSale(context),
+            icon: Icon(Icons.add, size: 17), label: Text('Add manual sale')),
           OutlinedButton.icon(onPressed: () => _importSales(context),
             icon: Icon(Icons.upload_file_outlined, size: 17),
             label: Text('Import CSV / Excel')),
