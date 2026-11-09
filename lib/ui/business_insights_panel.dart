@@ -6,10 +6,10 @@ import '../models/book_entry.dart';
 import '../models/paymongo_transaction.dart';
 import '../models/business_analytics.dart';
 
-const navy = HyperionColors.ink;
-const green = HyperionColors.accent;
-const coral = HyperionColors.danger;
-const muted = HyperionColors.muted;
+Color get navy => HyperionColors.ink;
+Color get green => HyperionColors.accent;
+Color get coral => HyperionColors.danger;
+Color get muted => HyperionColors.muted;
 final currency = NumberFormat.currency(locale: 'en_PH', symbol: '₱', decimalDigits: 2);
 String pesos(int c) => currency.format(c / 100);
 
