@@ -65,8 +65,10 @@ class _ManualSaleEditorState extends State<_ManualSaleEditor> {
     final result = await showDatePicker(context: context,
       initialDate: _date, firstDate: DateTime(2020),
       lastDate: DateTime(2100), helpText: 'Date payment was received');
-    if (result != null) setState(() => _date = DateTime(result.year,
-      result.month, result.day, _date.hour, _date.minute));
+    if (result != null) {
+      setState(() => _date = DateTime(result.year,
+        result.month, result.day, _date.hour, _date.minute));
+    }
   }
 
   void _save() {
