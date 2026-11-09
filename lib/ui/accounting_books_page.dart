@@ -120,6 +120,10 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
                 detail('Product / service', transaction.description),
               if (transaction.isManual && transaction.depositAccount.isNotEmpty)
                 detail('Received into', transaction.depositAccount),
+              if (transaction.isManual && transaction.customer.isNotEmpty)
+                detail('Customer', transaction.customer),
+              if (transaction.isManual && transaction.notes.isNotEmpty)
+                detail('Notes', transaction.notes),
               detail('Date/time', DateFormat('MMM d, yyyy, h:mm a').format(transaction.occurredAt)),
               detail('Type', transaction.type),
               detail('Status', transaction.status),
