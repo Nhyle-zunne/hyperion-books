@@ -15,6 +15,7 @@ import 'paymongo_screen.dart';
 import 'business_insights_panel.dart';
 import 'business_tools.dart';
 import 'accounting_books_page.dart';
+import 'tax_filing_page.dart';
 import 'record_search.dart';
 import 'hyperion_loading.dart';
 
@@ -40,7 +41,7 @@ class _BooksHomeState extends State<BooksHome> {
     if (_page == page) return;
     setState(() => _page = page);
     HyperionLoading.pageTransition(
-      const ['Loading overview', 'Loading entries', 'Loading books', 'Loading PayMongo activity', 'Loading settings'][page],
+      const ['Loading overview', 'Loading entries', 'Loading books', 'Loading PayMongo activity', 'Loading settings', 'Loading tax filing'][page],
     );
   }
 
@@ -99,7 +100,7 @@ class _BooksHomeState extends State<BooksHome> {
           padding: const EdgeInsets.all(25), child: Text(ctrl.status, textAlign: TextAlign.center))));
       }
       final isWide = MediaQuery.sizeOf(context).width >= 850;
-      final title = const ['Overview', 'Transactions', 'Books & reports', 'PayMongo activity', 'Business tools'][_page];
+      final title = const ['Overview', 'Transactions', 'Books & reports', 'PayMongo activity', 'Business tools', 'Tax Filing'][_page];
       final body = switch (_page) {
         0 => _overview(context),
         1 => _transactions(context),
@@ -108,6 +109,12 @@ class _BooksHomeState extends State<BooksHome> {
           transactions: ctrl.paymongoTransactions,
           onImport: () => _importPayMongo(context),
           onExport: () => _export(context),
+        ),
+        5 => TaxFilingPage(
+          entries: ctrl.entries,
+          transactions: ctrl.paymongoTransactions,
+          workspace: ctrl.workspace,
+          save: ctrl.saveWorkspace,
         ),
         _ => BusinessTools(
           workspace: ctrl.workspace,
@@ -206,6 +213,8 @@ class _BooksHomeState extends State<BooksHome> {
                 selectedIcon: Icon(Icons.receipt_long), label: Text('PayMongo')),
               NavigationRailDestination(icon: Icon(Icons.business_center_outlined),
                 selectedIcon: Icon(Icons.business_center), label: Text('Tools')),
+              NavigationRailDestination(icon: Icon(Icons.account_balance_outlined),
+                selectedIcon: Icon(Icons.account_balance), label: Text('Tax Filing')),
             ],
           ),
           Expanded(child: Center(child: ConstrainedBox(
@@ -215,13 +224,20 @@ class _BooksHomeState extends State<BooksHome> {
         ]),
         bottomNavigationBar: isWide ? null : NavigationBar(
           labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
-          selectedIndex: _page, onDestinationSelected: _navigate,
+          selectedIndex: _page == 5 ? 3 : (_page == 3 || _page == 4 ? 4 : _page),
+          onDestinationSelected: (index) {
+            if (index == 4) {
+              _openMore(context);
+            } else {
+              _navigate(index == 3 ? 5 : index);
+            }
+          },
           destinations: const [
             NavigationDestination(icon: Icon(Icons.dashboard_outlined), label: 'Home'),
             NavigationDestination(icon: Icon(Icons.swap_vert), label: 'Entries'),
             NavigationDestination(icon: Icon(Icons.menu_book_outlined), label: 'Books'),
-            NavigationDestination(icon: Icon(Icons.receipt_long_outlined), label: 'PayMongo'),
-            NavigationDestination(icon: Icon(Icons.business_center_outlined), label: 'Tools'),
+            NavigationDestination(icon: Icon(Icons.account_balance_outlined), label: 'Tax Filing'),
+            NavigationDestination(icon: Icon(Icons.more_horiz), label: 'More'),
           ]),
         floatingActionButton: _page == 1 ? FloatingActionButton.extended(
           backgroundColor: _green, foregroundColor: Colors.white,
@@ -229,6 +245,22 @@ class _BooksHomeState extends State<BooksHome> {
           icon: const Icon(Icons.add), label: const Text('Payout')) : null,
       );
     });
+  }
+
+  void _openMore(BuildContext context) {
+    showModalBottomSheet<void>(context: context,
+      builder: (sheet) => SafeArea(child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const ListTile(title: Text('More', style: TextStyle(
+            fontWeight: FontWeight.w900, fontSize: 18))),
+          ListTile(leading: const Icon(Icons.receipt_long_outlined),
+            title: const Text('PayMongo Activity'),
+            onTap: () { Navigator.pop(sheet); _navigate(3); }),
+          ListTile(leading: const Icon(Icons.business_center_outlined),
+            title: const Text('Business Tools and Backups'),
+            onTap: () { Navigator.pop(sheet); _navigate(4); }),
+        ]))));
   }
 
   Future<void> _searchRecords(BuildContext context) =>
