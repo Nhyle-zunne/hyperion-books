@@ -24,8 +24,8 @@ jobs:
           cache: true
       - run: flutter pub get
       - run: flutter analyze
-      - run: flutter test test/backup_test.dart test/book_entry_test.dart test/paymongo_csv_test.dart test/paymongo_screen_test.dart
-      - run: flutter test --platform chrome test/dashboard_layout_test.dart
+      - run: flutter test test/backup_test.dart test/book_entry_test.dart test/paymongo_csv_test.dart test/paymongo_screen_test.dart test/paymongo_import_plan_test.dart
+      - run: flutter test --platform chrome test/dashboard_layout_test.dart test/paymongo_repository_web_test.dart
       - run: node scripts/test_loader.mjs
       - run: flutter build web --release --no-web-resources-cdn --base-href=/hyperion-books/
       - run: node scripts/make_sw.mjs build/web

@@ -6,6 +6,7 @@ import '../models/reports.dart';
 import '../services/export_service.dart';
 import '../services/backup_service.dart';
 import '../services/paymongo_csv_service.dart';
+import '../services/paymongo_import_plan.dart';
 import '../state/books_controller.dart';
 import 'entry_dialog.dart';
 import 'paymongo_screen.dart';
@@ -197,10 +198,22 @@ class _BooksHomeState extends State<BooksHome> {
     try {
       final preview = await PayMongoCsvService.select();
       if (preview == null || !context.mounted) return;
-      final oldIds = widget.controller.paymongoTransactions.map((t) => t.id).toSet();
-      final newRows = preview.transactions.where((t) => !oldIds.contains(t.id)).toList();
-      final duplicates = preview.transactions.length - newRows.length;
+      final plan = PayMongoImportPlan.prepare(
+        incoming: preview.transactions,
+        existing: widget.controller.paymongoTransactions,
+      );
+      final newRows = plan.newTransactions;
+      final duplicates = plan.alreadyImported;
       final totals = PayMongoTotals.fromTransactions(newRows);
+      final duplicateNotice = newRows.isEmpty
+          ? 'All successful transactions in this CSV were already imported. '
+            'No records will be changed.\n\n'
+          : '';
+      final changedNotice = plan.conflictingExisting == 0
+          ? ''
+          : '${plan.conflictingExisting} existing transaction ID(s) have different '
+            'details in this export. Their previously saved values will NOT '
+            'be overwritten.\n\n';
       final proceed = await showDialog<bool>(context: context, builder: (dialog) =>
         AlertDialog(
           title: const Text('Import PayMongo transactions?'),
@@ -209,6 +222,8 @@ class _BooksHomeState extends State<BooksHome> {
             'New adjustments/refunds: ${totals.adjustments}\n'
             'Already imported (skipped): $duplicates\n'
             'Unsuccessful / unsupported rows (skipped): ${preview.ignored}\n\n'
+            '$duplicateNotice'
+            '$changedNotice'
             'Gross new payment sales: ${php(totals.grossPaymentsCentavos)}\n'
             'PayMongo fees (including VAT): ${php(totals.paymentFeesCentavos)}\n'
             'VAT portion (already included): ${php(totals.paymentVatCentavos)}\n'
@@ -224,16 +239,19 @@ class _BooksHomeState extends State<BooksHome> {
           actions: [
             TextButton(onPressed: () => Navigator.pop(dialog, false),
               child: const Text('Cancel')),
-            FilledButton(onPressed: newRows.isEmpty ? null :
-              () => Navigator.pop(dialog, true),
-              child: Text('Import ${newRows.length} records')),
+            if (newRows.isNotEmpty)
+              FilledButton(
+                onPressed: () => Navigator.pop(dialog, true),
+                child: Text('Import ${newRows.length} new records')),
           ],
         ));
       if (proceed != true || !context.mounted) return;
       final added = await HyperionLoading.whileRunning(
         'Importing PayMongo transactions', () => widget.controller.importPayMongo(newRows));
       if (context.mounted) {
-        _message(context, 'Imported $added PayMongo transactions. Export a JSON backup.');
+        final skipped = duplicates + (newRows.length - added);
+        _message(context, 'Imported $added new PayMongo transactions; '
+          'skipped $skipped already imported. Export a JSON backup.');
       }
     } catch (error) {
       if (context.mounted) _message(context, 'PayMongo CSV import failed: $error');
