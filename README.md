@@ -2,7 +2,7 @@
 
 **Business workflow update:** CPAlly-style management insights, local master lists, search, tax-task planner, bulk expense imports and private business profiles are included. See [Business workflows](docs/BUSINESS_WORKFLOWS.md) for scope and important accounting limitations.
 
-Personal bookkeeping for PayMongo and Google Play payouts, and expenses. **No Supabase, accounts, API tokens, or cloud database.** Hosted static app files do not contain financial entries.
+Personal bookkeeping for sales, business payouts and expenses. **No Supabase, accounts, API tokens, or cloud database.** Hosted static app files do not contain financial entries.
 
 ## Books of Accounts and Tax Filing workspace
 
@@ -15,7 +15,7 @@ The Books tab now has four CPAlly-inspired report views with an inclusive covere
 1. **Payout:** date (tap to select with a calendar), PayMongo or Google Play, net amount received, optional note and optional gross amount from a processor statement.
 2. **Expense:** date (calendar), amount, description, and optional category.
 
-Other views are generated: dashboard, 7/30/90-day business trends, monthly summary, cash receipts/disbursements, general journal, general ledger, and Excel `.xlsx` reports. Amounts are stored as integer centavos. PayMongo transactions can be imported separately, as can expenses using a downloadable CSV template with stable references.
+Other views are generated: dashboard, 7/30/90-day business trends, monthly summary, cash receipts/disbursements, general journal, general ledger, and Excel `.xlsx` reports. Amounts are stored as integer centavos. Sales transactions can be imported as CSV or Excel files, and expenses through a separate CSV template with stable references.
 
 ## Where entries live
 
@@ -57,38 +57,29 @@ Processor payouts may include sales from earlier dates and differ from gross sal
 
 The browser tab, home-screen icons and startup/operation loader reuse the exact gold/navy logo assets from `hyperion-pwa`. The cube loader uses the same six faces, 2.4-second rotation, progress sweep and reduced-motion behavior. The loader is visual-only: no financial data leaves the device.
 
-## PayMongo transaction CSV import
+## Sales imports — CSV and Excel
 
-Open **PayMongo** → **Import PayMongo CSV** and select a transaction report
-from PayMongo. A preview shows new successful payments, adjustments/refunds,
-unsupported statuses and duplicates before any records are saved.
+Open **Sales** → **Import Sales CSV / Excel** to import customer sales from a business spreadsheet. The Sales page is provider-neutral. The former duplicate activity menu item has been removed. A downloadable **Sales CSV template** contains these columns:
 
-- Import records retain the exported **date and time** and are sortable newest
-  or oldest first. No timezone conversion is assumed.
-- Re-imported Transaction IDs are skipped; overlapping CSV reports do not
-  double-count. Names, emails, phone numbers and billing addresses are not saved.
-- **Transactions are not bank payouts.** Successful imported payments are now
-  included in dashboard sales activity and draft accounting working papers:
-  debit PayMongo clearing, debit fees (including VAT), credit provisional gross sales.
-  A later bank payout entered in Entries is instead a transfer from PayMongo
-  clearing to the bank, not a second sale. Refunds/adjustments require review.
-  Record actual bank transfers once in Entries → Add payout, dated when the
-  funds are received. Expenses remain manual.
-- The PayMongo Fee column includes its VAT portion; the VAT column is shown for
-  reference and is not deducted a second time.
-- JSON backups now include imported transactions. Existing v1 backups remain
-  supported; restoring a backup replaces all local cash entries and imported
-  transactions only after a confirmation prompt.
+`Reference,Date,Gross Amount,Fee,Fee VAT,Net Amount,Status,Payment Method,Type,Currency`
 
-Do not commit private transaction CSVs or financial backups into this repository.
+- **Required:** unique stable Reference, transaction Date/time and Gross Amount. Use YYYY-MM-DD HH:MM. The same reference imported again (even in a renamed or reordered file) is skipped, while changed existing records are flagged without overwriting.
+- **Optional:** fees, the VAT already included in the fee, net amount, status, payment method, transaction type and currency. Only PHP is accepted. The app calculates net when omitted and rejects mismatched gross/fee/net totals.
+- **Formats:** ordinary `.csv` or Excel `.xlsx` (up to 12 MB). Excel cells with formulas are rejected; paste values before importing. The first nonempty worksheet is used. Existing processor-specific Transactions CSV files are still supported without showing their branding in the Sales UI.
+- **Preview:** paid sales, adjustments/refunds, skipped unpaid rows, already imported references and conflicts are shown before saving. Financial imports stay local to the browser.
+- **Accounting:** imported sales create provisional source records and journal postings, not bank deposits. Record each actual bank transfer once under **Entries**. Processing-fee VAT is already included in the total fee and must not be subtracted again.
+
+Sales CSV/XLSX importing is distinct from **Export Excel books**. The full exported accounting workbook is a report, not a restorable JSON backup. To transfer your complete dataset to another device, use JSON backup/restore.
+
+Do not commit customer transaction data or financial backups to the public repository.
 
 ## Four accounting books and BIR scope
 
-The Books page and Excel export now contain separately named **Cash Receipts Journal**, **Cash Disbursements Journal**, **General Journal** and **General Ledger**, each populated from imported PayMongo customer payments and/or manual bank payouts and expenses as appropriate. They are provisional working records, **not automatically compliant or BIR-registered computerized books**. The [accounting and BIR scope](docs/ACCOUNTING_AND_BIR_SCOPE.md) documents the classification assumptions, official BIR references, and missing data that must be reconciled against invoices and bank statements before formal use.
+The Books page and Excel export contain **Cash Receipts Journal**, **Cash Disbursements Journal**, **General Journal** and **General Ledger**, populated from imported sales and manually entered bank payouts and expenses. They are provisional working records, **not automatically compliant or BIR-registered computerized books**. The [accounting and BIR scope](docs/ACCOUNTING_AND_BIR_SCOPE.md) documents the classification assumptions, official BIR references, and missing data that must be reconciled against invoices and bank statements before formal use.
 
 ## New business tools and bulk expense CSV import
 
-The **Tools** tab includes a local business profile, customer/vendor/product and expense-category master lists, a manually maintained tax and compliance task planner with date pickers, and your existing backup/export functions. The global search button finds local PayMongo, payout, expense, list and task records; the top-bar + button provides quick entry/import actions. The dashboard shows management trends, costs by category, recent sales and expenses, and bank cash movement. These are not audited financial statements or verified taxable gross sales.
+The **Tools** tab includes a local business profile, customer/vendor/product and expense-category master lists, a manually maintained tax and compliance task planner with date pickers, and your existing backup/export functions. The global search button finds local sales, payout, expense, list and task records; the top-bar + button provides quick entry/import actions. The dashboard shows management trends, costs by category, recent sales and expenses, and bank cash movement. These are not audited financial statements or verified taxable gross sales.
 
 For expenses, choose **Import expenses CSV** from Entries, Tools or Quick Record. Download the template from Tools. The CSV must have `Reference,Date,Amount,Description,Category` (Category optional). Each expense needs a unique stable Reference; reimporting the same IDs skips existing records. Different genuine expenses should have different references even when dates and amounts match. All imports happen in your browser.
 
