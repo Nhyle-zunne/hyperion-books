@@ -76,6 +76,17 @@ class BooksController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Safe, idempotent expense import keyed by the CSV's stable Reference.
+  Future<int> importExpenses(List<BookEntry> expenses) async {
+    final repo = _repository;
+    if (repo == null) throw StateError('Local storage is not available');
+    final count = await repo.importExpenses(expenses);
+    await _reload();
+    _status = 'Imported $count expenses locally. Export a JSON backup.';
+    notifyListeners();
+    return count;
+  }
+
   /// Importing transactions never creates a cash payout or an expense.
   Future<int> importPayMongo(List<PayMongoTransaction> items) async {
     final repo = _repository;
