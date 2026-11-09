@@ -52,13 +52,13 @@ class _BusinessInsightsPanelState extends State<BusinessInsightsPanel> {
         final width = (size.maxWidth - (count - 1) * gap) / count;
         return Wrap(spacing: gap, runSpacing: gap, children: [
           SizedBox(width: width, child: _kpi('Tracked receipts',
-            pesos(a.trackedReceipts), 'Imported sales + other provisional receipts', green)),
+            pesos(a.trackedReceipts), 'Imported + manual sales, other receipts', green)),
           SizedBox(width: width, child: _kpi('Indicative result',
             pesos(a.indicativeResult), 'Not audited net profit', navy)),
           SizedBox(width: width, child: _kpi('Known costs',
             pesos(a.trackedCosts), 'Processing fees + recorded expenses', coral)),
           SizedBox(width: width, child: _kpi('Bank cash movement',
-            pesos(a.cashMovement), 'Manual payouts − expenses',
+            pesos(a.cashMovement), 'Payouts + direct sales − expenses',
             HyperionColors.chartBlue)),
         ]);
       }),
@@ -91,7 +91,7 @@ class _BusinessInsightsPanelState extends State<BusinessInsightsPanel> {
       SizedBox(height: 12),
       Text('Tracked receipts are not verified taxable sales. '
         'Google Play amounts are provisional. Bank payouts do not create '
-        'additional sales. Imported processing fees include their VAT component.',
+        'additional sales. Imported processor fees include their VAT component.',
         style: TextStyle(color: muted, fontSize: 11.5, height: 1.45)),
     ]);
   }
@@ -235,7 +235,7 @@ class _BusinessInsightsPanelState extends State<BusinessInsightsPanel> {
       ]),
       if (a.recentSales.isEmpty)
         Padding(padding: EdgeInsets.symmetric(vertical: 19),
-          child: Text('No imported sales in this period.',
+          child: Text('No sales in this period.',
             style: TextStyle(fontSize: 12, color: muted))),
       for (final item in a.recentSales) ...[
         Divider(height: 1),
