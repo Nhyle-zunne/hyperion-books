@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/book_entry.dart';
+import '../models/paymongo_transaction.dart';
 import '../models/reports.dart';
 import '../services/export_service.dart';
 import '../services/backup_service.dart';
+import '../services/paymongo_csv_service.dart';
 import '../state/books_controller.dart';
 import 'entry_dialog.dart';
+import 'paymongo_screen.dart';
 import 'hyperion_loading.dart';
 
 final _peso = NumberFormat.currency(locale: 'en_PH', symbol: '₱', decimalDigits: 2);
@@ -30,7 +33,7 @@ class _BooksHomeState extends State<BooksHome> {
     if (_page == page) return;
     setState(() => _page = page);
     HyperionLoading.pageTransition(
-      const ['Loading overview', 'Loading entries', 'Loading books', 'Loading settings'][page],
+      const ['Loading overview', 'Loading entries', 'Loading books', 'Loading PayMongo activity', 'Loading settings'][page],
     );
   }
 
@@ -67,7 +70,8 @@ class _BooksHomeState extends State<BooksHome> {
   Future<void> _export(BuildContext context) async {
     try {
       await HyperionLoading.whileRunning(
-        'Exporting Excel books', () => ExportService.export(widget.controller.report));
+        'Exporting Excel books', () => ExportService.export(widget.controller.report,
+          paymongo: widget.controller.paymongoTransactions));
       if (context.mounted) _message(context, 'Excel workbook exported.');
     } catch (error) {
       if (context.mounted) _message(context, 'Excel export failed: $error');
@@ -86,11 +90,16 @@ class _BooksHomeState extends State<BooksHome> {
           padding: const EdgeInsets.all(25), child: Text(ctrl.status, textAlign: TextAlign.center))));
       }
       final isWide = MediaQuery.sizeOf(context).width >= 850;
-      final title = const ['Overview', 'Transactions', 'Books & reports', 'Settings'][_page];
+      final title = const ['Overview', 'Transactions', 'Books & reports', 'PayMongo activity', 'Settings'][_page];
       final body = switch (_page) {
         0 => _overview(context),
         1 => _transactions(context),
         2 => _books(context),
+        3 => PayMongoScreen(
+          transactions: ctrl.paymongoTransactions,
+          onImport: () => _importPayMongo(context),
+          onExport: () => _export(context),
+        ),
         _ => _settings(context),
       };
       return Scaffold(
@@ -155,6 +164,8 @@ class _BooksHomeState extends State<BooksHome> {
                 selectedIcon: Icon(Icons.swap_vert), label: Text('Entries')),
               NavigationRailDestination(icon: Icon(Icons.menu_book_outlined),
                 selectedIcon: Icon(Icons.menu_book), label: Text('Books')),
+              NavigationRailDestination(icon: Icon(Icons.receipt_long_outlined),
+                selectedIcon: Icon(Icons.receipt_long), label: Text('PayMongo')),
               NavigationRailDestination(icon: Icon(Icons.settings_outlined),
                 selectedIcon: Icon(Icons.settings), label: Text('Settings')),
             ],
@@ -165,11 +176,13 @@ class _BooksHomeState extends State<BooksHome> {
           ))),
         ]),
         bottomNavigationBar: isWide ? null : NavigationBar(
+          labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
           selectedIndex: _page, onDestinationSelected: _navigate,
           destinations: const [
             NavigationDestination(icon: Icon(Icons.dashboard_outlined), label: 'Home'),
             NavigationDestination(icon: Icon(Icons.swap_vert), label: 'Entries'),
             NavigationDestination(icon: Icon(Icons.menu_book_outlined), label: 'Books'),
+            NavigationDestination(icon: Icon(Icons.receipt_long_outlined), label: 'PayMongo'),
             NavigationDestination(icon: Icon(Icons.settings_outlined), label: 'Settings'),
           ]),
         floatingActionButton: _page == 1 ? FloatingActionButton.extended(
@@ -180,10 +193,58 @@ class _BooksHomeState extends State<BooksHome> {
     });
   }
 
+  Future<void> _importPayMongo(BuildContext context) async {
+    try {
+      final preview = await PayMongoCsvService.select();
+      if (preview == null || !context.mounted) return;
+      final oldIds = widget.controller.paymongoTransactions.map((t) => t.id).toSet();
+      final newRows = preview.transactions.where((t) => !oldIds.contains(t.id)).toList();
+      final duplicates = preview.transactions.length - newRows.length;
+      final totals = PayMongoTotals.fromTransactions(newRows);
+      final proceed = await showDialog<bool>(context: context, builder: (dialog) =>
+        AlertDialog(
+          title: const Text('Import PayMongo transactions?'),
+          content: SingleChildScrollView(child: Text(
+            'New successful payments: ${totals.payments}\n'
+            'New adjustments/refunds: ${totals.adjustments}\n'
+            'Already imported (skipped): $duplicates\n'
+            'Unsuccessful / unsupported rows (skipped): ${preview.ignored}\n\n'
+            'Gross new payment sales: ${php(totals.grossPaymentsCentavos)}\n'
+            'PayMongo fees (including VAT): ${php(totals.paymentFeesCentavos)}\n'
+            'VAT portion (already included): ${php(totals.paymentVatCentavos)}\n'
+            'Net new payment activity, including adjustments: '
+            '${php(totals.activityNetCentavos)}\n\n'
+            'Records are sorted by the exact date/time shown in the CSV. '
+            'Only transaction IDs, amounts, type, status and method are kept: '
+            'customer names/emails are not saved.\n\n'
+            'These are customer transactions, NOT bank payouts. '
+            'They will NOT be added to the cashflow or journal. '
+            'Keep entering actual bank payouts under Entries.',
+          )),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialog, false),
+              child: const Text('Cancel')),
+            FilledButton(onPressed: newRows.isEmpty ? null :
+              () => Navigator.pop(dialog, true),
+              child: Text('Import ${newRows.length} records')),
+          ],
+        ));
+      if (proceed != true || !context.mounted) return;
+      final added = await HyperionLoading.whileRunning(
+        'Importing PayMongo transactions', () => widget.controller.importPayMongo(newRows));
+      if (context.mounted) {
+        _message(context, 'Imported $added PayMongo transactions. Export a JSON backup.');
+      }
+    } catch (error) {
+      if (context.mounted) _message(context, 'PayMongo CSV import failed: $error');
+    }
+  }
+
   Future<void> _backup(BuildContext context) async {
     try {
       await HyperionLoading.whileRunning(
-        'Exporting backup', () => BackupService.export(widget.controller.entries));
+        'Exporting backup', () => BackupService.export(widget.controller.entries,
+          paymongo: widget.controller.paymongoTransactions));
       if (context.mounted) _message(context, 'JSON backup saved. Keep it somewhere safe.');
     } catch (error) {
       if (context.mounted) _message(context, 'Could not save backup: $error');
@@ -195,13 +256,16 @@ class _BooksHomeState extends State<BooksHome> {
       final incoming = await BackupService.selectAndRead();
       if (incoming == null || !context.mounted) return;
       final current = widget.controller.entries;
-      final summary = BooksReport.fromEntries(incoming);
+      final summary = BooksReport.fromEntries(incoming.entries);
       final accepted = await showDialog<bool>(context: context, builder: (dialogContext) => AlertDialog(
         title: const Text('Replace all local records?'),
-        content: Text('This JSON backup contains ${incoming.length} entries.\n'
+        content: Text('This JSON backup contains ${incoming.entries.length} payout/expense entries '
+          'and ${incoming.paymongo.length} imported PayMongo transactions.\n'
           'Payouts: ${php(summary.netPayouts)}\n'
           'Expenses: ${php(summary.totalExpenses)}\n\n'
-          'Your ${current.length} current entries on this device will be REPLACED, not merged. '
+          'Your ${current.length} current entries and '
+          '${widget.controller.paymongoTransactions.length} imported PayMongo transactions '
+          'will be REPLACED, not merged. '
           'Export a JSON backup of your current records first. '
           'This will not change other devices.'),
         actions: [
@@ -213,8 +277,12 @@ class _BooksHomeState extends State<BooksHome> {
       ));
       if (accepted != true || !context.mounted) return;
       await HyperionLoading.whileRunning(
-        'Restoring local books', () => widget.controller.restore(incoming));
-      if (context.mounted) _message(context, 'Restored ${incoming.length} entries from backup.');
+        'Restoring local books', () => widget.controller.restore(incoming.entries,
+          paymongo: incoming.paymongo));
+      if (context.mounted) {
+        _message(context, 'Restored ${incoming.entries.length} entries and '
+          '${incoming.paymongo.length} PayMongo transactions from backup.');
+      }
     } catch (error) {
       if (context.mounted) _message(context, 'Backup import failed: $error');
     }
@@ -551,6 +619,8 @@ class _BooksHomeState extends State<BooksHome> {
           onSelected: (_) => setState(() => _filter = label)),
         OutlinedButton.icon(onPressed: () => _edit(context, EntryKind.expense),
           icon: const Icon(Icons.add), label: const Text('Expense')),
+        OutlinedButton.icon(onPressed: () => _navigate(3),
+          icon: const Icon(Icons.receipt_long_outlined), label: const Text('PayMongo CSV')),
       ]),
       const SizedBox(height: 10),
       if (entries.isEmpty) const _EmptyState('No matching entries', 'Use the buttons above to add your first transaction.'),
@@ -656,7 +726,8 @@ class _BooksHomeState extends State<BooksHome> {
         crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         const Text('Private device storage', style: TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
-        Text('${ctrl.entries.length} entries saved in this browser.'),
+        Text('${ctrl.entries.length} cash entries and '
+          '${ctrl.paymongoTransactions.length} imported PayMongo transactions in this browser.'),
         Text(ctrl.status),
         const SizedBox(height: 12),
         const Text('To move records between devices, export a JSON backup here, '
@@ -670,6 +741,8 @@ class _BooksHomeState extends State<BooksHome> {
             icon: const Icon(Icons.restore_page_outlined), label: const Text('Import JSON backup')),
           OutlinedButton.icon(onPressed: () => _export(context),
             icon: const Icon(Icons.file_download_outlined), label: const Text('Export Excel books')),
+          OutlinedButton.icon(onPressed: () => _importPayMongo(context),
+            icon: const Icon(Icons.upload_file), label: const Text('Import PayMongo CSV')),
         ]),
       ]))),
       const SizedBox(height: 15),

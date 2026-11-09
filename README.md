@@ -48,3 +48,25 @@ Processor payouts may include sales from earlier dates and differ from gross sal
 ## Shared Hyperion branding
 
 The browser tab, home-screen icons and startup/operation loader reuse the exact gold/navy logo assets from `hyperion-pwa`. The cube loader uses the same six faces, 2.4-second rotation, progress sweep and reduced-motion behavior. The loader is visual-only: no financial data leaves the device.
+
+## PayMongo transaction CSV import
+
+Open **PayMongo** → **Import PayMongo CSV** and select a transaction report
+from PayMongo. A preview shows new successful payments, adjustments/refunds,
+unsupported statuses and duplicates before any records are saved.
+
+- Import records retain the exported **date and time** and are sortable newest
+  or oldest first. No timezone conversion is assumed.
+- Re-imported Transaction IDs are skipped; overlapping CSV reports do not
+  double-count. Names, emails, phone numbers and billing addresses are not saved.
+- **Transactions are not cash payouts.** They appear only in PayMongo activity
+  and the PAYMONGO TRANSACTIONS Excel sheet, not in the cash journal or net cash
+  balance. Record actual bank transfers once in Entries → Add payout, dated when
+  the funds are received. Expenses remain manual.
+- The PayMongo Fee column includes its VAT portion; the VAT column is shown for
+  reference and is not deducted a second time.
+- JSON backups now include imported transactions. Existing v1 backups remain
+  supported; restoring a backup replaces all local cash entries and imported
+  transactions only after a confirmation prompt.
+
+Do not commit private transaction CSVs or financial backups into this repository.

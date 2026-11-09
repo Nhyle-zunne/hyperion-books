@@ -3,6 +3,7 @@ import 'package:excel/excel.dart';
 import 'package:file_saver/file_saver.dart';
 import 'package:intl/intl.dart';
 import '../models/reports.dart';
+import '../models/paymongo_transaction.dart';
 
 class ExportService {
   static CellValue t(String s) => TextCellValue(s);
@@ -32,7 +33,8 @@ class ExportService {
     }
   }
 
-  static Future<void> export(BooksReport report) async {
+  static Future<void> export(BooksReport report,
+      {Iterable<PayMongoTransaction> paymongo = const []}) async {
     if (!report.journalBalanced) throw StateError('Journal does not balance. Export cancelled.');
     final book = Excel.createExcel();
     book.rename('Sheet1', 'READ ME');
@@ -46,6 +48,8 @@ class ExportService {
       'Dates are transaction/payout dates entered by the user, not verified sales dates.',
       'Deleted entries are excluded. Data remains only in this browser unless exported.',
       'Payout deductions are unclassified; do not assume every deduction is a deductible processing fee.',
+      'PAYMONGO TRANSACTIONS is imported payment activity, NOT bank transfers. It is not included in the cash journal or net payouts.',
+      'PayMongo Fee includes VAT; the VAT column is for reference and is not deducted again.',
     ]) { info.appendRow([t(line)]); }
     info.setColumnWidth(0, 110);
 
@@ -81,6 +85,21 @@ class ExportService {
       report.months.map((m) => [t(m.month),amount(m.payoutNet),amount(m.deductions),
         amount(m.receipts),amount(m.expenses),amount(m.netCashFlow)]),
       widths:[18,22,24,29,21,24]);
+    final imported = paymongo.toList()
+      ..sort((a, b) {
+        final order = a.occurredAt.compareTo(b.occurredAt);
+        return order != 0 ? order : a.id.compareTo(b.id);
+      });
+    addSheet(book, 'PAYMONGO TRANSACTIONS',
+      ['Date & time (CSV)', 'Transaction ID', 'Type', 'Status', 'Gross PHP',
+       'Fee PHP (incl VAT)', 'VAT component PHP', 'Net PHP', 'Method'],
+      imported.map((e) => [
+        t(DateFormat('yyyy-MM-dd HH:mm').format(e.occurredAt)), t(e.id),
+        t(e.type), t(e.status), amount(e.grossCentavos),
+        amount(e.feeCentavos), amount(e.vatCentavos),
+        amount(e.netCentavos), t(e.paymentMethod),
+      ]),
+      widths: [23, 41, 17, 19, 20, 22, 23, 20, 18]);
     final bytes = book.save();
     if (bytes == null) throw StateError('Excel could not generate the workbook');
     await FileSaver.instance.saveFile(
