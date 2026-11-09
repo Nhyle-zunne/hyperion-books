@@ -11,7 +11,7 @@ class HyperionSidebar extends StatelessWidget {
     required this.onSelect});
 
   @override Widget build(BuildContext context) => Material(
-    color: Colors.white,
+    color: HyperionColors.card,
     child: SizedBox(width: 250, child: Column(children: [
       Padding(padding: EdgeInsets.fromLTRB(18, 16, 12, 10),
         child: Row(children: [
@@ -68,6 +68,7 @@ class HyperionSidebar extends StatelessWidget {
         ],
       )),
       Divider(height: 1),
+      HyperionThemeToggle(showLabel: true),
       Padding(padding: EdgeInsets.all(12),
         child: Row(children: [
           Icon(Icons.cloud_off_outlined, size: 18, color: HyperionColors.brand),
