@@ -42,28 +42,28 @@ class _SearchDialogState extends State<_SearchDialog> {
     final all = <_Hit>[
       for (final e in widget.entries)
         _Hit(e.kind == EntryKind.expense ? e.description : e.platform,
-          '\${e.id} • \${e.dateKey} • \${money(e.amountCentavos)} '
-          '• \${e.category} \${e.description}',
+          '${e.id} • ${e.dateKey} • ${money(e.amountCentavos)} '
+          '• ${e.category} ${e.description}',
           e.kind == EntryKind.expense ? 'Expenses' : 'Payouts',
           widget.onEntries),
       for (final e in widget.paymongo)
-        _Hit('PayMongo \${e.type}',
-          '\${e.id} • \${DateFormat('yyyy-MM-dd HH:mm').format(e.occurredAt)}'
-          ' • \${money(e.grossCentavos)} • \${money(e.netCentavos)}'
-          ' • \${e.paymentMethod} \${e.status}',
+        _Hit('PayMongo ${e.type}',
+          '${e.id} • ${DateFormat('yyyy-MM-dd HH:mm').format(e.occurredAt)}'
+          ' • ${money(e.grossCentavos)} • ${money(e.netCentavos)}'
+          ' • ${e.paymentMethod} ${e.status}',
           'PayMongo', widget.onPayMongo),
       for (final m in widget.workspace.masters)
-        _Hit(m.name, '\${m.kind} • \${m.details}', 'Master lists',
+        _Hit(m.name, '${m.kind} • ${m.details}', 'Master lists',
           widget.onTools),
       for (final t in widget.workspace.reminders)
         _Hit(t.title,
-          'Due \${DateFormat('MMM d, yyyy').format(t.dueDate)} • \${t.notes}',
+          'Due ${DateFormat('MMM d, yyyy').format(t.dueDate)} • ${t.notes}',
           'Tax planner', widget.onTools),
     ];
     final needle = query.trim().toLowerCase();
     final filtered = all.where((x) =>
       (type == 'All' || x.type == type) &&
-      (needle.isEmpty || ('\${x.title} \${x.detail} \${x.type}')
+      (needle.isEmpty || ('${x.title} ${x.detail} ${x.type}')
         .toLowerCase().contains(needle))).take(100).toList();
     return Dialog(insetPadding: const EdgeInsets.all(12),
       child: ConstrainedBox(constraints: const BoxConstraints(
@@ -97,13 +97,13 @@ class _SearchDialogState extends State<_SearchDialog> {
               itemBuilder: (context, i) {
                 final row = filtered[i];
                 return ListTile(title: Text(row.title),
-                  subtitle: Text('\${row.type} • \${row.detail}',
+                  subtitle: Text('${row.type} • ${row.detail}',
                     maxLines: 2, overflow: TextOverflow.ellipsis),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () { Navigator.pop(context); row.open(); });
               })),
           Padding(padding: const EdgeInsets.all(9),
-            child: Text('\${filtered.length} results (max 100). '
+            child: Text('${filtered.length} results (max 100). '
               'Private local search; no uploads.',
               style: const TextStyle(fontSize: 11))),
         ]),
