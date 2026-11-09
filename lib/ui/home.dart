@@ -232,8 +232,9 @@ class _BooksHomeState extends State<BooksHome> {
       if (proceed != true || !context.mounted) return;
       final added = await HyperionLoading.whileRunning(
         'Importing PayMongo transactions', () => widget.controller.importPayMongo(newRows));
-      if (context.mounted) _message(context,
-        'Imported $added PayMongo transactions. Export a JSON backup.');
+      if (context.mounted) {
+        _message(context, 'Imported $added PayMongo transactions. Export a JSON backup.');
+      }
     } catch (error) {
       if (context.mounted) _message(context, 'PayMongo CSV import failed: $error');
     }
@@ -278,8 +279,10 @@ class _BooksHomeState extends State<BooksHome> {
       await HyperionLoading.whileRunning(
         'Restoring local books', () => widget.controller.restore(incoming.entries,
           paymongo: incoming.paymongo));
-      if (context.mounted) _message(context, 'Restored ${incoming.entries.length} entries and '
-        '${incoming.paymongo.length} PayMongo transactions from backup.');
+      if (context.mounted) {
+        _message(context, 'Restored ${incoming.entries.length} entries and '
+          '${incoming.paymongo.length} PayMongo transactions from backup.');
+      }
     } catch (error) {
       if (context.mounted) _message(context, 'Backup import failed: $error');
     }
