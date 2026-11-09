@@ -72,6 +72,7 @@ class _BooksHomeState extends State<BooksHome> {
       _route = route;
       _page = page;
       if (route == 'daily-expenses') _filter = 'Expenses';
+      if (route == 'entries') _filter = 'All';
     });
     HyperionLoading.pageTransition('Opening business workspace');
   }
@@ -368,8 +369,10 @@ class _BooksHomeState extends State<BooksHome> {
           ]),
         floatingActionButton: _page == 1 ? FloatingActionButton.extended(
           backgroundColor: _green, foregroundColor: Colors.white,
-          onPressed: () => _edit(context, EntryKind.payout),
-          icon: const Icon(Icons.add), label: const Text('Payout')) : null,
+          onPressed: () => _edit(context, _route == 'daily-expenses'
+            ? EntryKind.expense : EntryKind.payout),
+          icon: const Icon(Icons.add),
+          label: Text(_route == 'daily-expenses' ? 'Expense' : 'Payout')) : null,
       );
     });
   }
