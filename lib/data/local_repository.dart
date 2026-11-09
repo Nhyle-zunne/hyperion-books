@@ -47,16 +47,18 @@ class LocalRepository {
   Future<int> importPayMongo(List<PayMongoTransaction> transactions) async {
     return db.transaction((txn) async {
       var added = 0;
+      final existing = await _paymongo.find(txn);
+      final usedIds = existing.map((row) => row.key).toSet();
+      final manualReferences = existing
+          .map((row) => PayMongoTransaction.fromJson(row.value))
+          .where((sale) => sale.isManual && sale.reference.isNotEmpty)
+          .map((sale) => sale.reference.trim().toLowerCase())
+          .toSet();
       for (final item in transactions) {
-        if (await _paymongo.record(item.id).get(txn) != null) continue;
-        // When a manual bank receipt uses the same external reference,
-        // importing the same transaction must not create a second sale.
-        final manualMatch = await _paymongo.find(txn, finder: Finder(
-          filter: Filter.equals('reference', item.id),
-        ));
-        if (manualMatch.any((row) =>
-            PayMongoTransaction.fromJson(row.value).isManual)) continue;
+        if (usedIds.contains(item.id) ||
+            manualReferences.contains(item.id.toLowerCase())) continue;
         await _paymongo.record(item.id).put(txn, item.toJson());
+        usedIds.add(item.id);
         added++;
       }
       return added;
