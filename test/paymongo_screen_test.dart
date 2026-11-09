@@ -1,0 +1,37 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:hyperion_books/models/paymongo_transaction.dart';
+import 'package:hyperion_books/ui/paymongo_screen.dart';
+
+void main() {
+  testWidgets('PayMongo import activity view fits mobile and keeps sales separate',
+      (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(360, 760);
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    var imports = 0;
+    final sample = PayMongoTransaction(
+      id: 'pay_test0001', type: 'Payment', status: 'Paid',
+      paymentMethod: 'qrph', occurredAt: DateTime(2026, 11, 5, 23, 12),
+      grossCentavos: 5000, feeCentavos: -75,
+      vatCentavos: -8, netCentavos: 4925,
+    );
+    await tester.pumpWidget(MaterialApp(home: Scaffold(body: PayMongoScreen(
+      transactions: [sample],
+      onImport: () => imports++,
+      onExport: () {},
+    ))));
+    await tester.pumpAndSettle();
+    expect(find.text('PayMongo transactions'), findsOneWidget);
+    expect(find.text('Gross payment sales'), findsOneWidget);
+    expect(find.text('Net payments'), findsOneWidget);
+    expect(find.text('Import PayMongo CSV'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.text('Import PayMongo CSV'));
+    expect(imports, 1);
+    expect(tester.takeException(), isNull);
+  });
+}
