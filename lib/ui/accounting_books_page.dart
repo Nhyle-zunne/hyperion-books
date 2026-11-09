@@ -45,6 +45,26 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
   DateTime? _end;
   bool _all = false;
   bool _exporting = false;
+  final ScrollController _pageScroll = ScrollController();
+  final ScrollController _tableHorizontal = ScrollController();
+  final ScrollController _tableVertical = ScrollController();
+
+  @override void dispose() {
+    _pageScroll.dispose();
+    _tableHorizontal.dispose();
+    _tableVertical.dispose();
+    super.dispose();
+  }
+
+  void _scrollTable(double delta) {
+    if (!_tableHorizontal.hasClients) return;
+    final position = _tableHorizontal.position;
+    _tableHorizontal.animateTo(
+      (_tableHorizontal.offset + delta).clamp(0.0, position.maxScrollExtent),
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOutCubic);
+  }
+
 
   @override void initState() {
     super.initState();
@@ -167,30 +187,72 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
   }
 
   Future<void> _manageReference(String ref) async {
+    PayMongoTransaction? transaction;
+    BookEntry? manual;
+    for (final item in widget.transactions) {
+      if (item.id == ref) { transaction = item; break; }
+    }
+    for (final item in widget.entries) {
+      if (item.id == ref) { manual = item; break; }
+    }
     final verified = widget.workspace.verifiedReferences.contains(ref);
     final voided = widget.workspace.voidedReferences.contains(ref);
+    Widget detail(String label, String value) => Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        SizedBox(width: 120, child: Text(label, style: const TextStyle(
+          fontSize: 12, color: _muted, fontWeight: FontWeight.w600))),
+        Expanded(child: SelectableText(value,
+          style: const TextStyle(fontSize: 13))),
+      ]));
     final choice = await showDialog<String>(context: context, builder: (d) =>
       AlertDialog(
-        title: const Text('Review source reference'),
-        content: Column(mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start, children: [
-            SelectableText(ref, style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            const Text('Verification and voiding here are manual working-paper flags, '
-              'not BIR confirmation or permanent source deletion.',
-              style: TextStyle(fontSize: 12)),
-            const SizedBox(height: 8),
-            ListTile(
+        title: const Text('Source transaction details'),
+        content: SizedBox(width: 530, child: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start, children: [
+            detail('Reference', ref),
+            if (transaction != null) ...[
+              detail('Source', 'PayMongo CSV'),
+              detail('Date/time', DateFormat('MMM d, yyyy, h:mm a').format(transaction.occurredAt)),
+              detail('Type', transaction.type),
+              detail('Status', transaction.status),
+              detail('Payment method', transaction.paymentMethod),
+              detail('Gross amount', _money.format(transaction.grossCentavos / 100)),
+              detail('Fee (as exported)', _money.format(transaction.feeCentavos / 100)),
+              detail('Fee VAT component', _money.format(transaction.vatCentavos / 100)),
+              detail('Net amount', _money.format(transaction.netCentavos / 100)),
+            ] else if (manual != null) ...[
+              detail('Source', manual.kind == EntryKind.expense ?
+                'Manually entered expense' : 'Manually entered bank payout'),
+              detail('Date', _stamp(manual.date)),
+              detail('Description', manual.description.isEmpty ? '—' : manual.description),
+              detail('Platform', manual.platform),
+              detail('Category', manual.category),
+              detail('Amount', _money.format(manual.amountCentavos / 100)),
+              if (manual.grossCentavos != null)
+                detail('Reported gross', _money.format(manual.grossCentavos! / 100)),
+            ] else
+              const Text('No matching source transaction on this device.',
+                style: TextStyle(color: _muted)),
+            const Divider(height: 26),
+            const Text('Book working-paper review',
+              style: TextStyle(fontWeight: FontWeight.w800)),
+            const SizedBox(height: 4),
+            const Text('These manual flags only change draft book views. '
+              'They do not change the original CSV or establish BIR verification.',
+              style: TextStyle(fontSize: 12, color: _muted)),
+            ListTile(contentPadding: EdgeInsets.zero,
               leading: Icon(verified ? Icons.verified : Icons.verified_outlined),
               title: Text(verified ? 'Remove manual verification' : 'Mark manually verified'),
               onTap: () => Navigator.pop(d, 'verify')),
-            ListTile(
+            ListTile(contentPadding: EdgeInsets.zero,
               leading: Icon(voided ? Icons.restore : Icons.block_outlined),
-              title: Text(voided ? 'Restore to working reports' : 'Void in working reports'),
+              title: Text(voided ? 'Restore in draft reports' : 'Exclude from draft reports'),
               onTap: () => Navigator.pop(d, 'void')),
-          ]),
+          ]))),
         actions: [TextButton(onPressed: () => Navigator.pop(d),
-          child: const Text('Cancel'))]));
+          child: const Text('Close'))]));
     if (choice == null) return;
     final next = choice == 'verify'
       ? widget.workspace.copyWith(verifiedReferences: [
@@ -207,12 +269,12 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
       await widget.save(next);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Book review flag saved locally. Back up your records.')));
+          content: Text('Book review flag saved locally. Back up your records.')));
       }
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Could not save flag: $error')));
+          content: Text('Could not save flag: $error')));
       }
     }
   }
@@ -256,161 +318,231 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
   @override Widget build(BuildContext context) {
     final books = AccountingBooks.fromSources(
       widget.entries, widget.transactions);
-    final table = _table(books);
-    final narrow = MediaQuery.sizeOf(context).width < 680;
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Container(padding: const EdgeInsets.fromLTRB(18, 16, 18, 12),
-        color: Colors.white, child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Books of Accounts', style: TextStyle(
-              color: _navy, fontWeight: FontWeight.w900, fontSize: 22)),
-            const SizedBox(height: 3),
-            const Text('Journal and ledger working papers, prepared from your local records.',
-              style: TextStyle(color: _muted, fontSize: 12)),
-            const SizedBox(height: 15),
-            Wrap(spacing: 8, runSpacing: 8, children: [
-              for (var i = 0; i < 4; i++)
-                _tabButton(i, const ['Journal','Ledger',
-                  'Cash Receipt','Cash Disbursement'][i]),
-            ]),
-            const SizedBox(height: 14),
-            Wrap(spacing: 10, runSpacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center, children: [
-                FilledButton.icon(
-                  onPressed: _exporting ? null : () => _export(table),
-                  icon: const Icon(Icons.table_view_outlined, size: 18),
-                  label: const Text('Export to Excel')),
-                OutlinedButton.icon(onPressed: () => _print(table),
-                  icon: const Icon(Icons.print_outlined, size: 18),
-                  label: const Text('Print Report')),
-              ]),
-          ])),
-      Expanded(child: ListView(padding: const EdgeInsets.all(16),
-        children: [
-          Card(child: Padding(padding: const EdgeInsets.all(15),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Covered Period', style: TextStyle(
-                fontWeight: FontWeight.w800, color: _navy)),
-              const SizedBox(height: 9),
-              Wrap(spacing: 9, runSpacing: 9,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: () => _pick(true),
-                    icon: const Icon(Icons.event, size: 18),
-                    label: Text(_start == null ? 'Begin date' : _stamp(_start!))),
-                  const Text('to', style: TextStyle(color: _muted)),
-                  OutlinedButton.icon(
-                    onPressed: () => _pick(false),
-                    icon: const Icon(Icons.event, size: 18),
-                    label: Text(_end == null ? 'End date' : _stamp(_end!))),
-                  TextButton(onPressed: () => setState(() => _all = !_all),
-                    child: Text(_all ? 'Use selected dates' : 'All dates')),
-                ]),
-              const SizedBox(height: 8),
-              CheckboxListTile(
-                dense: true, contentPadding: EdgeInsets.zero,
-                controlAffinity: ListTileControlAffinity.leading,
-                title: const Text('Show optional columns'),
-                value: _optional,
-                onChanged: (v) => setState(() => _optional = v ?? false)),
-              CheckboxListTile(
-                dense: true, contentPadding: EdgeInsets.zero,
-                controlAffinity: ListTileControlAffinity.leading,
-                title: const Text('Include voided entries'),
-                subtitle: const Text('Includes references manually marked void in draft reports.'),
-                value: _includeVoided,
-                onChanged: (v) => setState(() => _includeVoided = v ?? false)),
-              CheckboxListTile(
-                dense: true, contentPadding: EdgeInsets.zero,
-                controlAffinity: ListTileControlAffinity.leading,
-                title: const Text('Include unverified'),
-                subtitle: const Text('Turn off to show manually verified references only.'),
-                value: _includeUnverified,
-                onChanged: (v) => setState(() => _includeUnverified = v ?? true)),
-            ]))),
-          const SizedBox(height: 15),
-          Card(child: Padding(padding: const EdgeInsets.all(16),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(widget.workspace.businessName.trim().isEmpty ?
-                'HYPERION BOOKS' : widget.workspace.businessName.trim(),
-                style: const TextStyle(color: _navy,
-                  fontWeight: FontWeight.w900, fontSize: 17)),
-              if (widget.workspace.businessTin.isNotEmpty ||
-                  widget.workspace.businessAddress.isNotEmpty)
-                Padding(padding: const EdgeInsets.only(top: 5), child: Text(
-                  [
-                    if (widget.workspace.businessTin.isNotEmpty)
-                      'TIN ${widget.workspace.businessTin}',
-                    if (widget.workspace.businessAddress.isNotEmpty)
-                      widget.workspace.businessAddress,
-                  ].join(' · '),
-                  style: const TextStyle(color: _muted, fontSize: 12))),
-              const SizedBox(height: 5),
-              Text(table.title, style: const TextStyle(
-                color: _navy, fontWeight: FontWeight.w800, fontSize: 16)),
-              const SizedBox(height: 3),
-              Text('For the period $_period', style: const TextStyle(
-                color: _muted, fontSize: 12)),
-              const SizedBox(height: 14),
-              if (table.rows.isEmpty)
-                const Padding(padding: EdgeInsets.symmetric(vertical: 35),
-                  child: Center(child: Text(
-                    'No entries for this period. Select All dates or import transactions.',
-                    textAlign: TextAlign.center)))
-              else
-                SingleChildScrollView(scrollDirection: Axis.horizontal,
-                  child: DataTable(
-                    headingRowColor: WidgetStateProperty.all(
-                      const Color(0xFFF0F4F9)),
-                    headingTextStyle: const TextStyle(
-                      color: _navy, fontWeight: FontWeight.w900),
-                    columnSpacing: narrow ? 16 : 24,
-                    columns: [
-                      for (final label in table.headers)
-                        DataColumn(label: Text(label)),
-                    ],
-                    rows: [
-                      for (final row in table.rows)
-                        DataRow(cells: [
-                          for (var index = 0; index < row.length; index++)
-                            DataCell(ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 250),
-                              child: index == (_tab == 1 ? 3 : 0) &&
-                                  row[index].isNotEmpty && row[index] != 'TOTAL'
-                                ? Text(row[index], style: const TextStyle(
-                                    fontSize: 12, color: _navy,
-                                    decoration: TextDecoration.underline))
-                                : SelectableText(row[index],
-                                    style: const TextStyle(fontSize: 12))),
-                              onTap: index == (_tab == 1 ? 3 : 0) &&
-                                  row[index].isNotEmpty && row[index] != 'TOTAL'
-                                ? () => _manageReference(row[index]) : null),
-                        ]),
-                    ],
-                  )),
-            ]))),
-          const SizedBox(height: 13),
-          if (books.warnings.isNotEmpty)
-            Card(child: Padding(padding: const EdgeInsets.all(14),
+    final report = _table(books);
+    return LayoutBuilder(builder: (context, viewport) {
+      final narrow = viewport.maxWidth < 700;
+      final dataHeight = (viewport.maxHeight * .58).clamp(240.0, 560.0);
+      final buttonStyle = OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10));
+      return Scrollbar(
+        controller: _pageScroll, thumbVisibility: true,
+        child: ListView(controller: _pageScroll,
+          padding: EdgeInsets.symmetric(
+            horizontal: narrow ? 10 : 20, vertical: narrow ? 10 : 16),
+          children: [
+            // All controls live in the SAME vertical scroll flow as the report:
+            // no fixed header can cover the date filter or transaction table.
+            Card(child: Padding(padding: EdgeInsets.all(narrow ? 12 : 17),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('Reconciliation notices', style: TextStyle(
-                  color: _navy, fontWeight: FontWeight.w800)),
-                const SizedBox(height: 7),
-                for (final warning in books.warnings)
-                  Padding(padding: const EdgeInsets.only(bottom: 5),
-                    child: Text('• $warning',
-                      style: const TextStyle(fontSize: 12, color: _muted))),
+                Row(children: [
+                  const Expanded(child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text('Books of Accounts', style: TextStyle(
+                        fontSize: 21, fontWeight: FontWeight.w900, color: _navy)),
+                      SizedBox(height: 3),
+                      Text('Four journals and ledgers · local working papers',
+                        style: TextStyle(fontSize: 12, color: _muted)),
+                    ])),
+                  if (!narrow) const Icon(Icons.menu_book_outlined,
+                    color: _navy, size: 26),
+                ]),
+                const SizedBox(height: 12),
+                Wrap(spacing: 7, runSpacing: 8, children: [
+                  for (var i = 0; i < 4; i++)
+                    _tabButton(i, const [
+                      'Journal', 'Ledger', 'Cash Receipt', 'Cash Disbursement'][i]),
+                ]),
+                const SizedBox(height: 10),
+                Wrap(spacing: 8, runSpacing: 8, children: [
+                  FilledButton.icon(
+                    onPressed: _exporting ? null : () => _export(report),
+                    icon: const Icon(Icons.table_view_outlined, size: 17),
+                    label: const Text('Export to Excel')),
+                  OutlinedButton.icon(
+                    onPressed: () => _print(report),
+                    icon: const Icon(Icons.print_outlined, size: 17),
+                    label: const Text('Print Report')),
+                ]),
               ]))),
-          const SizedBox(height: 6),
-          const Text('DRAFT WORKING PAPERS ONLY · Not BIR-registered computerized books. '
-            'Book verification and void flags are local working-paper annotations only; these tables do not establish invoice validity, account verification '
-            'or filing compliance. Period-filtered ledger balances include earlier '
-            'postings; reconcile against source invoices and bank statements.',
-            style: TextStyle(color: _muted, fontSize: 11)),
-          const SizedBox(height: 20),
-        ])),
-    ]);
+            const SizedBox(height: 10),
+            Card(child: Padding(padding: const EdgeInsets.all(12),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('COVERED PERIOD', style: TextStyle(
+                  fontSize: 11, letterSpacing: .7,
+                  color: _muted, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 8),
+                Wrap(spacing: 8, runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center, children: [
+                    OutlinedButton.icon(style: buttonStyle,
+                      onPressed: () => _pick(true),
+                      icon: const Icon(Icons.calendar_today_outlined, size: 15),
+                      label: Text(_start == null ? 'Start date' : _stamp(_start!))),
+                    const Text('to', style: TextStyle(color: _muted)),
+                    OutlinedButton.icon(style: buttonStyle,
+                      onPressed: () => _pick(false),
+                      icon: const Icon(Icons.calendar_today_outlined, size: 15),
+                      label: Text(_end == null ? 'End date' : _stamp(_end!))),
+                    TextButton(onPressed: () => setState(() => _all = !_all),
+                      child: Text(_all ? 'Use selected period' : 'Show all dates')),
+                  ]),
+                const SizedBox(height: 6),
+                Wrap(spacing: 8, runSpacing: 4, children: [
+                  FilterChip(label: const Text('Optional columns'),
+                    selected: _optional,
+                    onSelected: (v) => setState(() => _optional = v)),
+                  FilterChip(label: const Text('Include voided'),
+                    selected: _includeVoided,
+                    onSelected: (v) => setState(() => _includeVoided = v)),
+                  FilterChip(label: const Text('Include unverified'),
+                    selected: _includeUnverified,
+                    onSelected: (v) => setState(() => _includeUnverified = v)),
+                ]),
+              ]))),
+            const SizedBox(height: 10),
+            Card(clipBehavior: Clip.antiAlias,
+              child: Padding(padding: EdgeInsets.all(narrow ? 10 : 16),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(child: Column(children: [
+                      Text(widget.workspace.businessName.trim().isEmpty
+                        ? 'HYPERION BOOKS'
+                        : widget.workspace.businessName.trim(),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: _navy,
+                          fontWeight: FontWeight.w900, fontSize: 16)),
+                      if (widget.workspace.businessTin.isNotEmpty ||
+                          widget.workspace.businessAddress.isNotEmpty)
+                        Padding(padding: const EdgeInsets.only(top: 3),
+                          child: Text([
+                            if (widget.workspace.businessTin.isNotEmpty)
+                              'TIN ${widget.workspace.businessTin}',
+                            if (widget.workspace.businessAddress.isNotEmpty)
+                              widget.workspace.businessAddress,
+                          ].join(' · '),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: _muted, fontSize: 11))),
+                      const SizedBox(height: 9),
+                      Text(report.title, style: const TextStyle(
+                        color: _navy, fontWeight: FontWeight.w900, fontSize: 17)),
+                      const SizedBox(height: 3),
+                      Text('For the period $_period',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: _muted, fontSize: 12)),
+                      const SizedBox(height: 3),
+                      Text('${report.rows.length} visible journal/ledger lines',
+                        style: const TextStyle(color: _muted, fontSize: 11)),
+                    ])),
+                    const SizedBox(height: 13),
+                    if (report.rows.isEmpty)
+                      const Padding(padding: EdgeInsets.symmetric(vertical: 28),
+                        child: Center(child: Text(
+                          'No records in this period. Select “Show all dates” or import transactions.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: _muted))))
+                    else ...[
+                      // Keep the horizontal track visible even when there are
+                      // hundreds of rows; the report has its own vertical pane.
+                      Row(children: [
+                        const Icon(Icons.swipe, color: _muted, size: 17),
+                        const SizedBox(width: 5),
+                        const Expanded(child: Text(
+                          'Drag the bottom scrollbar or use arrows to see every column. '
+                          'Select a reference to view the complete transaction.',
+                          style: TextStyle(fontSize: 11, color: _muted))),
+                        IconButton(tooltip: 'Scroll table left',
+                          onPressed: () => _scrollTable(-320),
+                          icon: const Icon(Icons.chevron_left)),
+                        IconButton(tooltip: 'Scroll table right',
+                          onPressed: () => _scrollTable(320),
+                          icon: const Icon(Icons.chevron_right)),
+                      ]),
+                      SizedBox(height: dataHeight,
+                        child: LayoutBuilder(builder: (context, size) =>
+                          Scrollbar(
+                            controller: _tableHorizontal,
+                            thumbVisibility: true,
+                            trackVisibility: true,
+                            interactive: true,
+                            scrollbarOrientation: ScrollbarOrientation.bottom,
+                            child: SingleChildScrollView(
+                              controller: _tableHorizontal,
+                              scrollDirection: Axis.horizontal,
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(minWidth: size.maxWidth),
+                                child: Scrollbar(
+                                  controller: _tableVertical,
+                                  thumbVisibility: true,
+                                  trackVisibility: true,
+                                  interactive: true,
+                                  child: SingleChildScrollView(
+                                    controller: _tableVertical,
+                                    scrollDirection: Axis.vertical,
+                                    child: DataTable(
+                                      dataRowMinHeight: 46,
+                                      dataRowMaxHeight: 96,
+                                      headingRowColor: WidgetStateProperty.all(
+                                        const Color(0xFFF0F4F9)),
+                                      headingTextStyle: const TextStyle(
+                                        fontWeight: FontWeight.w900, color: _navy),
+                                      columnSpacing: narrow ? 16 : 25,
+                                      columns: [
+                                        for (final header in report.headers)
+                                          DataColumn(label: Text(header)),
+                                      ],
+                                      rows: [
+                                        for (final row in report.rows)
+                                          DataRow(cells: [
+                                            for (var i = 0; i < row.length; i++)
+                                              DataCell(ConstrainedBox(
+                                                constraints: BoxConstraints(
+                                                  maxWidth: i == 4 ? 380 : 260),
+                                                child: i == (_tab == 1 ? 3 : 0) &&
+                                                    row[i].isNotEmpty && row[i] != 'TOTAL'
+                                                  ? Text(row[i],
+                                                      style: const TextStyle(
+                                                        color: _navy,
+                                                        decoration: TextDecoration.underline,
+                                                        fontSize: 12))
+                                                  : SelectableText(row[i],
+                                                      style: const TextStyle(fontSize: 12))),
+                                                onTap: i == (_tab == 1 ? 3 : 0) &&
+                                                    row[i].isNotEmpty && row[i] != 'TOTAL'
+                                                  ? () => _manageReference(row[i]) : null),
+                                          ]),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        )),
+                      const SizedBox(height: 4),
+                      const Text('Horizontal and vertical report scrollbars are separate.',
+                        style: TextStyle(color: _muted, fontSize: 10)),
+                    ],
+                  ]))),
+            if (books.warnings.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Card(child: ExpansionTile(
+                title: Text('Reconciliation notices (${books.warnings.length})'),
+                children: [
+                  for (final warning in books.warnings)
+                    ListTile(dense: true, title: Text(warning,
+                      style: const TextStyle(fontSize: 12))),
+                ],
+              )),
+            ],
+            const SizedBox(height: 8),
+            const Padding(padding: EdgeInsets.all(8), child: Text(
+              'DRAFT WORKING PAPERS ONLY · Not BIR-registered computerized books. '
+              'Review and void flags affect reports only. Retain and reconcile '
+              'original invoices, PayMongo records and bank statements.',
+              style: TextStyle(color: _muted, fontSize: 11))),
+            const SizedBox(height: 20),
+          ]),
+      );
+    });
   }
 
   Widget _tabButton(int index, String label) {
