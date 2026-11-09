@@ -41,11 +41,15 @@ class _BusinessToolsState extends State<BusinessTools> {
   Future<void> persist(BusinessWorkspace next) async {
     try {
       await widget.save(next);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Saved locally. Back up your records.')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Saved locally. Back up your records.')));
+      }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Save failed: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Save failed: $e')));
+      }
     }
   }
 
@@ -158,18 +162,22 @@ class _BusinessToolsState extends State<BusinessTools> {
               child: const Text('Cancel')),
             FilledButton(onPressed: () {
               if (label.trim().isEmpty || label.length > 160 ||
-                  details.length > 500) return;
+                  details.length > 500) {
+                return;
+              }
               Navigator.pop(dialog, BusinessListItem(
                 id: original?.id ?? const Uuid().v4(), kind: type,
                 name: label.trim(), details: details.trim(),
                 priceCentavos: original?.priceCentavos));
             }, child: const Text('Save')),
           ])));
-    if (record != null) await persist(widget.workspace.copyWith(masters: [
-      for (final x in widget.workspace.masters)
-        if (x.id != record.id) x,
-      record,
-    ]));
+    if (record != null) {
+      await persist(widget.workspace.copyWith(masters: [
+        for (final x in widget.workspace.masters)
+          if (x.id != record.id) x,
+        record,
+      ]));
+    }
   }
 
   Widget planner() {
@@ -205,7 +213,7 @@ class _BusinessToolsState extends State<BusinessTools> {
             onPressed: () => persist(widget.workspace.copyWith(reminders: [
               for (final x in widget.workspace.reminders)
                 if (x.id != task.id) x,
-            ])))),
+            ]))))),
     ]);
   }
 
@@ -241,17 +249,21 @@ class _BusinessToolsState extends State<BusinessTools> {
               child: const Text('Cancel')),
             FilledButton(onPressed: () {
               if (title.trim().isEmpty || title.length > 160 ||
-                  description.length > 1000) return;
+                  description.length > 1000) {
+                return;
+              }
               Navigator.pop(dialog, BusinessReminder(
                 id: original?.id ?? const Uuid().v4(),
                 title: title.trim(), notes: description.trim(),
                 dueDate: date, completed: original?.completed ?? false));
             }, child: const Text('Save')),
           ])));
-    if (value != null) await persist(widget.workspace.copyWith(reminders: [
-      for (final x in widget.workspace.reminders)
-        if (x.id != value.id) x,
-      value,
-    ]));
+    if (value != null) {
+      await persist(widget.workspace.copyWith(reminders: [
+        for (final x in widget.workspace.reminders)
+          if (x.id != value.id) x,
+        value,
+      ]));
+    }
   }
 }
