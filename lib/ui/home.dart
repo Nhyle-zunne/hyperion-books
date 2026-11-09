@@ -306,6 +306,7 @@ class _BooksHomeState extends State<BooksHome> {
             ],
           ]),
           actions: [
+            if (isWide) HyperionThemeToggle(),
             IconButton(
               tooltip: 'Search local records',
               onPressed: () => _searchRecords(context),
@@ -803,14 +804,14 @@ class _BooksHomeState extends State<BooksHome> {
         borderRadius: BorderRadius.circular(12)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(label, style: TextStyle(fontSize: 11.5,
-          color: Color(0xFF60748A), fontWeight: FontWeight.w700)),
+          color: HyperionColors.muted, fontWeight: FontWeight.w700)),
         SizedBox(height: 7),
         FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft,
           child: Text(value, style: TextStyle(
             fontSize: 22, fontWeight: FontWeight.w900, color: HyperionColors.ink))),
         SizedBox(height: 5),
         Text(note, style: TextStyle(fontSize: 11,
-          color: Color(0xFF60748A))),
+          color: HyperionColors.muted)),
       ]),
     );
 
@@ -824,7 +825,7 @@ class _BooksHomeState extends State<BooksHome> {
 
   Widget _periodPicker(String period, List<String> available) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-    decoration: BoxDecoration(color: Colors.white,
+    decoration: BoxDecoration(color: HyperionColors.card,
       border: Border.all(color: HyperionColors.border),
       borderRadius: BorderRadius.circular(12)),
     child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -1032,7 +1033,7 @@ class _BooksHomeState extends State<BooksHome> {
 
   Widget _dashboardPanel({required Widget child}) => Container(
     width: double.infinity, padding: const EdgeInsets.all(19),
-    decoration: BoxDecoration(color: Colors.white,
+    decoration: BoxDecoration(color: HyperionColors.card,
       border: Border.all(color: HyperionColors.border),
       borderRadius: BorderRadius.circular(18),
       boxShadow: [BoxShadow(
