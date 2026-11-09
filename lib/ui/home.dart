@@ -649,7 +649,9 @@ class _BooksHomeState extends State<BooksHome> {
       .fold<int>(0, (sum, e) => sum + e.amountCentavos);
     final deductions = selected.payouts.fold<int>(0, (sum, e) => sum + e.deductionCentavos);
     return LayoutBuilder(builder: (context, constraints) {
-      final wide = constraints.maxWidth >= 930;
+      // The expanded 250px business sidebar reduces the available content width.
+      // Stack dashboard panels until the content area itself is comfortably wide.
+      final wide = constraints.maxWidth >= 1100;
       final margin = constraints.maxWidth < 520 ? 16.0 : 28.0;
       return ListView(
         key: const PageStorageKey<String>('hyperion-dashboard'),
