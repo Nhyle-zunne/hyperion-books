@@ -39,14 +39,14 @@ class LedgerPosting {
 
 class AccountingBooks {
   static const bank = '1010 Cash / bank';
-  static const clearing = '1020 PayMongo settlement clearing';
-  static const sales = '4010 PayMongo sales (provisional)';
+  static const clearing = '1020 Sales settlement clearing';
+  static const sales = '4010 Imported sales (provisional)';
   static const google = '4020 Google Play receipts (provisional)';
-  static const fees = '5010 PayMongo processing fees (VAT included)';
+  static const fees = '5010 Processing fees (VAT included)';
   static const deductions = '5090 Other platform deductions (review)';
-  static const variance = '1090 Unreconciled PayMongo difference';
-  static const adjustments = '2090 PayMongo adjustment (review)';
-  static const refunds = '4090 PayMongo refunds (review)';
+  static const variance = '1090 Unreconciled imported sale difference';
+  static const adjustments = '2090 Sales adjustment (review)';
+  static const refunds = '4090 Sales refunds (review)';
   static const unmatched = '4095 Unmatched payout receipts (review)';
 
   final List<ReceiptRecord> cashReceipts;
@@ -96,29 +96,29 @@ class AccountingBooks {
     }
 
     for (final t in imported) {
-      final memo = '${t.type} via PayMongo';
+      final memo = '${t.type} from imported sales';
       if (t.isPayment) {
-        post(t.id, t.occurredAt, clearing, memo, 'PayMongo CSV', t.netCentavos);
+        post(t.id, t.occurredAt, clearing, memo, 'Sales import', t.netCentavos);
         // PayMongo CSV Fee is negative, with its VAT portion already included.
-        post(t.id, t.occurredAt, fees, memo, 'PayMongo CSV', -t.feeCentavos);
-        post(t.id, t.occurredAt, sales, memo, 'PayMongo CSV', -t.grossCentavos);
+        post(t.id, t.occurredAt, fees, memo, 'Sales import', -t.feeCentavos);
+        post(t.id, t.occurredAt, sales, memo, 'Sales import', -t.grossCentavos);
         final diff = t.netCentavos - t.feeCentavos - t.grossCentavos;
         if (diff != 0) {
           post(t.id, t.occurredAt, variance, 'Gross/fee/net mismatch',
-              'PayMongo CSV', -diff);
+              'Sales import', -diff);
           mismatchCount++;
         }
         receipts.add(ReceiptRecord(t.id, t.occurredAt,
             'Customer payment - processor collection',
-            'PayMongo clearing (not bank)', t.grossCentavos, -t.feeCentavos,
+            'Sales clearing (not bank)', t.grossCentavos, -t.feeCentavos,
             t.netCentavos, 0, false, false));
       } else {
         adjustmentsCount++;
         // Refunds and adjustments are not assumed to be verified sales.
-        post(t.id, t.occurredAt, clearing, memo, 'PayMongo CSV', t.netCentavos);
+        post(t.id, t.occurredAt, clearing, memo, 'Sales import', t.netCentavos);
         post(t.id, t.occurredAt,
             t.type == 'Refund' ? refunds : adjustments,
-            'Pending classification - $memo', 'PayMongo CSV', -t.netCentavos);
+            'Pending classification - $memo', 'Sales import', -t.netCentavos);
       }
     }
 
@@ -176,11 +176,11 @@ class AccountingBooks {
       ledger.putIfAbsent(p.account, () => []).add(LedgerPosting(p, bal));
     }
     if (adjustmentsCount > 0) {
-      warnings.add('$adjustmentsCount PayMongo adjustments/refunds '
+      warnings.add('$adjustmentsCount imported adjustments/refunds '
           'need supporting documents and classification.');
     }
     if (mismatchCount > 0) {
-      warnings.add('$mismatchCount PayMongo transactions fail '
+      warnings.add('$mismatchCount imported sales fail '
           'gross/fee/net reconciliation.');
     }
     if (grossOverrides > 0) {
@@ -189,14 +189,14 @@ class AccountingBooks {
     }
     if (hasImported && (month == null || month == 'All time') &&
         (balances[clearing] ?? 0) < 0) {
-      warnings.add('PayMongo clearing is negative. Reconcile missing '
+      warnings.add('Sales clearing is negative. Reconcile missing '
           'transactions, opening balance, reserves and bank transfers.');
     }
     if (month != null && month != 'All time' && hasImported) {
       warnings.add('Filtered balances exclude previous periods/opening balances.');
     }
     if (hasImported) {
-      warnings.add('PayMongo CSV does not replace official invoices '
+      warnings.add('Imported sales files do not replace official invoices '
           'or bank settlement statements.');
     }
     return AccountingBooks(
