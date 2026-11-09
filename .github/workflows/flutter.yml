@@ -20,6 +20,7 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
+      - run: flutter test --platform chrome test_web/dashboard_layout_test.dart
       - name: Build Flutter Web for GitHub Pages subpath
         run: flutter build web --release --no-web-resources-cdn --base-href=/hyperion-books/
       - name: Build offline service worker
