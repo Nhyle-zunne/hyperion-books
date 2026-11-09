@@ -88,14 +88,18 @@ class BookTableData {
             : books.ledger[selected] ?? const <LedgerPosting>[];
         for (final line in records) {
           final p = line.posting;
-          if (!allowed(p.reference)) continue;
+          if (!allowed(p.reference)) {
+            continue;
+          }
           // Carry approved prior-period activity into the running balance.
           if (!allDates && start != null &&
               DateTime(p.date.year, p.date.month, p.date.day).isBefore(start)) {
             running += p.debit - p.credit;
             continue;
           }
-          if (!within(p.date)) continue;
+          if (!within(p.date)) {
+            continue;
+          }
           running += p.debit - p.credit;
           result.add([
             day(p.date), p.reference, p.particulars,
