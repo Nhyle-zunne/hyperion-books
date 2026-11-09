@@ -223,7 +223,9 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
     try {
       await ExportService.exportBookTable(
         table.title, table.headers, table.rows,
-        period: _period, businessName: widget.workspace.businessName);
+        period: _period, businessName: widget.workspace.businessName,
+        businessTin: widget.workspace.businessTin,
+        businessAddress: widget.workspace.businessAddress);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Selected book exported to Excel.')));
@@ -242,6 +244,8 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
     final opened = ReportPrinter.printTable(
       title: table.title, period: _period,
       businessName: widget.workspace.businessName,
+      businessTin: widget.workspace.businessTin,
+      businessAddress: widget.workspace.businessAddress,
       headers: table.headers, rows: table.rows);
     if (!opened && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -332,6 +336,16 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
                 'HYPERION BOOKS' : widget.workspace.businessName.trim(),
                 style: const TextStyle(color: _navy,
                   fontWeight: FontWeight.w900, fontSize: 17)),
+              if (widget.workspace.businessTin.isNotEmpty ||
+                  widget.workspace.businessAddress.isNotEmpty)
+                Padding(padding: const EdgeInsets.only(top: 5), child: Text(
+                  [
+                    if (widget.workspace.businessTin.isNotEmpty)
+                      'TIN ${widget.workspace.businessTin}',
+                    if (widget.workspace.businessAddress.isNotEmpty)
+                      widget.workspace.businessAddress,
+                  ].join(' · '),
+                  style: const TextStyle(color: _subtle, fontSize: 12))),
               const SizedBox(height: 5),
               Text(table.title, style: const TextStyle(
                 color: _navy, fontWeight: FontWeight.w800, fontSize: 16)),
