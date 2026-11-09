@@ -1,4 +1,3 @@
-import 'dart:ui' show FontFeature;
 import 'package:flutter/material.dart';
 import '../models/book_table_view.dart';
 import '../theme/hyperion_theme.dart';
