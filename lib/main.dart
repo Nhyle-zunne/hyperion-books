@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'state/books_controller.dart';
+import 'theme/hyperion_theme.dart';
 import 'ui/home.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Load the appearance before displaying the first frame.
+  await HyperionThemeController.instance.load();
   final controller = BooksController();
   await controller.start();
   runApp(HyperionBooksApp(controller: controller));
@@ -14,25 +17,15 @@ class HyperionBooksApp extends StatelessWidget {
   const HyperionBooksApp({super.key, required this.controller});
 
   @override
-  Widget build(BuildContext context) {
-    const navy = Color(0xFF042353);
-    return MaterialApp(
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: HyperionThemeController.instance,
+    builder: (context, _) => MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Hyperion Books',
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: navy,
-          brightness: Brightness.light, surface: const Color(0xFFF6F8FB)),
-        scaffoldBackgroundColor: const Color(0xFFF4F7FA),
-        appBarTheme: const AppBarTheme(backgroundColor: Colors.white,
-          foregroundColor: Color(0xFF102840)),
-        cardTheme: CardThemeData(color: Colors.white,
-          elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))),
-        inputDecorationTheme: InputDecorationTheme(
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 14)),
-      ),
+      themeMode: HyperionThemeController.instance.mode,
+      theme: HyperionColors.buildTheme(Brightness.light),
+      darkTheme: HyperionColors.buildTheme(Brightness.dark),
       home: BooksHome(controller: controller),
-    );
-  }
+    ),
+  );
 }
