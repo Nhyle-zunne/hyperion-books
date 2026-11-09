@@ -1094,13 +1094,6 @@ class _BooksHomeState extends State<BooksHome> {
     ));
   }
 
-  Widget _books(BuildContext context) => AccountingBooksPage(
-    entries: widget.controller.entries,
-    transactions: widget.controller.paymongoTransactions,
-    workspace: widget.controller.workspace,
-    save: widget.controller.saveWorkspace,
-  );
-
   Widget _settings(BuildContext context) {
     final ctrl = widget.controller;
     return ListView(padding: const EdgeInsets.all(20), children: [
