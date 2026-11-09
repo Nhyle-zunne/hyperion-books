@@ -45,13 +45,23 @@ assert(source('lib/services/sales_import_service.dart').includes('parseWorkbook'
 assert(source('lib/ui/home.dart').includes('TaxFilingPage'), 'Tax Filing navigation missing');
 assert(source('lib/ui/home.dart').includes('HyperionSidebar'), 'Business sidebar missing');
 assert(source('lib/ui/accounting_books_page.dart').includes('ScrollbarOrientation.bottom'), 'Horizontal Books scrollbar missing');
-for (const route of ['tax-calendar','tax-monthly','tax-quarterly','tax-annual','tax-2307','tax-invoices','tax-books','journal','ledger','financial-reports','management-reports','aging-reports','purchase-records','business-assets','payroll','bulk-import']) {
+for (const route of ['tax-calendar','tax-monthly','tax-quarterly','tax-annual','tax-2307','tax-invoices','books','financial-reports','management-reports','aging-reports','purchase-records','business-assets','payroll','bulk-import']) {
   assert(source('lib/ui/hyperion_sidebar.dart').includes(route), `Sidebar route missing: ${route}`);
 }
+const sidebar = source('lib/ui/hyperion_sidebar.dart');
+assert((sidebar.match(/_item\\('books', 'Books of Accounts'/g) ?? []).length === 1,
+  'Accounting must have exactly one Books of Accounts item');
+for (const duplicate of ["_item('tax-books'", "_item('journal'", "_item('ledger'"]) {
+  assert(!sidebar.includes(duplicate), 'Redundant book navigation remains: ' + duplicate);
+}
+assert(source('lib/ui/home.dart').includes("'books' || 'tax-books' || 'journal' || 'ledger'"),
+  'Canonical Books route or legacy aliases missing');
+assert(!source('lib/ui/tax_filing_page.dart').includes("'Books of Accounts'"),
+  'Tax Filing still shows duplicate Books tab');
 for (const excluded of ["_item('inbox'", "_item('help'"]) {
   assert(!source('lib/ui/hyperion_sidebar.dart').includes(excluded), 'Excluded menu item present');
 }
-for (const item of ['Calendar','Monthly','Quarterly','Annual','2307 Certificates','e-Invoicing','Books of Accounts']) {
+for (const item of ['Calendar','Monthly','Quarterly','Annual','2307 Certificates','e-Invoicing']) {
   assert(source('lib/ui/tax_filing_page.dart').includes(item), `Missing tax section: ${item}`);
 }
 for (const tab of ['BUSINESS PROFILE','MASTER LISTS','COMPLIANCE TASKS']) {
