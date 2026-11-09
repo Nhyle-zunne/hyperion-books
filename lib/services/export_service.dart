@@ -4,6 +4,7 @@ import 'package:file_saver/file_saver.dart';
 import 'package:intl/intl.dart';
 import '../models/reports.dart';
 import '../models/accounting_books.dart';
+import '../models/business_workspace.dart';
 import '../models/paymongo_transaction.dart';
 
 class ExportService {
@@ -35,7 +36,8 @@ class ExportService {
   }
 
   static Future<void> export(BooksReport report,
-      {Iterable<PayMongoTransaction> paymongo = const []}) async {
+      {Iterable<PayMongoTransaction> paymongo = const [],
+       BusinessWorkspace workspace = const BusinessWorkspace()}) async {
     if (!report.journalBalanced) {
       throw StateError('Manual journal does not balance. Export cancelled.');
     }
@@ -68,6 +70,8 @@ class ExportService {
       'The Cash Receipts Journal separates gross PayMongo collections, net processor clearing and actual bank receipts. Do not sum these distinct columns as revenue.',
       'The General Journal includes all postings consolidated; do not also post the specialized journal sheets a second time.',
       'The reports are not a substitute for a registered set of books or verified invoices, official supporting documents and tax returns.',
+      'BUSINESS PROFILE, MASTER LISTS, and COMPLIANCE TASKS are private data. Protect your exported workbook.',
+      'Compliance reminders are user-set dates and do not validate filing deadlines or produce tax returns.',
       'BIR RMC 65-2025: https://bir-cdn.bir.gov.ph/BIR/pdf/RMC%20No.%2065-2025%20Digest.pdf',
       'BIR RMC 4-2026: https://bir-cdn.bir.gov.ph/BIR/pdf/RMC%20No.%204-2026.pdf',
       'BIR RR 7-2024: https://bir-cdn.bir.gov.ph/BIR/pdf/RR%20No.%207-%202024.pdf',
@@ -158,6 +162,25 @@ class ExportService {
         amount(e.netCentavos), t(e.paymentMethod),
       ]),
       widths: [23, 41, 17, 19, 20, 22, 23, 20, 18]);
+    addSheet(book, 'BUSINESS PROFILE',
+      ['Field', 'Value'], [
+        [t('Business name'), t(workspace.businessName)],
+        [t('Registration status'), t(workspace.registrationStatus)],
+        [t('Tax method (user selected)'), t(workspace.taxStatus)],
+        [t('Private notes'), t(workspace.notes)],
+      ], widths: [34, 90]);
+    addSheet(book, 'MASTER LISTS',
+      ['List', 'Name', 'Notes', 'Reference price PHP'],
+      workspace.masters.map((item) => [
+        t(item.kind), t(item.name), t(item.details),
+        item.priceCentavos == null ? t('') : amount(item.priceCentavos!),
+      ]), widths: [23, 40, 68, 26]);
+    addSheet(book, 'COMPLIANCE TASKS',
+      ['Due date', 'Task', 'Completed', 'Notes'],
+      workspace.reminders.map((item) => [
+        dateCell(item.dueDate), t(item.title),
+        t(item.completed ? 'Yes' : 'No'), t(item.notes),
+      ]), widths: [19, 45, 20, 85]);
     final bytes = book.save();
     if (bytes == null) throw StateError('Excel could not generate the workbook');
     await FileSaver.instance.saveFile(
