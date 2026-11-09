@@ -382,6 +382,7 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
     var amount = original == null ? '' :
       (original.amountCentavos / 100).toStringAsFixed(2);
     var date = original?.date ?? DateTime.now();
+    DateTime? dueDate = original?.dueDate;
     String? errorText;
     final result = await showDialog<TaxRecord>(context: context,
       builder: (d) => StatefulBuilder(builder: (d, refresh) => AlertDialog(
@@ -409,6 +410,20 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
               if (chosen != null) refresh(() => date = chosen);
             }, icon: const Icon(Icons.event),
               label: Text(DateFormat('MMM d, yyyy').format(date))),
+            if (kind == 'Invoice') ...[
+              const SizedBox(height: 8),
+              OutlinedButton.icon(onPressed: () async {
+                final chosen = await showDatePicker(context: d,
+                  initialDate: dueDate ?? date, firstDate: DateTime(2000),
+                  lastDate: DateTime(2100));
+                if (chosen != null) refresh(() => dueDate = chosen);
+              }, icon: const Icon(Icons.schedule_outlined),
+                label: Text(dueDate == null ? 'Set payment due date' :
+                  'Due: ${DateFormat('MMM d, yyyy').format(dueDate!)}')),
+              if (dueDate != null) TextButton(
+                onPressed: () => refresh(() => dueDate = null),
+                child: const Text('Clear due date')),
+            ],
             const SizedBox(height: 8),
             TextFormField(initialValue: amount,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -457,7 +472,7 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
             Navigator.pop(d, TaxRecord(
               id: original?.id ?? const Uuid().v4(),
               kind: kind, name: name.trim(), reference: ref.trim(),
-              date: date, period: period.trim(), status: status,
+              date: date, dueDate: dueDate, period: period.trim(), status: status,
               direction: direction, notes: notes.trim(),
               amountCentavos: parsed));
           }, child: const Text('Save locally')),
