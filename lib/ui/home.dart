@@ -14,6 +14,9 @@ import 'paymongo_screen.dart';
 import 'business_insights_panel.dart';
 import 'business_tools.dart';
 import 'accounting_books_page.dart';
+import 'hyperion_sidebar.dart';
+import 'operation_records_page.dart';
+import 'business_reports_page.dart';
 import 'tax_filing_page.dart';
 import 'record_search.dart';
 import 'hyperion_loading.dart';
@@ -33,16 +36,100 @@ class BooksHome extends StatefulWidget {
 
 class _BooksHomeState extends State<BooksHome> {
   int _page = 0;
+  String _route = 'dashboard';
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   String _filter = 'All';
   String _month = 'All time';
 
   void _navigate(int page) {
-    if (_page == page) return;
-    setState(() => _page = page);
-    HyperionLoading.pageTransition(
-      const ['Loading overview', 'Loading entries', 'Loading books', 'Loading PayMongo activity', 'Loading settings', 'Loading tax filing'][page],
-    );
+    final target = switch (page) {
+      0 => 'dashboard',
+      1 => 'entries',
+      2 => 'books',
+      3 => 'paymongo',
+      4 => 'my-business',
+      5 => 'tax-calendar',
+      _ => 'dashboard',
+    };
+    _openRoute(target);
   }
+
+  void _openRoute(String route) {
+    final page = switch (route) {
+      'dashboard' => 0,
+      'entries' || 'daily-expenses' => 1,
+      'books' || 'tax-books' || 'journal' || 'ledger' => 2,
+      'paymongo' || 'sales' => 3,
+      'my-business' || 'product-to-sell' || 'master-customers' ||
+      'master-vendors' || 'master-products' || 'master-categories' ||
+      'backups' => 4,
+      'tax-calendar' || 'tax-monthly' || 'tax-quarterly' ||
+      'tax-annual' || 'tax-2307' || 'tax-invoices' => 5,
+      _ => 6,
+    };
+    if (_route == route) return;
+    setState(() {
+      _route = route;
+      _page = page;
+      if (route == 'daily-expenses') _filter = 'Expenses';
+    });
+    HyperionLoading.pageTransition('Opening business workspace');
+  }
+
+  String get _routeTitle => const <String,String>{
+    'dashboard': 'Dashboard',
+    'entries': 'Transactions',
+    'books': 'Books of Accounts',
+    'paymongo': 'PayMongo Activity',
+    'my-business': 'My Business',
+    'backups': 'Backups & Exports',
+    'compliance': 'Compliance',
+    'sales': 'Sales',
+    'product-to-sell': 'Product to Sell',
+    'purchase-records': 'Purchase Records',
+    'business-assets': 'Business Assets',
+    'daily-expenses': 'Daily Expenses',
+    'payroll': 'Payroll',
+    'tax-calendar': 'Tax Calendar',
+    'tax-monthly': 'Monthly Tax',
+    'tax-quarterly': 'Quarterly Tax',
+    'tax-annual': 'Annual Tax',
+    'tax-2307': '2307 Certificates',
+    'tax-invoices': 'e-Invoicing',
+    'tax-books': 'Books of Accounts',
+    'journal': 'Journal Entries',
+    'ledger': 'General Ledger',
+    'financial-reports': 'Financial Reports',
+    'management-reports': 'Management Reports',
+    'aging-reports': 'Aging Reports',
+    'master-customers': 'Customers',
+    'master-vendors': 'Vendors',
+    'master-products': 'Products',
+    'master-categories': 'Expense Categories',
+    'bulk-import': 'Bulk Import',
+  }[_route] ?? 'Business Workspace';
+
+  int get _taxSection => switch (_route) {
+    'tax-monthly' => 1,
+    'tax-quarterly' => 2,
+    'tax-annual' => 3,
+    'tax-2307' => 4,
+    'tax-invoices' => 5,
+    _ => 0,
+  };
+
+  int get _businessTab => switch (_route) {
+    'product-to-sell' || 'master-customers' || 'master-vendors' ||
+    'master-products' || 'master-categories' => 1,
+    _ => 0,
+  };
+
+  String get _masterKind => switch (_route) {
+    'product-to-sell' || 'master-products' => 'Product',
+    'master-vendors' => 'Vendor',
+    'master-categories' => 'Expense category',
+    _ => 'Customer',
+  };
 
   Future<void> _edit(BuildContext context, EntryKind kind, {BookEntry? initial}) async {
     final id = widget.controller.userId;
@@ -99,34 +186,88 @@ class _BooksHomeState extends State<BooksHome> {
           padding: const EdgeInsets.all(25), child: Text(ctrl.status, textAlign: TextAlign.center))));
       }
       final isWide = MediaQuery.sizeOf(context).width >= 850;
-      final title = const ['Overview', 'Transactions', 'Books & reports', 'PayMongo activity', 'Business tools', 'Tax Filing'][_page];
-      final body = switch (_page) {
-        0 => _overview(context),
-        1 => _transactions(context),
-        2 => _books(context),
-        3 => PayMongoScreen(
+      final title = _routeTitle;
+      final body = switch (_route) {
+        'dashboard' => _overview(context),
+        'entries' || 'daily-expenses' => _transactions(context),
+        'books' || 'tax-books' || 'journal' || 'ledger' =>
+          AccountingBooksPage(
+            key: ValueKey(_route),
+            entries: ctrl.entries,
+            transactions: ctrl.paymongoTransactions,
+            workspace: ctrl.workspace, save: ctrl.saveWorkspace,
+            initialTab: _route == 'ledger' ? 1 : 0),
+        'paymongo' || 'sales' => PayMongoScreen(
+          key: ValueKey(_route),
           transactions: ctrl.paymongoTransactions,
           onImport: () => _importPayMongo(context),
           onExport: () => _export(context),
         ),
-        5 => TaxFilingPage(
+        'compliance' => CompliancePage(
+          workspace: ctrl.workspace,
           entries: ctrl.entries,
           transactions: ctrl.paymongoTransactions,
-          workspace: ctrl.workspace,
-          save: ctrl.saveWorkspace,
-        ),
-        _ => BusinessTools(
-          workspace: ctrl.workspace,
-          save: ctrl.saveWorkspace,
-          backupPage: _settings(context),
-        ),
+          navigate: _openRoute),
+        'purchase-records' || 'business-assets' || 'payroll' =>
+          OperationRecordsPage(
+            key: ValueKey(_route),
+            kind: _route == 'business-assets' ? 'Asset' :
+              _route == 'payroll' ? 'Payroll' : 'Purchase',
+            workspace: ctrl.workspace, save: ctrl.saveWorkspace,
+            recordExpense: () => _edit(context, EntryKind.expense)),
+        'financial-reports' || 'management-reports' || 'aging-reports' =>
+          BusinessReportsPage(
+            mode: _route == 'financial-reports' ? 'financial' :
+              _route == 'aging-reports' ? 'aging' : 'management',
+            workspace: ctrl.workspace,
+            entries: ctrl.entries,
+            transactions: ctrl.paymongoTransactions,
+            navigate: _openRoute),
+        'tax-calendar' || 'tax-monthly' || 'tax-quarterly' ||
+        'tax-annual' || 'tax-2307' || 'tax-invoices' =>
+          TaxFilingPage(
+            key: ValueKey(_route),
+            initialSection: _taxSection,
+            entries: ctrl.entries,
+            transactions: ctrl.paymongoTransactions,
+            workspace: ctrl.workspace,
+            save: ctrl.saveWorkspace,
+          ),
+        'my-business' || 'product-to-sell' || 'master-customers' ||
+        'master-vendors' || 'master-products' || 'master-categories' =>
+          BusinessTools(
+            key: ValueKey(_route), initialTab: _businessTab,
+            initialKind: _masterKind,
+            workspace: ctrl.workspace,
+            save: ctrl.saveWorkspace,
+            backupPage: _settings(context),
+          ),
+        'backups' => _settings(context),
+        'bulk-import' => _bulkImport(context),
+        _ => _overview(context),
       };
       return Scaffold(
+        key: _scaffoldKey,
+        drawer: isWide ? null : Drawer(
+          child: SafeArea(child: HyperionSidebar(
+            selected: _route,
+            onSelect: (route) {
+              Navigator.of(context).pop();
+              _openRoute(route);
+            })),
+        ),
         appBar: AppBar(
           toolbarHeight: 72,
           automaticallyImplyLeading: false,
           titleSpacing: isWide ? 23 : 14,
           title: Row(children: [
+            if (!isWide) ...[
+              IconButton(
+                tooltip: 'Open business navigation',
+                onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                icon: const Icon(Icons.menu)),
+              const SizedBox(width: 4),
+            ],
             InkWell(
               onTap: () => _navigate(0),
               borderRadius: BorderRadius.circular(12),
@@ -198,24 +339,9 @@ class _BooksHomeState extends State<BooksHome> {
           ],
         ),
         body: Row(children: [
-          if (isWide) NavigationRail(
-            selectedIndex: _page, onDestinationSelected: _navigate,
-            backgroundColor: Colors.white, labelType: NavigationRailLabelType.all,
-            destinations: const [
-              NavigationRailDestination(icon: Icon(Icons.space_dashboard_outlined),
-                selectedIcon: Icon(Icons.space_dashboard), label: Text('Overview')),
-              NavigationRailDestination(icon: Icon(Icons.swap_vert_outlined),
-                selectedIcon: Icon(Icons.swap_vert), label: Text('Entries')),
-              NavigationRailDestination(icon: Icon(Icons.menu_book_outlined),
-                selectedIcon: Icon(Icons.menu_book), label: Text('Books')),
-              NavigationRailDestination(icon: Icon(Icons.receipt_long_outlined),
-                selectedIcon: Icon(Icons.receipt_long), label: Text('PayMongo')),
-              NavigationRailDestination(icon: Icon(Icons.business_center_outlined),
-                selectedIcon: Icon(Icons.business_center), label: Text('Tools')),
-              NavigationRailDestination(icon: Icon(Icons.account_balance_outlined),
-                selectedIcon: Icon(Icons.account_balance), label: Text('Tax Filing')),
-            ],
-          ),
+          if (isWide) HyperionSidebar(
+            selected: _route, onSelect: _openRoute),
+          if (isWide) const VerticalDivider(width: 1),
           Expanded(child: Center(child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1260),
             child: body,
@@ -223,10 +349,12 @@ class _BooksHomeState extends State<BooksHome> {
         ]),
         bottomNavigationBar: isWide ? null : NavigationBar(
           labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
-          selectedIndex: _page == 5 ? 3 : (_page == 3 || _page == 4 ? 4 : _page),
+          selectedIndex: switch (_page) {
+            0 => 0, 1 => 1, 2 => 2, 5 => 3, _ => 4,
+          },
           onDestinationSelected: (index) {
             if (index == 4) {
-              _openMore(context);
+              _scaffoldKey.currentState?.openDrawer();
             } else {
               _navigate(index == 3 ? 5 : index);
             }
@@ -246,21 +374,70 @@ class _BooksHomeState extends State<BooksHome> {
     });
   }
 
-  void _openMore(BuildContext context) {
-    showModalBottomSheet<void>(context: context,
-      builder: (sheet) => SafeArea(child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const ListTile(title: Text('More', style: TextStyle(
-            fontWeight: FontWeight.w900, fontSize: 18))),
-          ListTile(leading: const Icon(Icons.receipt_long_outlined),
-            title: const Text('PayMongo Activity'),
-            onTap: () { Navigator.pop(sheet); _navigate(3); }),
-          ListTile(leading: const Icon(Icons.business_center_outlined),
-            title: const Text('Business Tools and Backups'),
-            onTap: () { Navigator.pop(sheet); _navigate(4); }),
-        ]))));
-  }
+  Widget _bulkImport(BuildContext context) => ListView(
+    padding: const EdgeInsets.fromLTRB(18, 18, 18, 55),
+    children: [
+      const Text('Bulk Import', style: TextStyle(
+        color: _ink, fontSize: 23, fontWeight: FontWeight.w900)),
+      const SizedBox(height: 6),
+      const Text('Import transaction files locally, preview changes and '
+        'skip existing source references automatically.',
+        style: TextStyle(color: Color(0xFF64758A))),
+      const SizedBox(height: 14),
+      Card(child: Padding(padding: const EdgeInsets.all(15),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('PAYMONGO TRANSACTIONS', style: TextStyle(
+            color: _ink, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 7),
+          Text('${widget.controller.paymongoTransactions.length} imported records '
+            'in this browser'),
+          const SizedBox(height: 10),
+          FilledButton.icon(onPressed: () => _importPayMongo(context),
+            icon: const Icon(Icons.upload_file_outlined),
+            label: const Text('Import PayMongo CSV')),
+        ]))),
+      const SizedBox(height: 10),
+      Card(child: Padding(padding: const EdgeInsets.all(15),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('EXPENSE TRANSACTIONS', style: TextStyle(
+            color: _ink, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 7),
+          Text('${widget.controller.entries.where(
+            (e) => e.kind == EntryKind.expense).length} expense entries'),
+          const SizedBox(height: 10),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            FilledButton.icon(onPressed: () => _importExpenses(context),
+              icon: const Icon(Icons.upload_file),
+              label: const Text('Import expense CSV')),
+            OutlinedButton.icon(onPressed: () => _downloadExpenseTemplate(context),
+              icon: const Icon(Icons.description_outlined),
+              label: const Text('Download CSV template')),
+          ]),
+        ]))),
+      const SizedBox(height: 10),
+      Card(child: Padding(padding: const EdgeInsets.all(15),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('BACKUP & ACCOUNTING EXPORT', style: TextStyle(
+            fontWeight: FontWeight.w900, color: _ink)),
+          const SizedBox(height: 10),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            OutlinedButton.icon(onPressed: () => _backup(context),
+              icon: const Icon(Icons.backup_outlined),
+              label: const Text('Export JSON backup')),
+            OutlinedButton.icon(onPressed: () => _restore(context),
+              icon: const Icon(Icons.restore),
+              label: const Text('Restore JSON backup')),
+            OutlinedButton.icon(onPressed: () => _export(context),
+              icon: const Icon(Icons.table_view_outlined),
+              label: const Text('Export Excel reports')),
+          ]),
+        ]))),
+      const SizedBox(height: 12),
+      const Text('Source imports do not automatically move bank cash. '
+        'Importing a JSON backup is different: it REPLACES local records '
+        'after explicit confirmation. Keep a fresh backup before restoring.',
+        style: TextStyle(color: Color(0xFF64758A), fontSize: 12)),
+    ]);
 
   Future<void> _searchRecords(BuildContext context) =>
       openRecordSearch(context,
