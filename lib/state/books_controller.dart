@@ -93,7 +93,7 @@ class BooksController extends ChangeNotifier {
     if (repo == null) throw StateError('Local storage is not available');
     final added = await repo.importPayMongo(items);
     await _reload();
-    _status = 'Imported $added PayMongo transactions locally. Back up your records.';
+    _status = 'Imported $added sales transactions locally. Back up your records.';
     notifyListeners();
     return added;
   }
@@ -115,7 +115,7 @@ class BooksController extends ChangeNotifier {
     if (repo == null) throw StateError('Local storage is not available');
     await repo.replaceAll(entries, paymongo, workspace: workspace);
     await _reload();
-    _status = 'Restored ${entries.length} entries and ${paymongo.length} PayMongo transactions on this device.';
+    _status = 'Restored ${entries.length} entries and ${paymongo.length} sales transactions on this device.';
     notifyListeners();
   }
 
