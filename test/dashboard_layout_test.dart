@@ -65,7 +65,10 @@ void main() {
     expect(find.text('Add payout'), findsOneWidget);
     expect(find.text('Add expense'), findsOneWidget);
     expect(find.byType(Image), findsWidgets);
-    expect(tester.takeException(), isNull);
+    final layoutError = tester.takeException();
+    // ignore: avoid_print
+    print('DASHBOARD LAYOUT ERROR: $layoutError');
+    expect(layoutError, isNull);
   }
 
   testWidgets('dashboard renders on a narrow phone without overflow',
@@ -85,6 +88,10 @@ void main() {
     addTearDown(fixture.dispose);
     await tester.pumpWidget(MaterialApp(home: BooksHome(controller: fixture)));
     await tester.pumpAndSettle();
+    // ignore: avoid_print
+    print('IMPORT MARKERS: activity=${find.text('Imported PayMongo activity').evaluate().length}, '
+      'gross=${find.text('Gross customer payments').evaluate().length}, '
+      'count=${find.text('1 paid transactions').evaluate().length}');
     expect(find.text('Imported PayMongo activity'), findsOneWidget);
     expect(find.text('Gross customer payments'), findsOneWidget);
     expect(find.text('1 paid transactions'), findsOneWidget);
