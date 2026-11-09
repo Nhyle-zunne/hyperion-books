@@ -444,16 +444,16 @@ class _BooksHomeState extends State<BooksHome> {
             return Wrap(spacing: gap, runSpacing: gap, children: [
               SizedBox(width: width, child: _activityKpi(
                 'Gross customer payments', php(totals.grossPaymentsCentavos),
-                totals.payments.toString() + ' paid transactions')),
+                '${totals.payments} paid transactions')),
               SizedBox(width: width, child: _activityKpi(
                 'Processing fees (incl. VAT)', php(totals.paymentFeesCentavos),
-                'VAT portion: ' + php(totals.paymentVatCentavos))),
+                'VAT portion: ${php(totals.paymentVatCentavos)}')),
               SizedBox(width: width, child: _activityKpi(
                 'Net customer payments', php(totals.netPaymentsCentavos),
                 'Held/settled via PayMongo')),
               SizedBox(width: width, child: _activityKpi(
                 'Adjustments / refunds', php(totals.adjustmentsNetCentavos),
-                totals.adjustments.toString() + ' review items')),
+                '${totals.adjustments} review items')),
             ]);
           }),
           const SizedBox(height: 11),
@@ -462,7 +462,7 @@ class _BooksHomeState extends State<BooksHome> {
           TextButton.icon(onPressed: () => _navigate(3),
             icon: const Icon(Icons.visibility_outlined, size: 18),
             label: Text(rows == 0 ? 'View PayMongo activity' :
-              'View ' + rows.toString() + ' transactions')),
+              'View $rows transactions')),
           OutlinedButton.icon(onPressed: () => _importPayMongo(context),
             icon: const Icon(Icons.upload_file_outlined, size: 17),
             label: const Text('Import CSV')),
