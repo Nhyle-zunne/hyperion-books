@@ -63,8 +63,10 @@ class _BooksHomeState extends State<BooksHome> {
     return AnimatedBuilder(animation: widget.controller, builder: (context, _) {
       final ctrl = widget.controller;
       if (ctrl.loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
-      if (!ctrl.ready) return Scaffold(body: Center(child: Padding(
-        padding: const EdgeInsets.all(25), child: Text(ctrl.status, textAlign: TextAlign.center))));
+      if (!ctrl.ready) {
+        return Scaffold(body: Center(child: Padding(
+          padding: const EdgeInsets.all(25), child: Text(ctrl.status, textAlign: TextAlign.center))));
+      }
       final isWide = MediaQuery.sizeOf(context).width >= 850;
       final title = const ['Overview', 'Transactions', 'Books & reports', 'Settings'][_page];
       final body = switch (_page) {
@@ -163,7 +165,7 @@ class _BooksHomeState extends State<BooksHome> {
   Widget _section(String title, {Widget? trailing}) => Row(children: [
     Expanded(child: Text(title, style: const TextStyle(fontSize: 20,
       fontWeight: FontWeight.w800, color: _ink))),
-    if (trailing != null) trailing,
+    ?trailing,
   ]);
 
   Widget _overview(BuildContext context) {
@@ -292,7 +294,13 @@ class _BooksHomeState extends State<BooksHome> {
         Text('${payout ? '+' : '−'}${php(e.amountCentavos)}', style: TextStyle(
           fontWeight: FontWeight.w800, color: payout ? _green : const Color(0xFFC25751))),
         if (editable) PopupMenuButton<String>(
-          onSelected: (v) { if (v == 'edit') _edit(context, e.kind, initial: e); else _delete(context, e); },
+          onSelected: (v) {
+            if (v == 'edit') {
+              _edit(context, e.kind, initial: e);
+            } else {
+              _delete(context, e);
+            }
+          },
           itemBuilder: (_) => const [PopupMenuItem(value: 'edit', child: Text('Edit')),
             PopupMenuItem(value: 'delete', child: Text('Delete'))],
         ),

@@ -6,6 +6,6 @@ BASE_HREF="${BASE_HREF:-/hyperion-books/}"
 flutter pub get
 flutter analyze
 flutter test
-flutter build web --release --web-content-hash --no-web-resources-cdn --base-href="$BASE_HREF"
+flutter build web --release --no-web-resources-cdn --base-href="$BASE_HREF"
 node scripts/make_sw.mjs build/web
 printf 'Static, fully local PWA ready at build/web; no credentials required.\n'

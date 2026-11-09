@@ -2,7 +2,6 @@ import 'dart:typed_data';
 import 'package:excel/excel.dart';
 import 'package:file_saver/file_saver.dart';
 import 'package:intl/intl.dart';
-import '../models/book_entry.dart';
 import '../models/reports.dart';
 
 class ExportService {

@@ -19,7 +19,9 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
-      - name: Compile Flutter Web for GitHub Pages path
-        run: flutter build web --release --web-content-hash --no-web-resources-cdn --base-href=/hyperion-books/
-      - name: Generate offline service worker
+      - name: Build Flutter Web for GitHub Pages subpath
+        run: flutter build web --release --no-web-resources-cdn --base-href=/hyperion-books/
+      - name: Build offline service worker
         run: node scripts/make_sw.mjs build/web
+      - name: Inspect build output
+        run: test -f build/web/index.html && test -f build/web/sw.js && test -f build/web/manifest.json

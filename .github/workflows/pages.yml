@@ -1,8 +1,8 @@
-name: Deploy Hyperion Books (opt in)
+name: Publish Hyperion Books to GitHub Pages
 on:
+  workflow_dispatch:
   push:
     branches: [main]
-  workflow_dispatch:
 permissions:
   contents: read
   pages: write
@@ -12,6 +12,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   deploy:
+    # Opt in only after Pages is enabled. GitHub Free requires a PUBLIC repo.
     if: vars.ENABLE_GITHUB_PAGES == 'true'
     runs-on: ubuntu-latest
     environment:
@@ -26,7 +27,7 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
-      - run: flutter build web --release --web-content-hash --no-web-resources-cdn --base-href=/hyperion-books/
+      - run: flutter build web --release --no-web-resources-cdn --base-href=/hyperion-books/
       - run: node scripts/make_sw.mjs build/web
       - run: find build/web -name '*.map' -delete
       - uses: actions/configure-pages@v5

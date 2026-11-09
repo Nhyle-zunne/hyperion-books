@@ -1,23 +1,29 @@
 # Hyperion Books — Flutter Web PWA
 
-**GitHub-only, local-first personal bookkeeping.** No Supabase, Google sign-in, external database, API token, or subscription required.
+Personal bookkeeping for PayMongo and Google Play payouts, and expenses. **No Supabase, accounts, API tokens, or cloud database.** Hosted static app files do not contain financial entries.
 
 ## Two things to enter
 
-1. **Payout:** date (calendar picker), source (PayMongo or Google Play), net amount received; optional note and gross amount if supported by a settlement statement.
-2. **Expense:** date (calendar picker), amount, description; optional category.
+1. **Payout:** date (tap to select with a calendar), PayMongo or Google Play, net amount received, optional note and optional gross amount from a processor statement.
+2. **Expense:** date (calendar), amount, description, and optional category.
 
-The app calculates monthly cashflow, cash receipts/disbursements, general journal, general ledger and Excel `.xlsx` books. Amounts use integer centavos rather than floating-point calculations.
+All other views are generated: dashboard, monthly summary, cash receipts/disbursements, general journal, general ledger, and Excel `.xlsx` reports. Amounts are stored as integer centavos.
 
-## Privacy and transferring records
+## Where entries live
 
-Entries are saved to browser **IndexedDB only on that device**. This is **not cloud sync**. To switch devices, use Settings → **Export JSON backup** and then Settings → **Import JSON backup** on the other device. Import previews totals and, after confirmation, **REPLACES the receiving device's records**; export its own backup first. Excel export is for reading/printing, **not restorable**; JSON is the restorable backup. Neither format is automatically uploaded to GitHub.
+Each browser/PWA installation stores entries in **IndexedDB on that device**, accessible offline after the PWA shell is cached. **There is no automatic multi-device sync.** Each device has its own dataset. Use Settings → **Export JSON backup**, then Settings → **Import JSON backup** on another device to transfer the records. Import shows amounts and requires explicit confirmation because it **REPLACES** the target device's existing records. Export the receiving device's backup first! Excel exports are human-readable books and **cannot** be re-imported; the JSON file is the restorable backup.
 
-Keep JSON files somewhere safe and private, never in the source repository. Browser data cleanup, site origin changes, PWA removal or device loss may erase local entries. No device-side encryption is provided.
+Do not upload financial backups to GitHub. Neither IndexedDB nor the unencrypted JSON backup uses at-rest encryption. Use a device with a screen lock, keep backups in a private location, and make regular backups; clearing browser site data or losing the device may erase local records.
 
-## Building and hosting
+## GitHub Pages hosting
 
-Requires Flutter stable **3.50+**, Dart, Node.js 20+:
+Your `hyperion-books` repo is **private**. On GitHub Free, GitHub Pages requires a **public repository**. With GitHub Pro/Team, you can publish from private repos, but **the published site is still publicly accessible**. Never commit private bookkeeping data even if the repo is private. GitHub Pages is static hosting, not a financial database.
+
+If your plan supports Pages from this repo, use **Settings → Pages → Build and deployment → GitHub Actions**, and set repository **Settings → Secrets and variables → Actions → Variables → `ENABLE_GITHUB_PAGES` = `true`**. The `pages.yml` workflow then builds and publishes `https://<owner>.github.io/hyperion-books/`. Otherwise, leave the repository private and publish the static `build/web/` directory via another static host with a free tier, or make a separate public source-only repository (after review). **Do not change repository visibility solely to deploy without understanding the implications.**
+
+## Build locally
+
+Requires a recent stable Flutter SDK (current stable), Dart and Node.js 20+.
 
 ```bash
 flutter pub get
@@ -27,18 +33,14 @@ node scripts/check_source.mjs
 bash scripts/build_web.sh
 ```
 
-The default static build targets **`/hyperion-books/`** (GitHub Pages project path). For a dedicated root-domain host: `BASE_HREF=/ bash scripts/build_web.sh`. The build creates `build/web` and a custom offline service worker from Flutter's precache manifest.
+By default it builds for the GitHub Pages subpath `/hyperion-books/`. For a dedicated domain root use `BASE_HREF=/ bash scripts/build_web.sh`. The script produces `build/web` and generates `sw.js` by enumerating the compiled static assets; no credentials or environment secrets are required.
 
-### GitHub Pages and repository visibility
+The app runs on Android, iPhone/iPad, Windows, and Mac through an HTTPS browser and can be installed as a PWA. Install while online, wait for the service worker to cache the app, then test offline. iOS browsers may evict app storage; back up regularly.
 
-This repository is currently **private**. On **GitHub Free, Pages requires a public repository**. GitHub Pro/Team can publish Pages from private source repositories, but the published site is public. Never include personal financial records in the site bundle or repository.
+## Verification status
 
-If eligible, use Settings → Pages → Build and deployment → **GitHub Actions** and add a repository Actions variable `ENABLE_GITHUB_PAGES=true` to opt into the deployment workflow. The expected URL is `https://Nhyle-zunne.github.io/hyperion-books/`. Do not change repository visibility without reviewing the privacy implications.
+`flutter analyze`, `flutter test`, and a web build run in `.github/workflows/flutter.yml` on pushes and pull requests. **CI results must be checked** before considering a change tested. GitHub Pages publishing is opt-in and may be unavailable on a private GitHub Free repository.
 
-## Current setup status
+## Accounting caveat
 
-The full Flutter source is distributed separately as `Hyperion_Books_GitHub_Only_Source.zip` in the ChatGPT conversation. **The GitHub repository was initially missing the `lib/`, `web/`, `scripts/`, and `test/` source directories.** Upload the contents of the extracted ZIP **to the repository root**, preserving paths. GitHub Actions then runs compilation/tests. Do not assume the app is deployed just because the files are present.
-
-## Important accounting note
-
-Processor settlement dates are not necessarily sales dates. Net payouts may exclude fees, refunds, and withholding. Journal/ledger output is a provisional personal cash tracker, not automatically BIR-compliant official books.
+Processor payouts may include sales from earlier dates and differ from gross sales because of fees, refunds, withholding, or other adjustments. This app records net cash movement and provisional journals; the reports are not independently certified BIR books of accounts or automatically tax-compliant. Keep underlying statements and receipts.

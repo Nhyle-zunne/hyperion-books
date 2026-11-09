@@ -1,4 +1,3 @@
-import 'package:sembast/sembast.dart';
 import 'package:sembast_web/sembast_web.dart';
 import '../models/book_entry.dart';
 

@@ -1,6 +1,6 @@
 name: hyperion_books
 version: 0.2.0+1
-description: Offline-first payout and expense tracker with Excel and JSON backup.
+description: Offline-first personal payout and expense tracking, with manual backups.
 publish_to: none
 
 environment:
@@ -10,8 +10,8 @@ dependencies:
   flutter:
     sdk: flutter
   sembast: ^3.10.0
-  sembast_web: ^2.4.6+1
   file_selector: ^1.1.0
+  sembast_web: ^2.4.6+1
   uuid: ^4.6.0
   intl: ^0.20.2
   excel: ^4.0.6

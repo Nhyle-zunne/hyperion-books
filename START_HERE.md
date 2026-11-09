@@ -1,13 +1,15 @@
-# Hyperion Books — Start here
+# Hyperion Books — Quick start
 
-This is a Flutter Web PWA with **no Supabase or Google sign-in**.
+This is an offline-first Flutter Web app. No Supabase or Google login is required.
 
-1. Download and extract `Hyperion_Books_GitHub_Only_Source.zip` from the ChatGPT conversation.
-2. Upload **all contents** of the extracted folder to the GitHub repository root (not the ZIP alone, not inside an extra parent directory).
-3. The Flutter source needs `lib/`, `web/`, `scripts/`, `test/`, `docs/`, `pubspec.yaml` and `.github/workflows/`.
-4. Check the GitHub Actions build for successful `flutter analyze`, `flutter test`, and web build.
-5. To host on GitHub Pages, you must be eligible to publish from this repo. GitHub Free requires a public repository; the current repository is private.
-6. If eligible: Settings → Pages → Source: GitHub Actions. Settings → Secrets and variables → Actions → Variables: `ENABLE_GITHUB_PAGES=true`. No secrets are needed.
-7. Once published: add payouts or expenses (calendar picker), view generated books, and export Excel. Export a **JSON backup** often for recovery and transfer. Import **REPLACES** all records on that device after confirmation.
+1. Open the published PWA and select a date to add a PayMongo/Google Play payout or expense.
+2. View the automatic Dashboard, Books, Journal and Ledger.
+3. Use **Books → Excel** to export readable financial reports.
+4. Use **Settings → Export JSON backup** regularly. This JSON is the only restorable backup format.
+5. To move to another device, open the app there and select **Settings → Import JSON backup**. **It REPLACES all existing entries on that device**, after showing a preview and asking for confirmation.
 
-No automatic multi-device synchronization. Records stay in each device's browser storage. Never upload private financial backups to GitHub.
+## Getting it online
+
+The repository contains `lib/`, `web/`, `scripts/`, `test/`, `.github/workflows/`, and `pubspec.yaml`. GitHub Actions builds and checks the project. For GitHub Pages, set Settings → Pages → Source: GitHub Actions, and create the Actions variable `ENABLE_GITHUB_PAGES=true` after checking your plan eligibility. GitHub Free cannot publish Pages from a private repo. The app uses `/hyperion-books/` as the default base path.
+
+No database, backend, Google OAuth, secret API keys, or Supabase is involved. The published PWA site may be accessible to others; each browser keeps separate local records. Do not upload transaction files to your repo. Browser data can be deleted or evicted; back up often.
