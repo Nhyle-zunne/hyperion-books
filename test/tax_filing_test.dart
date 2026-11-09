@@ -47,6 +47,21 @@ void main() {
     expect(() => BackupService.decodeFull(jsonEncode(raw)), throwsFormatException);
   });
 
+  test('manual verification and report-only void flags persist in v3 backups', () {
+    const workspace = BusinessWorkspace(
+      verifiedReferences: ['pay_accepted001'],
+      voidedReferences: ['pay_void001'],
+    );
+    final encoded = BackupService.encode([], workspace: workspace);
+    final stored = BackupService.decodeFull(encoded).workspace;
+    expect(stored.verifiedReferences, ['pay_accepted001']);
+    expect(stored.voidedReferences, ['pay_void001']);
+    final raw = jsonDecode(encoded) as Map<String, dynamic>;
+    final scope = raw['workspace'] as Map<String, dynamic>;
+    scope['verified_references'] = ['pay_accepted001', 'pay_accepted001'];
+    expect(() => BackupService.decodeFull(jsonEncode(raw)), throwsFormatException);
+  });
+
   test('time window counts original PayMongo payment, not its bank payout twice', () {
     final payment = PayMongoTransaction(id: 'pay_tax001', type: 'Payment',
       status: 'Paid', paymentMethod: 'qrph',
