@@ -248,7 +248,35 @@ class ExportService {
       if (!isMoney || raw.trim().isEmpty) return t(raw);
       final creditSide = raw.trim().endsWith(' Cr');
       final cleaned = raw.replaceAll('₱', '').replaceAll(',', '')
-          .replaceAll(RegExp(r'\\s+(Dr|Cr)$'), '').trim();
+          .replaceAll(RegExp(r'\s+(Dr|Cr), '').trim();
+      final value = double.tryParse(cleaned);
+      if (value == null) return t(raw);
+      return DoubleCellValue(creditSide ? -value : value);
+    }
+    final reportRows = rows.map((row) => [
+      for (var i = 0; i < headers.length; i++)
+        reportCell(row[i], monetary[i]),
+    ]);
+    final sheetName = title.split(' - ').first.toUpperCase();
+    final widths = switch (sheetName) {
+      'GENERAL JOURNAL' => [18.0, 37, 75, 22, 22],
+      'GENERAL LEDGER' => [18.0, 37, 58, 22, 22, 25],
+      'CASH RECEIPTS JOURNAL' => [18.0, 37, 58, 22, 22, 23, 23],
+      'CASH DISBURSEMENTS JOURNAL' => [18.0, 37, 57, 42, 23],
+      _ => List<double>.filled(headers.length, 24),
+    };
+    addSheet(workbook, sheetName, headers, reportRows, widths: widths);
+    final bytes = workbook.save();
+    if (bytes == null) throw StateError('Excel could not generate the workbook');
+    await FileSaver.instance.saveFile(
+      name: 'Hyperion_Books_${DateFormat('yyyyMMdd').format(DateTime.now())}_${title.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_')}',
+      bytes: Uint8List.fromList(bytes), fileExtension: 'xlsx',
+      mimeType: MimeType.custom,
+      customMimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  }
+
+}
+), '').trim();
       final value = double.tryParse(cleaned);
       if (value == null) return t(raw);
       return DoubleCellValue(creditSide ? -value : value);
