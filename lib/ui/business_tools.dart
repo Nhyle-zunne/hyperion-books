@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../models/business_workspace.dart';
+import '../models/book_entry.dart';
 
 class BusinessTools extends StatefulWidget {
   final BusinessWorkspace workspace;
@@ -129,17 +130,34 @@ class _BusinessToolsState extends State<BusinessTools> {
           onTap: () => editItem(item),
           trailing: IconButton(tooltip: 'Delete item',
             icon: const Icon(Icons.delete_outline),
-            onPressed: () => persist(widget.workspace.copyWith(masters: [
-              for (final x in widget.workspace.masters)
-                if (x.id != item.id) x,
-            ])) ))),
+            onPressed: () => _confirmMasterDelete(item))))),
     ]);
+  }
+
+  Future<void> _confirmMasterDelete(BusinessListItem item) async {
+    final okay = await showDialog<bool>(context: context,
+      builder: (dialog) => AlertDialog(
+        title: const Text('Delete this list item?'),
+        content: const Text('Saved transactions are not deleted.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialog, false),
+            child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(dialog, true),
+            child: const Text('Delete')),
+        ]));
+    if (okay != true) return;
+    await persist(widget.workspace.copyWith(masters: [
+      for (final x in widget.workspace.masters)
+        if (x.id != item.id) x,
+    ]));
   }
 
   Future<void> editItem(BusinessListItem? original) async {
     var type = original?.kind ?? kind;
     var label = original?.name ?? '';
     var details = original?.details ?? '';
+    var price = original?.priceCentavos == null ? '' :
+      (original!.priceCentavos! / 100).toStringAsFixed(2);
     final record = await showDialog<BusinessListItem>(context: context,
       builder: (dialog) => StatefulBuilder(
         builder: (context, refresh) => AlertDialog(
@@ -156,6 +174,12 @@ class _BusinessToolsState extends State<BusinessTools> {
               TextFormField(initialValue: details, maxLength: 500,
                 decoration: const InputDecoration(labelText: 'Notes'),
                 onChanged: (v) => details = v),
+              if (type == 'Product')
+                TextFormField(initialValue: price,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                    labelText: 'Reference price PHP (optional)'),
+                  onChanged: (v) => price = v),
             ])),
           actions: [
             TextButton(onPressed: () => Navigator.pop(dialog),
@@ -165,10 +189,14 @@ class _BusinessToolsState extends State<BusinessTools> {
                   details.length > 500) {
                 return;
               }
+              final parsedPrice = type == 'Product' && price.trim().isNotEmpty
+                  ? parsePesos(price) : null;
+              if (type == 'Product' && price.trim().isNotEmpty &&
+                  parsedPrice == null) return;
               Navigator.pop(dialog, BusinessListItem(
                 id: original?.id ?? const Uuid().v4(), kind: type,
                 name: label.trim(), details: details.trim(),
-                priceCentavos: original?.priceCentavos));
+                priceCentavos: parsedPrice));
             }, child: const Text('Save')),
           ])));
     if (record != null) {
@@ -210,11 +238,26 @@ class _BusinessToolsState extends State<BusinessTools> {
           onTap: () => editTask(task),
           trailing: IconButton(tooltip: 'Delete task',
             icon: const Icon(Icons.delete_outline),
-            onPressed: () => persist(widget.workspace.copyWith(reminders: [
-              for (final x in widget.workspace.reminders)
-                if (x.id != task.id) x,
-            ]))))),
+            onPressed: () => _confirmTaskDelete(task))))),
     ]);
+  }
+
+  Future<void> _confirmTaskDelete(BusinessReminder item) async {
+    final okay = await showDialog<bool>(context: context,
+      builder: (dialog) => AlertDialog(
+        title: const Text('Delete this reminder?'),
+        content: const Text('This action cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialog, false),
+            child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(dialog, true),
+            child: const Text('Delete')),
+        ]));
+    if (okay != true) return;
+    await persist(widget.workspace.copyWith(reminders: [
+      for (final x in widget.workspace.reminders)
+        if (x.id != item.id) x,
+    ]));
   }
 
   Future<void> editTask(BusinessReminder? original) async {
