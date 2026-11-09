@@ -17,9 +17,9 @@ Do not upload financial backups to GitHub. Neither IndexedDB nor the unencrypted
 
 ## GitHub Pages hosting
 
-Your `hyperion-books` repo is **private**. On GitHub Free, GitHub Pages requires a **public repository**. With GitHub Pro/Team, you can publish from private repos, but **the published site is still publicly accessible**. Never commit private bookkeeping data even if the repo is private. GitHub Pages is static hosting, not a financial database.
+GitHub currently reports `hyperion-books` as a **public repository**. GitHub Free requires a public repo for GitHub Pages; Pro/Team can also publish from private repos. With GitHub Pro/Team, you can publish from private repos, but **the published site is still publicly accessible**. Never commit private bookkeeping data even if the repo is private. GitHub Pages is static hosting, not a financial database.
 
-If your plan supports Pages from this repo, use **Settings → Pages → Build and deployment → GitHub Actions**, and set repository **Settings → Secrets and variables → Actions → Variables → `ENABLE_GITHUB_PAGES` = `true`**. The `pages.yml` workflow then builds and publishes `https://<owner>.github.io/hyperion-books/`. Otherwise, leave the repository private and publish the static `build/web/` directory via another static host with a free tier, or make a separate public source-only repository (after review). **Do not change repository visibility solely to deploy without understanding the implications.**
+If your plan supports Pages from this repo, use **Settings → Pages → Build and deployment → GitHub Actions**, and set repository **Settings → Secrets and variables → Actions → Variables → `ENABLE_GITHUB_PAGES` = `true`**. The `pages.yml` workflow then builds and publishes `https://<owner>.github.io/hyperion-books/`. If the repository becomes private on GitHub Free, Pages publishing from it will not be available; review the repo visibility and plan before turning deployment on. **No user financial data should ever be committed to the repository.**
 
 ## Build locally
 
