@@ -245,12 +245,16 @@ class ExportService {
     final monetary = headers.map((header) =>
         header.contains('(₱)') || header.endsWith(' PHP')).toList();
     CellValue reportCell(String raw, bool isMoney) {
-      if (!isMoney || raw.trim().isEmpty) return t(raw);
+      if (!isMoney || raw.trim().isEmpty) {
+        return t(raw);
+      }
       final creditSide = raw.trim().endsWith(' Cr');
       final cleaned = raw.replaceAll('₱', '').replaceAll(',', '')
           .replaceAll(RegExp(r'\s+(Dr|Cr), '').trim();
       final value = double.tryParse(cleaned);
-      if (value == null) return t(raw);
+      if (value == null) {
+        return t(raw);
+      }
       return DoubleCellValue(creditSide ? -value : value);
     }
     final reportRows = rows.map((row) => [
