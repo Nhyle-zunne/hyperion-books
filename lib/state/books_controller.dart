@@ -98,6 +98,24 @@ class BooksController extends ChangeNotifier {
     return added;
   }
 
+  Future<void> saveManualSale(PayMongoTransaction sale) async {
+    final repo = _repository;
+    if (repo == null) throw StateError('Local storage is not available');
+    await repo.saveManualSale(sale);
+    await _reload();
+    _status = 'Manual sale saved locally. Export a JSON backup.';
+    notifyListeners();
+  }
+
+  Future<void> removeManualSale(PayMongoTransaction sale) async {
+    final repo = _repository;
+    if (repo == null) throw StateError('Local storage is not available');
+    await repo.removeManualSale(sale.id);
+    await _reload();
+    _status = 'Manual sale removed locally. Export a new backup.';
+    notifyListeners();
+  }
+
   Future<void> saveWorkspace(BusinessWorkspace value) async {
     final repo = _repository;
     if (repo == null) throw StateError('Local storage is not available');
