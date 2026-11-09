@@ -1,6 +1,6 @@
-/// One transaction from PayMongo's transaction CSV, not a bank payout.
-///
-/// Customer names, email, phone and billing fields are deliberately not stored.
+/// A sales transaction from an imported spreadsheet or a manually recorded sale.
+/// Manual transactions represent money paid directly to a bank, wallet or cash.
+/// Optional manual details remain on this device and in unencrypted backups.
 class PayMongoTransaction {
   final String id;
   final String type;
@@ -15,6 +15,12 @@ class PayMongoTransaction {
   final int feeCentavos;
   final int vatCentavos;
   final int netCentavos;
+  final String source;
+  final String reference;
+  final String description;
+  final String customer;
+  final String depositAccount;
+  final String notes;
 
   const PayMongoTransaction({
     required this.id,
@@ -26,7 +32,15 @@ class PayMongoTransaction {
     required this.feeCentavos,
     required this.vatCentavos,
     required this.netCentavos,
+    this.source = 'import',
+    this.reference = '',
+    this.description = '',
+    this.customer = '',
+    this.depositAccount = '',
+    this.notes = '',
   });
+
+  bool get isManual => source == 'manual';
 
   bool get isPayment => type == 'Payment';
 
@@ -43,6 +57,12 @@ class PayMongoTransaction {
     'fee_centavos': feeCentavos,
     'vat_centavos': vatCentavos,
     'net_centavos': netCentavos,
+    'source': source,
+    'reference': reference,
+    'description': description,
+    'customer': customer,
+    'deposit_account': depositAccount,
+    'notes': notes,
   };
 
   factory PayMongoTransaction.fromJson(Map<String, dynamic> json) {
@@ -55,6 +75,12 @@ class PayMongoTransaction {
     final fee = json['fee_centavos'];
     final vat = json['vat_centavos'];
     final net = json['net_centavos'];
+    final source = json['source'] ?? 'import';
+    final reference = json['reference'] ?? '';
+    final description = json['description'] ?? '';
+    final customer = json['customer'] ?? '';
+    final account = json['deposit_account'] ?? '';
+    final notes = json['notes'] ?? '';
     final d = datetime is String ? DateTime.tryParse(datetime) : null;
     final money = [gross, fee, vat, net];
     if (id is! String || id.length < 6 || id.length > 160 ||
@@ -63,7 +89,16 @@ class PayMongoTransaction {
         status is! String || status.length > 60 ||
         method is! String || method.length > 80 ||
         d == null || d.year < 2000 || d.year > 2100 || d.isUtc ||
-        money.any((x) => x is! int || x.abs() > 100000000000000)) {
+        money.any((x) => x is! int || x.abs() > 100000000000000) ||
+        (source != 'import' && source != 'manual') ||
+        reference is! String || reference.length > 160 ||
+        description is! String || description.length > 180 ||
+        customer is! String || customer.length > 160 ||
+        account is! String || account.length > 160 ||
+        notes is! String || notes.length > 1000 ||
+        (source == 'manual' && (!id.startsWith('manual_') ||
+          type != 'Payment' || gross <= 0 || fee > 0 ||
+          net != gross + fee || vat != 0 || description.trim().isEmpty))) {
       throw const FormatException('Invalid PayMongo transaction in backup');
     }
     return PayMongoTransaction(
@@ -71,6 +106,8 @@ class PayMongoTransaction {
       paymentMethod: method, occurredAt: d,
       grossCentavos: gross, feeCentavos: fee,
       vatCentavos: vat, netCentavos: net,
+      source: source, reference: reference, description: description,
+      customer: customer, depositAccount: account, notes: notes,
     );
   }
 }
