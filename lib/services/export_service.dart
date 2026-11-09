@@ -181,6 +181,14 @@ class ExportService {
         dateCell(item.dueDate), t(item.title),
         t(item.completed ? 'Yes' : 'No'), t(item.notes),
       ]), widths: [19, 45, 20, 85]);
+    addSheet(book, 'TAX TRACKING RECORDS',
+      ['Kind','Date','Period','Name / form','Reference','Status','Direction',
+       'Amount PHP','Notes'],
+      workspace.taxRecords.map((item) => [
+        t(item.kind),dateCell(item.date),t(item.period),t(item.name),
+        t(item.reference),t(item.status),t(item.direction),
+        amount(item.amountCentavos),t(item.notes),
+      ]), widths: [17,19,17,45,39,20,19,20,55]);
     final bytes = book.save();
     if (bytes == null) throw StateError('Excel could not generate the workbook');
     await FileSaver.instance.saveFile(
