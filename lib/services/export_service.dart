@@ -51,7 +51,6 @@ class ExportService {
     if (!books.balanced) {
       throw StateError('Combined accounting journal is not balanced. Export cancelled.');
     }
-    String stamp(DateTime d) => DateFormat('yyyy-MM-dd HH:mm').format(d);
     CellValue moneyOrBlank(int value) => value == 0 ? t('') : amount(value);
     final book = Excel.createExcel();
     book.rename('Sheet1', 'READ ME');
@@ -60,13 +59,13 @@ class ExportService {
       'HYPERION BOOKS — ACCOUNTING WORKING PAPERS',
       'Four separate journals/ledgers: Cash Receipts Journal, Cash Disbursements Journal, General Journal and General Ledger.',
       'This Excel workbook is NOT a BIR-authorized computerized book or approved loose-leaf book. Confirm registration and approval requirements with your RDO.',
-      'Source records: imported sales CSV/Excel files, manually entered payouts and expenses. Dates and amounts require reconciliation against invoices and bank statements.',
+      'Source records: imported or manual sales, bank payouts and expenses. Dates and amounts require reconciliation with invoices and bank statements.',
       'Imported paid sale: Debit sales clearing (net), Debit processing fees (VAT already included), Credit provisional imported sales (gross).',
       'PayMongo bank payout (entered manually): Debit Cash/Bank, Credit PayMongo clearing; this is NOT a second sale.',
       'Fees include their VAT component; do not subtract or recognize VAT twice. Input VAT treatment depends on taxpayer status and documentation.',
       'Adjustments/refunds and gross/fee/net differences go into accounts labeled REVIEW until supporting documents justify their classification.',
       'Google Play payouts and PayMongo payouts without source transactions remain provisional/unmatched, not verified gross tax receipts.',
-      'A period-filtered ledger does NOT automatically carry in prior period balances. Missing opening balances can affect reconciliation.',
+      'The on-screen ledger carries earlier-period activity into the displayed balance. Verify opening balances and exclude voided references consistently.',
       'The Cash Receipts Journal separates gross imported sales, net settlement clearing and actual bank receipts. Do not sum these distinct columns as revenue.',
       'The General Journal includes all postings consolidated; do not also post the specialized journal sheets a second time.',
       'The reports are not a substitute for a registered set of books or verified invoices, official supporting documents and tax returns.',
@@ -86,66 +85,70 @@ class ExportService {
     addSheet(book, 'EXPENSES', ['Date','Category','Description','Amount PHP','Entry ID'],
       report.expenses.map((e) => [dateCell(e.date),t(e.category),t(e.description),
         amount(e.amountCentavos),t(e.id)]), widths:[17,20,48,20,40]);
+    // One concise format per book, aligned with the on-screen account view.
+    // Fees, processor clearing and bank cash remain separate to avoid
+    // treating transfers as additional revenue.
     addSheet(book, 'CASH RECEIPTS JOURNAL',
-      ['Date/time','Reference','Particulars','Collection channel',
-       'Gross collection PHP','Fees incl VAT PHP','Net to processor PHP',
-       'Bank received PHP','Classification'],
+      ['Date','Reference','Particulars','Gross PHP','Fees PHP',
+       'Bank / cash PHP','Clearing PHP'],
       books.cashReceipts.map((e) => [
-        t(stamp(e.date)), t(e.reference), t(e.particulars), t(e.channel),
+        dateCell(e.date), t(e.reference), t(e.particulars),
         moneyOrBlank(e.gross), moneyOrBlank(e.fees),
-        moneyOrBlank(e.processorNet), moneyOrBlank(e.bankReceived),
-        t(e.bankTransfer ? 'Internal transfer, not revenue' :
-          e.provisional ? 'Provisional; verify' : 'Customer collection'),
+        moneyOrBlank(e.bankReceived), moneyOrBlank(e.processorNet),
       ]),
-      widths: [24,40,51,35,23,22,24,22,34]);
+      widths: [18,36,55,20,20,23,23]);
     addSheet(book, 'CASH DISBURSEMENTS JOURNAL',
-      ['Date/time','Reference','Particulars / payee',
-       'Debit expense account','Cash/bank paid PHP'],
+      ['Date','Reference','Particulars / payee',
+       'Expense account','Paid PHP'],
       books.cashDisbursements.map((e) => [
-        t(stamp(e.date)), t(e.reference), t(e.particulars),
+        dateCell(e.date), t(e.reference), t(e.particulars),
         t(e.account), amount(e.amount),
-      ]), widths: [24,40,55,40,23]);
+      ]), widths: [18,38,54,40,22]);
     addSheet(book, 'GENERAL JOURNAL',
-      ['Date/time','Reference','Account','Particulars','Source',
-       'Debit PHP','Credit PHP'],
+      ['Date','Reference','Account / particulars','Debit PHP','Credit PHP'],
       books.journal.map((e) => [
-        t(stamp(e.date)),t(e.reference),t(e.account),t(e.particulars),
-        t(e.source),moneyOrBlank(e.debit),moneyOrBlank(e.credit),
-      ]), widths: [24,41,43,55,25,22,22]);
+        dateCell(e.date), t(e.reference),
+        t('${e.account} · ${e.particulars}'),
+        moneyOrBlank(e.debit), moneyOrBlank(e.credit),
+      ]), widths: [18,39,80,22,22]);
     final ledgerRows = <List<CellValue>>[];
     for (final account in books.ledger.keys.toList()..sort()) {
       for (final line in books.ledger[account]!) {
         ledgerRows.add([
-          t(account),t(stamp(line.posting.date)),t(line.posting.reference),
+          t(account), dateCell(line.posting.date), t(line.posting.reference),
           t(line.posting.particulars),
-          moneyOrBlank(line.posting.debit),moneyOrBlank(line.posting.credit),
-          moneyOrBlank(line.debitBalance),moneyOrBlank(line.creditBalance),
+          moneyOrBlank(line.posting.debit), moneyOrBlank(line.posting.credit),
+          amount(line.signedBalance),
         ]);
       }
     }
     addSheet(book, 'GENERAL LEDGER',
-      ['Account','Date/time','Reference','Particulars',
-       'Debit PHP','Credit PHP','Debit balance PHP','Credit balance PHP'],
-      ledgerRows, widths: [44,24,40,55,22,22,25,25]);
+      ['Account','Date','Reference','Particulars',
+       'Debit PHP','Credit PHP','Balance PHP (+Dr / -Cr)'],
+      ledgerRows, widths: [40,18,38,55,22,22,28]);
     final monthKeys = <String>{
       ...report.months.map((m) => m.month),
       ...imported.map((t) => t.month),
     }.toList()..sort();
     final byMonth = {for (final m in report.months) m.month: m};
     addSheet(book, 'MONTHLY SUMMARY',
-      ['Month','Imported gross sales PHP','Imported fees PHP',
-       'Imported net payments PHP','Adjustments/refunds PHP',
+      ['Month','Recorded gross sales PHP','Processing fees PHP',
+       'Net sales payments PHP','Adjustments/refunds PHP',
        'Manual bank payouts PHP','Manual expenses PHP',
-       'Manual cash movement PHP'],
+       'Payouts + direct sales - expenses PHP'],
       monthKeys.map((key) {
         final m = byMonth[key];
         final p = PayMongoTotals.fromTransactions(
           imported.where((t) => t.month == key));
+        final directCash = imported.where((t) =>
+            t.month == key && t.isManual && t.isPayment)
+            .fold<int>(0, (n, t) => n + t.netCentavos);
         return [
           t(key),amount(p.grossPaymentsCentavos),
           amount(p.paymentFeesCentavos),amount(p.netPaymentsCentavos),
           amount(p.adjustmentsNetCentavos),amount(m?.payoutNet ?? 0),
-          amount(m?.expenses ?? 0),amount(m?.netCashFlow ?? 0),
+          amount(m?.expenses ?? 0),
+          amount((m?.netCashFlow ?? 0) + directCash),
         ];
       }), widths: [17,28,23,29,26,29,26,29]);
     addSheet(book, 'RECONCILIATION NOTES',
@@ -233,30 +236,44 @@ class ExportService {
       'Business address: $businessAddress',
       'Book: $title',
       'Covered period: $period',
-      'Transactions are derived from local entries and sales CSV/Excel imports.',
+      'Transactions are derived from local entries and imported or manual sales.',
       'These are not BIR-registered computerized books or proof of tax filing.',
       'The displayed ledger running balances include prior-period transactions.',
       'Preserve invoices and bank statements; reconcile all provisional entries.',
     ]) { info.appendRow([t(note)]); }
     info.setColumnWidth(0, 110);
-    final monetary = {
-      'Debit', 'Credit', 'Debit balance', 'Credit balance',
-      'Gross collection', 'Fees incl. VAT', 'Processor net',
-      'Bank received', 'Cash / bank paid',
-    };
+    final monetary = headers.map((header) =>
+        header.contains('(₱)') || header.endsWith(' PHP')).toList();
+    CellValue reportCell(String raw, bool isMoney) {
+      if (!isMoney || raw.trim().isEmpty) {
+        return t(raw);
+      }
+      final creditSide = raw.trim().endsWith(' Cr');
+      final cleaned = raw.replaceAll('₱', '').replaceAll(',', '')
+          .replaceAll(RegExp(r'\s+(Dr|Cr)$'), '').trim();
+      final value = double.tryParse(cleaned);
+      if (value == null) {
+        return t(raw);
+      }
+      return DoubleCellValue(creditSide ? -value : value);
+    }
     final reportRows = rows.map((row) => [
       for (var i = 0; i < headers.length; i++)
-        if (monetary.contains(headers[i]) && row[i].trim().isNotEmpty)
-          amount(((double.tryParse(row[i].replaceAll('₱', '')
-             .replaceAll(',', '').trim()) ?? 0) * 100).round())
-        else t(row[i]),
+        reportCell(row[i], monetary[i]),
     ]);
-    addSheet(workbook, title.toUpperCase(), headers, reportRows,
-      widths: List<double>.filled(headers.length, 25));
+    final sheetName = title.split(' - ').first.toUpperCase();
+    final widths = switch (sheetName) {
+      'GENERAL JOURNAL' => <double>[18.0, 37, 75, 22, 22],
+      'GENERAL LEDGER' => <double>[18.0, 37, 58, 22, 22, 25],
+      'CASH RECEIPTS JOURNAL' => <double>[18.0, 37, 58, 22, 22, 23, 23],
+      'CASH DISBURSEMENTS JOURNAL' => <double>[18.0, 37, 57, 42, 23],
+      _ => List<double>.filled(headers.length, 24),
+    };
+    addSheet(workbook, sheetName, headers, reportRows, widths: widths);
     final bytes = workbook.save();
     if (bytes == null) throw StateError('Excel could not generate the workbook');
     await FileSaver.instance.saveFile(
-      name: 'Hyperion_Books_${DateFormat('yyyyMMdd').format(DateTime.now())}_${title.replaceAll(" ", "_")}',
+      name: 'Hyperion_Books_${DateFormat('yyyyMMdd').format(DateTime.now())}_${title.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_')}',
       bytes: Uint8List.fromList(bytes), fileExtension: 'xlsx',
       mimeType: MimeType.custom,
       customMimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');

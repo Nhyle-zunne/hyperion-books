@@ -12,7 +12,7 @@ class HyperionSidebar extends StatelessWidget {
 
   @override Widget build(BuildContext context) => Material(
     color: HyperionColors.card,
-    child: SizedBox(width: 250, child: Column(children: [
+    child: SizedBox(width: 235, child: Column(children: [
       Padding(padding: EdgeInsets.fromLTRB(18, 16, 12, 10),
         child: Row(children: [
           Icon(Icons.dashboard_customize_outlined, size: 18, color: HyperionColors.brand),
@@ -29,6 +29,12 @@ class HyperionSidebar extends StatelessWidget {
           _item('dashboard', 'Dashboard', Icons.dashboard_outlined),
           _item('compliance', 'Compliance', Icons.health_and_safety_outlined),
           _item('sales', 'Sales', Icons.point_of_sale_outlined),
+          _group('Accounting', Icons.calculate_outlined, 'accounting', [
+            _item('books', 'Books of Accounts', Icons.menu_book_outlined, indent: true),
+            _item('financial-reports', 'Financial Reports', Icons.bar_chart_outlined, indent: true),
+            _item('management-reports', 'Management Reports', Icons.insights_outlined, indent: true),
+            _item('aging-reports', 'Aging Reports', Icons.schedule_outlined, indent: true),
+          ]),
           _group('Purchases', Icons.shopping_cart_outlined, 'purchases', [
             _item('product-to-sell', 'Product to Sell', Icons.inventory_2_outlined, indent: true),
             _item('purchase-records', 'Purchase Records', Icons.shopping_bag_outlined, indent: true),
@@ -45,12 +51,6 @@ class HyperionSidebar extends StatelessWidget {
             _item('tax-annual', 'Annual', Icons.event_outlined, indent: true),
             _item('tax-2307', '2307 Certificates', Icons.description_outlined, indent: true),
             _item('tax-invoices', 'e-Invoicing', Icons.receipt_outlined, indent: true),
-          ]),
-          _group('Accounting', Icons.calculate_outlined, 'accounting', [
-            _item('books', 'Books of Accounts', Icons.menu_book_outlined, indent: true),
-            _item('financial-reports', 'Financial Reports', Icons.bar_chart_outlined, indent: true),
-            _item('management-reports', 'Management Reports', Icons.insights_outlined, indent: true),
-            _item('aging-reports', 'Aging Reports', Icons.schedule_outlined, indent: true),
           ]),
           _group('Master List', Icons.list_alt_outlined, 'master', [
             _item('master-customers', 'Customers', Icons.groups_outlined, indent: true),

@@ -35,8 +35,9 @@ for (const tab of ['PAYOUTS','EXPENSES','CASH RECEIPTS JOURNAL','CASH DISBURSEME
 const accounting = source('lib/models/accounting_books.dart');
 assert(accounting.includes('Sales settlement clearing') && accounting.includes('balanced'), 'Combined accounting journals missing');
 const booksUi = source('lib/ui/accounting_books_page.dart');
+const bookModel = source('lib/models/book_table_view.dart');
 for (const name of ['Cash Receipts Journal','Cash Disbursements Journal','General Journal','General Ledger']) {
-  assert(booksUi.includes(name), `Missing accounting book view: ${name}`);
+  assert(bookModel.includes(name), `Missing accounting book view: ${name}`);
 }
 assert(source('lib/ui/home.dart').includes('Sales activity'), 'Sales dashboard missing');
 assert(!source('lib/ui/hyperion_sidebar.dart').includes("_item('paymongo'"), 'Duplicate activity navigation remains');
@@ -44,7 +45,10 @@ assert(source('lib/ui/home.dart').includes('SalesImportService.select'), 'Generi
 assert(source('lib/services/sales_import_service.dart').includes('parseWorkbook'), 'Sales XLSX parser missing');
 assert(source('lib/ui/home.dart').includes('TaxFilingPage'), 'Tax Filing navigation missing');
 assert(source('lib/ui/home.dart').includes('HyperionSidebar'), 'Business sidebar missing');
-assert(source('lib/ui/accounting_books_page.dart').includes('ScrollbarOrientation.bottom'), 'Horizontal Books scrollbar missing');
+assert(source('lib/ui/accounting_books_page.dart').includes('BooksCompactTable'),
+  'Compact no-horizontal-scroll book view missing');
+assert(source('lib/models/book_table_view.dart').includes('Balance (₱)'),
+  'Per-account compact ledger columns missing');
 for (const route of ['tax-calendar','tax-monthly','tax-quarterly','tax-annual','tax-2307','tax-invoices','books','financial-reports','management-reports','aging-reports','purchase-records','business-assets','payroll','bulk-import']) {
   assert(source('lib/ui/hyperion_sidebar.dart').includes(route), `Sidebar route missing: ${route}`);
 }
