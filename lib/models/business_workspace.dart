@@ -136,6 +136,7 @@ class BusinessWorkspace {
   final List<BusinessListItem> masters;
   final List<BusinessReminder> reminders;
   final List<TaxRecord> taxRecords;
+  final List<String> verifiedReferences, voidedReferences;
 
   const BusinessWorkspace({
     this.businessName = '',
@@ -145,6 +146,8 @@ class BusinessWorkspace {
     this.masters = const [],
     this.reminders = const [],
     this.taxRecords = const [],
+    this.verifiedReferences = const [],
+    this.voidedReferences = const [],
   });
 
   BusinessWorkspace copyWith({
@@ -153,6 +156,8 @@ class BusinessWorkspace {
     List<BusinessListItem>? masters,
     List<BusinessReminder>? reminders,
     List<TaxRecord>? taxRecords,
+    List<String>? verifiedReferences,
+    List<String>? voidedReferences,
   }) => BusinessWorkspace(
     businessName: businessName ?? this.businessName,
     registrationStatus: registrationStatus ?? this.registrationStatus,
@@ -161,6 +166,8 @@ class BusinessWorkspace {
     masters: List.unmodifiable(masters ?? this.masters),
     reminders: List.unmodifiable(reminders ?? this.reminders),
     taxRecords: List.unmodifiable(taxRecords ?? this.taxRecords),
+    verifiedReferences: List.unmodifiable(verifiedReferences ?? this.verifiedReferences),
+    voidedReferences: List.unmodifiable(voidedReferences ?? this.voidedReferences),
   );
 
   List<String> get expenseCategories {
@@ -180,6 +187,8 @@ class BusinessWorkspace {
     'masters': masters.map((e) => e.toJson()).toList(),
     'reminders': reminders.map((e) => e.toJson()).toList(),
     'tax_records': taxRecords.map((e) => e.toJson()).toList(),
+    'verified_references': verifiedReferences,
+    'voided_references': voidedReferences,
   };
 
   factory BusinessWorkspace.fromJson(Map<String, dynamic> json) {
@@ -190,13 +199,17 @@ class BusinessWorkspace {
     final rawMasters = json['masters'] ?? [];
     final rawReminders = json['reminders'] ?? [];
     final rawTaxRecords = json['tax_records'] ?? [];
+    final rawVerified = json['verified_references'] ?? [];
+    final rawVoided = json['voided_references'] ?? [];
     if (name is! String || name.length > 180 ||
         reg is! String || !registrationStatuses.contains(reg) ||
         tax is! String || !taxStatuses.contains(tax) ||
         notes is! String || notes.length > 3000 ||
         rawMasters is! List || rawMasters.length > 10000 ||
         rawReminders is! List || rawReminders.length > 10000 ||
-        rawTaxRecords is! List || rawTaxRecords.length > 10000) {
+        rawTaxRecords is! List || rawTaxRecords.length > 10000 ||
+        rawVerified is! List || rawVerified.length > 100000 ||
+        rawVoided is! List || rawVoided.length > 100000) {
       throw const FormatException('Invalid business settings in backup.');
     }
     final masters = <BusinessListItem>[];
@@ -236,12 +249,26 @@ class BusinessWorkspace {
       }
       taxRecords.add(item);
     }
+    List<String> validReferences(List<dynamic> raw) {
+      final result = <String>[];
+      final unique = <String>{};
+      for (final value in raw) {
+        if (value is! String || value.isEmpty || value.length > 160 ||
+            !unique.add(value)) {
+          throw const FormatException('Invalid or duplicate book audit reference.');
+        }
+        result.add(value);
+      }
+      return List.unmodifiable(result);
+    }
     return BusinessWorkspace(
       businessName: name.trim(), registrationStatus: reg,
       taxStatus: tax, notes: notes,
       masters: List.unmodifiable(masters),
       reminders: List.unmodifiable(reminders),
       taxRecords: List.unmodifiable(taxRecords),
+      verifiedReferences: validReferences(rawVerified),
+      voidedReferences: validReferences(rawVoided),
     );
   }
 }
