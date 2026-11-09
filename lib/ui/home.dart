@@ -78,7 +78,8 @@ class _BooksHomeState extends State<BooksHome> {
     try {
       await HyperionLoading.whileRunning(
         'Exporting Excel books', () => ExportService.export(widget.controller.report,
-          paymongo: widget.controller.paymongoTransactions));
+          paymongo: widget.controller.paymongoTransactions,
+          workspace: widget.controller.workspace));
       if (context.mounted) _message(context, 'Excel workbook exported.');
     } catch (error) {
       if (context.mounted) _message(context, 'Excel export failed: $error');
