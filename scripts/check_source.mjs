@@ -35,8 +35,9 @@ for (const tab of ['PAYOUTS','EXPENSES','CASH RECEIPTS JOURNAL','CASH DISBURSEME
 const accounting = source('lib/models/accounting_books.dart');
 assert(accounting.includes('Sales settlement clearing') && accounting.includes('balanced'), 'Combined accounting journals missing');
 const booksUi = source('lib/ui/accounting_books_page.dart');
+const bookModel = source('lib/models/book_table_view.dart');
 for (const name of ['Cash Receipts Journal','Cash Disbursements Journal','General Journal','General Ledger']) {
-  assert(booksUi.includes(name), `Missing accounting book view: ${name}`);
+  assert(bookModel.includes(name), `Missing accounting book view: ${name}`);
 }
 assert(source('lib/ui/home.dart').includes('Sales activity'), 'Sales dashboard missing');
 assert(!source('lib/ui/hyperion_sidebar.dart').includes("_item('paymongo'"), 'Duplicate activity navigation remains');
