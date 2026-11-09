@@ -21,16 +21,22 @@ class TaxFilingPage extends StatefulWidget {
   final List<PayMongoTransaction> transactions;
   final BusinessWorkspace workspace;
   final Future<void> Function(BusinessWorkspace) save;
+  final int initialSection;
   const TaxFilingPage({super.key, required this.entries,
     required this.transactions, required this.workspace,
-    required this.save});
+    required this.save, this.initialSection = 0});
   @override State<TaxFilingPage> createState() => _TaxFilingPageState();
 }
 
 class _TaxFilingPageState extends State<TaxFilingPage> {
-  int section = 0;
+  late int section;
   DateTime viewing = DateTime(DateTime.now().year, DateTime.now().month);
   bool busy = false;
+  @override void initState() {
+    super.initState();
+    section = widget.initialSection.clamp(0, 6);
+  }
+
   static const sections = [
     'Calendar','Monthly','Quarterly','Annual',
     '2307 Certificates','e-Invoicing','Books of Accounts',
