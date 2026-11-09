@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/book_entry.dart';
+import '../models/accounting_books.dart';
 import '../models/paymongo_transaction.dart';
 import '../models/reports.dart';
 import '../services/export_service.dart';
@@ -314,10 +315,15 @@ class _BooksHomeState extends State<BooksHome> {
 
   Widget _overview(BuildContext context) {
     final report = widget.controller.report;
-    final available = report.months.map((m) => m.month).toList();
+    final importedAll = widget.controller.paymongoTransactions;
+    final available = <String>{...report.months.map((m) => m.month),
+      ...importedAll.map((t) => t.month)}.toList()..sort((a, b) => b.compareTo(a));
     final period = _month == 'All time' || available.contains(_month) ? _month : 'All time';
     final selected = period == 'All time' ? report : BooksReport.fromEntries(
       widget.controller.entries.where((e) => e.dateKey.startsWith(period)));
+    final importedInPeriod = importedAll.where(
+      (t) => period == 'All time' || t.month == period).toList();
+    final importedTotals = PayMongoTotals.fromTransactions(importedInPeriod);
     final recent = widget.controller.entries.where(
       (e) => period == 'All time' || e.dateKey.startsWith(period)).take(5).toList();
     final paymongo = selected.payouts.where((e) => e.platform == 'PayMongo')
@@ -346,19 +352,28 @@ class _BooksHomeState extends State<BooksHome> {
           const SizedBox(height: 20),
           _welcomeCard(wide),
           const SizedBox(height: 20),
+          _importedPanel(context, importedTotals, importedInPeriod.length),
+          const SizedBox(height: 19),
+          const Text('Bank and cash movements', style: TextStyle(
+            color: _ink, fontWeight: FontWeight.w800, fontSize: 17)),
+          const SizedBox(height: 6),
+          const Text('These totals come from manually entered bank payouts and expenses, '
+            'not from imported customer payments.', style: TextStyle(
+              fontSize: 12, color: Color(0xFF64758A))),
+          const SizedBox(height: 13),
           LayoutBuilder(builder: (context, size) {
             final columns = size.maxWidth >= 790 ? 3 : size.maxWidth >= 490 ? 2 : 1;
             const spacing = 13.0;
             final cardWidth = (size.maxWidth - (columns - 1) * spacing) / columns;
             return Wrap(spacing: spacing, runSpacing: spacing, children: [
-              SizedBox(width: cardWidth, child: _statCard('Net payouts', php(selected.netPayouts),
+              SizedBox(width: cardWidth, child: _statCard('Bank payouts', php(selected.netPayouts),
                 '${selected.payouts.length} recorded payouts',
                 Icons.south_west, _green)),
               SizedBox(width: cardWidth, child: _statCard('Expenses paid', php(selected.totalExpenses),
                 '${selected.expenses.length} recorded expenses',
                 Icons.north_east, const Color(0xFFB35D55))),
               SizedBox(width: cardWidth, child: _statCard('Net cash movement', php(selected.netCashMovement),
-                'Payouts minus expenses',
+                'Manual bank payouts minus expenses',
                 Icons.account_balance_wallet_outlined, _ink)),
             ]);
           }),
@@ -393,6 +408,86 @@ class _BooksHomeState extends State<BooksHome> {
       );
     });
   }
+
+  Widget _importedPanel(BuildContext context, PayMongoTotals totals, int rows) =>
+    _dashboardPanel(child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(children: [
+          Container(padding: const EdgeInsets.all(9),
+            decoration: BoxDecoration(color: const Color(0xFFE0F5EC),
+              borderRadius: BorderRadius.circular(11)),
+            child: const Icon(Icons.receipt_long_outlined, color: _green)),
+          const SizedBox(width: 11),
+          const Expanded(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Imported PayMongo activity', style: TextStyle(
+                fontSize: 17, fontWeight: FontWeight.w800, color: _ink)),
+              SizedBox(height: 3),
+              Text('Customer collections, fees and adjustments — not bank deposits',
+                style: TextStyle(fontSize: 11.5, color: Color(0xFF64758A))),
+            ],
+          )),
+        ]),
+        const SizedBox(height: 15),
+        if (rows == 0) ...[
+          const Text('No PayMongo transactions in this period. Import a CSV to see sales activity.',
+            style: TextStyle(fontSize: 12.5, color: Color(0xFF64758A))),
+          const SizedBox(height: 9),
+        ] else ...[
+          LayoutBuilder(builder: (context, constraints) {
+            final columns = constraints.maxWidth > 840 ? 4 :
+              constraints.maxWidth > 470 ? 2 : 1;
+            const gap = 12.0;
+            final width = (constraints.maxWidth - (columns - 1) * gap) / columns;
+            return Wrap(spacing: gap, runSpacing: gap, children: [
+              SizedBox(width: width, child: _activityKpi(
+                'Gross customer payments', php(totals.grossPaymentsCentavos),
+                totals.payments.toString() + ' paid transactions')),
+              SizedBox(width: width, child: _activityKpi(
+                'Processing fees (incl. VAT)', php(totals.paymentFeesCentavos),
+                'VAT portion: ' + php(totals.paymentVatCentavos))),
+              SizedBox(width: width, child: _activityKpi(
+                'Net customer payments', php(totals.netPaymentsCentavos),
+                'Held/settled via PayMongo')),
+              SizedBox(width: width, child: _activityKpi(
+                'Adjustments / refunds', php(totals.adjustmentsNetCentavos),
+                totals.adjustments.toString() + ' review items')),
+            ]);
+          }),
+          const SizedBox(height: 11),
+        ],
+        Wrap(spacing: 10, runSpacing: 8, children: [
+          TextButton.icon(onPressed: () => _navigate(3),
+            icon: const Icon(Icons.visibility_outlined, size: 18),
+            label: Text(rows == 0 ? 'View PayMongo activity' :
+              'View ' + rows.toString() + ' transactions')),
+          OutlinedButton.icon(onPressed: () => _importPayMongo(context),
+            icon: const Icon(Icons.upload_file_outlined, size: 17),
+            label: const Text('Import CSV')),
+        ]),
+      ],
+    ));
+
+  Widget _activityKpi(String label, String value, String note) =>
+    Container(
+      width: double.infinity, padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(color: const Color(0xFFF6F9FB),
+        border: Border.all(color: const Color(0xFFE5EBF1)),
+        borderRadius: BorderRadius.circular(12)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(label, style: const TextStyle(fontSize: 11.5,
+          color: Color(0xFF60748A), fontWeight: FontWeight.w700)),
+        const SizedBox(height: 7),
+        FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft,
+          child: Text(value, style: const TextStyle(
+            fontSize: 22, fontWeight: FontWeight.w900, color: _ink))),
+        const SizedBox(height: 5),
+        Text(note, style: const TextStyle(fontSize: 11,
+          color: Color(0xFF60748A))),
+      ]),
+    );
 
   Widget _dashboardHeading() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
     const Text('Financial overview', style: TextStyle(
@@ -677,44 +772,86 @@ class _BooksHomeState extends State<BooksHome> {
   }
 
   Widget _books(BuildContext context) {
-    final report = widget.controller.report;
+    final books = AccountingBooks.fromSources(
+      widget.controller.entries, widget.controller.paymongoTransactions);
+    String dateTime(DateTime date) => DateFormat('yyyy-MM-dd HH:mm').format(date);
+    String nonzero(int value) => value == 0 ? '' : php(value);
     return DefaultTabController(length: 4, child: Column(children: [
-      Padding(padding: const EdgeInsets.fromLTRB(18, 12, 18, 5), child: Row(children: [
-        const Expanded(child: Text('Auto-generated books', style: TextStyle(
-          fontWeight: FontWeight.w900, fontSize: 20, color: _ink))),
-        FilledButton.icon(onPressed: () => _export(context), icon: const Icon(Icons.download_outlined),
-          label: const Text('Excel')),
-      ])),
-      const Padding(padding: EdgeInsets.symmetric(horizontal: 18),
+      Padding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+        child: Row(children: [
+          const Expanded(child: Text('Four accounting books',
+            style: TextStyle(fontWeight: FontWeight.w900,
+              color: _ink, fontSize: 20))),
+          FilledButton.icon(onPressed: () => _export(context),
+            icon: const Icon(Icons.download_outlined, size: 18),
+            label: const Text('Excel')),
+        ])),
+      const Padding(padding: EdgeInsets.symmetric(horizontal: 16),
         child: Align(alignment: Alignment.centerLeft,
-          child: Text('View-only. Every line is generated from your payout and expense entries.',
-            style: TextStyle(fontSize: 12)))),
-      const TabBar(isScrollable: true, tabs: [
-        Tab(text: 'Monthly'), Tab(text: 'Cash books'), Tab(text: 'Journal'), Tab(text: 'Ledger'),
-      ]),
-      Expanded(child: TabBarView(children: [
-        _reportTable(context, ['Month','Payouts','Expenses','Cash movement'],
-          report.months.map((m) => [m.month,php(m.payoutNet),php(m.expenses),php(m.netCashFlow)]).toList()),
-        ListView(padding: const EdgeInsets.all(12), children: [
-          const Text('Cash receipts', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
-          _staticTable(['Date','Platform','Net received'],
-            report.payouts.map((e) => [e.dateKey,e.platform,php(e.amountCentavos)]).toList()),
-          const SizedBox(height: 18),
-          const Text('Cash disbursements', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
-          _staticTable(['Date','Description','Cash paid'],
-            report.expenses.map((e) => [e.dateKey,e.description,php(e.amountCentavos)]).toList()),
+          child: Text('Draft working records based on PayMongo CSV transactions '
+            'and manually entered bank payouts/expenses. '
+            'Not BIR-registered computerized books.',
+            style: TextStyle(fontSize: 11.5, color: Color(0xFF64758A))))),
+      if (books.warnings.isNotEmpty)
+        Padding(padding: const EdgeInsets.fromLTRB(16, 9, 16, 5),
+          child: Container(width: double.infinity,
+            padding: const EdgeInsets.all(11),
+            decoration: BoxDecoration(color: const Color(0xFFFFF7E7),
+              borderRadius: BorderRadius.circular(10)),
+            child: Text(books.warnings.take(3).join('\n'),
+              maxLines: 5, overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 11, color: Color(0xFF785828))))),
+      const TabBar(isScrollable: true, tabAlignment: TabAlignment.start,
+        tabs: [
+          Tab(text: 'Cash Receipts Journal'),
+          Tab(text: 'Cash Disbursements Journal'),
+          Tab(text: 'General Journal'),
+          Tab(text: 'General Ledger'),
         ]),
-        _reportTable(context, ['Date','Account','Narration','Debit','Credit'],
-          report.journal.map((l) => [BookEntry.dateKeyOf(l.date),l.account,l.narration,
-            l.debit == 0 ? '' : php(l.debit),l.credit == 0 ? '' : php(l.credit)]).toList()),
+      Expanded(child: TabBarView(children: [
+        _reportTable(context,
+          ['Date / time', 'Reference', 'Particulars', 'Collection channel',
+           'Gross collection', 'Fees incl. VAT', 'Net to processor',
+           'Bank received', 'Bank transfer?'],
+          books.cashReceipts.map((e) => [
+            dateTime(e.date), e.reference, e.particulars, e.channel,
+            nonzero(e.gross), nonzero(e.fees), nonzero(e.processorNet),
+            nonzero(e.bankReceived), e.bankTransfer ? 'Transfer (not sale)' :
+              e.provisional ? 'Provisional' : 'No',
+          ]).toList()),
+        _reportTable(context,
+          ['Date / time', 'Reference', 'Particulars', 'Debit account',
+           'Cash / bank paid'],
+          books.cashDisbursements.map((e) => [
+            dateTime(e.date), e.reference, e.particulars, e.account,
+            php(e.amount),
+          ]).toList()),
+        _reportTable(context,
+          ['Date / time', 'Reference', 'Account', 'Particulars',
+           'Source', 'Debit', 'Credit'],
+          books.journal.map((e) => [
+            dateTime(e.date), e.reference, e.account, e.particulars,
+            e.source, nonzero(e.debit), nonzero(e.credit),
+          ]).toList()),
         ListView(padding: const EdgeInsets.all(12), children: [
-          for (final account in report.ledger.keys.toList()..sort()) ...[
+          for (final account in books.ledger.keys.toList()..sort()) ...[
             Padding(padding: const EdgeInsets.only(top: 12, bottom: 6),
-              child: Text(account, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16))),
-            _staticTable(['Date','Debit','Credit','Debit−credit balance'],
-              report.ledger[account]!.map((l) => [BookEntry.dateKeyOf(l.journal.date),
-                php(l.journal.debit),php(l.journal.credit),php(l.debitMinusCreditBalance)]).toList()),
+              child: Text(account, style: const TextStyle(
+                fontWeight: FontWeight.w800, fontSize: 15))),
+            _staticTable(
+              ['Date / time', 'Reference', 'Particulars',
+               'Debit', 'Credit', 'Debit balance', 'Credit balance'],
+              books.ledger[account]!.map((e) => [
+                dateTime(e.posting.date), e.posting.reference,
+                e.posting.particulars, nonzero(e.posting.debit),
+                nonzero(e.posting.credit), nonzero(e.debitBalance),
+                nonzero(e.creditBalance),
+              ]).toList()),
           ],
+          if (books.ledger.isEmpty)
+            const Padding(padding: EdgeInsets.all(26),
+              child: Text('Import PayMongo CSV transactions or add bank '
+                'payouts/expenses to populate this ledger.')),
         ]),
       ])),
     ]));
