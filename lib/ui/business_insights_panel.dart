@@ -149,7 +149,7 @@ class _BusinessInsightsPanelState extends State<BusinessInsightsPanel> {
       Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
         Text(DateFormat('MMM d').format(a.start),
           style: const TextStyle(fontSize: 11, color: muted)),
-        Text('Peak \${pesos(maxValue)}',
+        Text('Peak ${pesos(maxValue)}',
           style: const TextStyle(fontSize: 11, color: muted)),
         Text(DateFormat('MMM d').format(a.end),
           style: const TextStyle(fontSize: 11, color: muted)),
@@ -220,7 +220,7 @@ class _BusinessInsightsPanelState extends State<BusinessInsightsPanel> {
           const SizedBox(height: 15),
         ],
       const Divider(height: 22),
-      Text('Additional processor fees: \${pesos(a.fees)}',
+      Text('Additional processor fees: ${pesos(a.fees)}',
         style: const TextStyle(color: muted, fontSize: 11)),
     ]));
   }
@@ -265,7 +265,7 @@ class _BusinessInsightsPanelState extends State<BusinessInsightsPanel> {
         ListTile(dense: true, contentPadding: EdgeInsets.zero,
           title: Text(e.description, maxLines: 1, overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontSize: 12)),
-          subtitle: Text('\${DateFormat('MMM d').format(e.date)} · \${e.category}'),
+          subtitle: Text('${DateFormat('MMM d').format(e.date)} · ${e.category}'),
           trailing: Text(pesos(e.amountCentavos),
             style: const TextStyle(color: coral,
               fontWeight: FontWeight.w800, fontSize: 12))),
