@@ -153,15 +153,19 @@ class ExportService {
       books.warnings.map((warning) => [t(warning)]),
       widths: [120]);
     addSheet(book, 'SALES TRANSACTIONS',
-      ['Date & time (CSV)', 'Transaction ID', 'Type', 'Status', 'Gross PHP',
-       'Fee PHP (incl VAT)', 'VAT component PHP', 'Net PHP', 'Method'],
+      ['Date / time', 'Record ID', 'Source', 'Payment reference',
+       'Product / service', 'Customer (optional)', 'Received into',
+       'Type', 'Status', 'Gross PHP', 'Fee PHP',
+       'Fee VAT portion PHP', 'Net PHP', 'Method', 'Notes'],
       imported.map((e) => [
         t(DateFormat('yyyy-MM-dd HH:mm').format(e.occurredAt)), t(e.id),
+        t(e.isManual ? 'Manual direct payment' : 'CSV / Excel import'),
+        t(e.reference), t(e.description), t(e.customer), t(e.depositAccount),
         t(e.type), t(e.status), amount(e.grossCentavos),
         amount(e.feeCentavos), amount(e.vatCentavos),
-        amount(e.netCentavos), t(e.paymentMethod),
+        amount(e.netCentavos), t(e.paymentMethod), t(e.notes),
       ]),
-      widths: [23, 41, 17, 19, 20, 22, 23, 20, 18]);
+      widths: [23, 41, 24, 27, 35, 27, 27, 17, 19, 20, 22, 23, 20, 18, 38]);
     addSheet(book, 'BUSINESS PROFILE',
       ['Field', 'Value'], [
         [t('Business name'), t(workspace.businessName)],
