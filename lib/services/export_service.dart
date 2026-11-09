@@ -236,30 +236,40 @@ class ExportService {
       'Business address: $businessAddress',
       'Book: $title',
       'Covered period: $period',
-      'Transactions are derived from local entries and sales CSV/Excel imports.',
+      'Transactions are derived from local entries and imported or manual sales.',
       'These are not BIR-registered computerized books or proof of tax filing.',
       'The displayed ledger running balances include prior-period transactions.',
       'Preserve invoices and bank statements; reconcile all provisional entries.',
     ]) { info.appendRow([t(note)]); }
     info.setColumnWidth(0, 110);
-    final monetary = {
-      'Debit', 'Credit', 'Debit balance', 'Credit balance',
-      'Gross collection', 'Fees incl. VAT', 'Processor net',
-      'Bank received', 'Cash / bank paid',
-    };
+    final monetary = headers.map((header) =>
+        header.contains('(₱)') || header.endsWith(' PHP')).toList();
+    CellValue reportCell(String raw, bool isMoney) {
+      if (!isMoney || raw.trim().isEmpty) return t(raw);
+      final creditSide = raw.trim().endsWith(' Cr');
+      final cleaned = raw.replaceAll('₱', '').replaceAll(',', '')
+          .replaceAll(RegExp(r'\\s+(Dr|Cr)$'), '').trim();
+      final value = double.tryParse(cleaned);
+      if (value == null) return t(raw);
+      return DoubleCellValue(creditSide ? -value : value);
+    }
     final reportRows = rows.map((row) => [
       for (var i = 0; i < headers.length; i++)
-        if (monetary.contains(headers[i]) && row[i].trim().isNotEmpty)
-          amount(((double.tryParse(row[i].replaceAll('₱', '')
-             .replaceAll(',', '').trim()) ?? 0) * 100).round())
-        else t(row[i]),
+        reportCell(row[i], monetary[i]),
     ]);
-    addSheet(workbook, title.toUpperCase(), headers, reportRows,
-      widths: List<double>.filled(headers.length, 25));
+    final sheetName = title.split(' - ').first.toUpperCase();
+    final widths = switch (sheetName) {
+      'GENERAL JOURNAL' => [18.0, 37, 75, 22, 22],
+      'GENERAL LEDGER' => [18.0, 37, 58, 22, 22, 25],
+      'CASH RECEIPTS JOURNAL' => [18.0, 37, 58, 22, 22, 23, 23],
+      'CASH DISBURSEMENTS JOURNAL' => [18.0, 37, 57, 42, 23],
+      _ => List<double>.filled(headers.length, 24),
+    };
+    addSheet(workbook, sheetName, headers, reportRows, widths: widths);
     final bytes = workbook.save();
     if (bytes == null) throw StateError('Excel could not generate the workbook');
     await FileSaver.instance.saveFile(
-      name: 'Hyperion_Books_${DateFormat('yyyyMMdd').format(DateTime.now())}_${title.replaceAll(" ", "_")}',
+      name: 'Hyperion_Books_${DateFormat('yyyyMMdd').format(DateTime.now())}_${title.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_')}',
       bytes: Uint8List.fromList(bytes), fileExtension: 'xlsx',
       mimeType: MimeType.custom,
       customMimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
