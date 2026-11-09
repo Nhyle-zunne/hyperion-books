@@ -41,11 +41,15 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
     setState(() => busy = true);
     try {
       await widget.save(next);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Saved in this browser. Export a backup to protect this data.')));
+      }
     } catch (error) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Could not save: $error')));
+      }
     } finally {
       if (mounted) setState(() => busy = false);
     }
