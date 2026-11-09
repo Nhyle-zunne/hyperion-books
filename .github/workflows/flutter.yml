@@ -19,7 +19,7 @@ jobs:
       - run: node --check scripts/make_sw.mjs
       - run: flutter pub get
       - run: flutter analyze
-      - run: flutter test test/backup_test.dart test/book_entry_test.dart test/paymongo_csv_test.dart test/paymongo_screen_test.dart test/paymongo_import_plan_test.dart
+      - run: flutter test test/backup_test.dart test/book_entry_test.dart test/paymongo_csv_test.dart test/paymongo_screen_test.dart test/paymongo_import_plan_test.dart test/accounting_books_test.dart
       - run: flutter test --platform chrome test/dashboard_layout_test.dart test/paymongo_repository_web_test.dart
       - name: Build Flutter Web for GitHub Pages subpath
         run: flutter build web --release --no-web-resources-cdn --base-href=/hyperion-books/
