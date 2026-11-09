@@ -220,8 +220,8 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
           _metric('Bank cash movement', s.bankMovement),
         ]),
         SizedBox(height: 12),
-        Text('${s.paymentCount} imported PayMongo customer payments; '
-          'other receipts are provisional. PayMongo bank transfers are '
+        Text('${s.paymentCount} imported paid sales; '
+          'other receipts are provisional. Bank transfers are '
           'not counted twice.',
           style: TextStyle(color: HyperionColors.muted, fontSize: 12)),
         if (s.adjustmentsPendingReview != 0) Text(
