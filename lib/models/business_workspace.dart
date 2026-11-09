@@ -91,16 +91,19 @@ const taxRecordDirections = ['', 'Incoming', 'Outgoing'];
 class TaxRecord {
   final String id, kind, name, reference, period, status, direction, notes;
   final DateTime date;
+  final DateTime? dueDate;
   final int amountCentavos;
   const TaxRecord({
     required this.id, required this.kind, required this.name,
     required this.reference, required this.date,
+    this.dueDate,
     this.period = '', this.status = 'Draft', this.direction = '',
     this.notes = '', this.amountCentavos = 0,
   });
   Map<String, Object?> toJson() => {
     'id': id, 'kind': kind, 'name': name, 'reference': reference,
     'period': period, 'date': BookEntry.dateKeyOf(date),
+    'due_date': dueDate == null ? null : BookEntry.dateKeyOf(dueDate!),
     'status': status, 'direction': direction,
     'notes': notes, 'amount_centavos': amountCentavos,
   };
@@ -109,6 +112,8 @@ class TaxRecord {
     final name = json['name'], reference = json['reference'];
     final period = json['period'] ?? '';
     final date = json['date'], status = json['status'] ?? 'Draft';
+    final rawDue = json['due_date'];
+    final dueDate = rawDue is String ? DateTime.tryParse(rawDue) : null;
     final direction = json['direction'] ?? '', notes = json['notes'] ?? '';
     final amount = json['amount_centavos'] ?? 0;
     final parsed = date is String ? DateTime.tryParse(date) : null;
@@ -118,6 +123,8 @@ class TaxRecord {
         reference is! String || reference.length > 160 ||
         period is! String || period.length > 40 ||
         parsed == null || date != BookEntry.dateKeyOf(parsed) ||
+        (rawDue != null && (dueDate == null ||
+            rawDue != BookEntry.dateKeyOf(dueDate))) ||
         status is! String || !taxRecordStatuses.contains(status) ||
         direction is! String || !taxRecordDirections.contains(direction) ||
         notes is! String || notes.length > 1500 ||
@@ -126,6 +133,7 @@ class TaxRecord {
     }
     return TaxRecord(id: id, kind: kind, name: name.trim(),
       reference: reference.trim(), period: period.trim(), date: parsed,
+      dueDate: dueDate,
       status: status, direction: direction, notes: notes,
       amountCentavos: amount);
   }
