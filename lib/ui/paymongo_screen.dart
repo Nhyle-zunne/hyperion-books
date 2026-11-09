@@ -12,11 +12,13 @@ class PayMongoScreen extends StatefulWidget {
   final List<PayMongoTransaction> transactions;
   final VoidCallback onImport;
   final VoidCallback onExport;
+  final VoidCallback? onTemplate;
   const PayMongoScreen({
     super.key,
     required this.transactions,
     required this.onImport,
     required this.onExport,
+    this.onTemplate,
   });
 
   @override
@@ -59,7 +61,8 @@ class _PayMongoScreenState extends State<PayMongoScreen> {
             fontSize: 23, fontWeight: FontWeight.w900, color: HyperionColors.ink)),
           SizedBox(height: 7),
           Text('Manage customer sales, processing fees, refunds, and adjustments. '
-            'Import CSV or Excel spreadsheets from your business records.',
+            'Import CSV or Excel spreadsheets from your business records. '
+            'Each sale needs a unique Reference, Date and Gross Amount.',
             style: TextStyle(color: HyperionColors.muted, fontSize: 13)),
           SizedBox(height: 15),
           Wrap(spacing: 10, runSpacing: 10, children: [
@@ -69,6 +72,10 @@ class _PayMongoScreenState extends State<PayMongoScreen> {
             OutlinedButton.icon(
               onPressed: widget.onExport, icon: Icon(Icons.file_download_outlined),
               label: Text('Export Excel books')),
+            if (widget.onTemplate != null) OutlinedButton.icon(
+              onPressed: widget.onTemplate,
+              icon: Icon(Icons.description_outlined),
+              label: Text('Sales CSV template')),
           ]),
           SizedBox(height: 16),
           Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(
