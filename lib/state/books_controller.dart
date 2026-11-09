@@ -3,6 +3,7 @@ import '../data/local_repository.dart';
 import '../models/book_entry.dart';
 import '../models/reports.dart';
 import '../models/paymongo_transaction.dart';
+import '../models/business_workspace.dart';
 
 /// Device-local books. There is no server, OAuth, or automatic cross-device sync.
 class BooksController extends ChangeNotifier {
@@ -11,6 +12,7 @@ class BooksController extends ChangeNotifier {
   String _status = 'Opening your local books…';
   List<BookEntry> _entries = [];
   List<PayMongoTransaction> _paymongo = [];
+  BusinessWorkspace _workspace = const BusinessWorkspace();
 
   String get status => _status;
   bool get loading => _loading;
@@ -20,6 +22,7 @@ class BooksController extends ChangeNotifier {
   BooksReport get report => BooksReport.fromEntries(_entries);
   List<PayMongoTransaction> get paymongoTransactions => List.unmodifiable(_paymongo);
   PayMongoTotals get paymongoTotals => PayMongoTotals.fromTransactions(_paymongo);
+  BusinessWorkspace get workspace => _workspace;
 
   Future<void> start() async {
     try {
@@ -39,6 +42,7 @@ class BooksController extends ChangeNotifier {
     if (repo == null) return;
     _entries = (await repo.list()).where((entry) => !entry.deleted).toList();
     _paymongo = await repo.listPayMongo();
+    _workspace = await repo.readWorkspace();
     _paymongo.sort((a, b) {
       final c = b.occurredAt.compareTo(a.occurredAt);
       return c != 0 ? c : a.id.compareTo(b.id);
@@ -83,11 +87,22 @@ class BooksController extends ChangeNotifier {
     return added;
   }
 
-  /// Explicit overwrite only. The UI must preview totals and confirm first.
-  Future<void> restore(List<BookEntry> entries, {List<PayMongoTransaction> paymongo = const []}) async {
+  Future<void> saveWorkspace(BusinessWorkspace value) async {
     final repo = _repository;
     if (repo == null) throw StateError('Local storage is not available');
-    await repo.replaceAll(entries, paymongo);
+    await repo.saveWorkspace(value);
+    await _reload();
+    _status = 'Business tools saved locally; export a JSON backup.';
+    notifyListeners();
+  }
+
+  /// Explicit overwrite only. The UI must preview totals and confirm first.
+  Future<void> restore(List<BookEntry> entries,
+      {List<PayMongoTransaction> paymongo = const [],
+      BusinessWorkspace workspace = const BusinessWorkspace()}) async {
+    final repo = _repository;
+    if (repo == null) throw StateError('Local storage is not available');
+    await repo.replaceAll(entries, paymongo, workspace: workspace);
     await _reload();
     _status = 'Restored ${entries.length} entries and ${paymongo.length} PayMongo transactions on this device.';
     notifyListeners();
