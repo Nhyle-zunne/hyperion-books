@@ -28,9 +28,9 @@ The desktop navigation is a scrollable, hierarchical sidebar (a full drawer on p
 
 - Purchases includes a product reference list, purchase records and business assets.
 - Expenses includes manually recorded daily expenses and a payroll reference register.
-- Accounting includes journal, ledger, financial, management and invoice aging working reports.
+- Accounting contains a single **Books of Accounts** destination with four built-in tabs (Journal, Ledger, Cash Receipt, Cash Disbursement), plus Financial Reports, Management Reports and Aging Reports. Journal and Ledger are no longer separate sidebar items.
 - Master List links directly to editable local customers, vendors, products and expense categories.
-- Tax Filing links directly to its seven existing sections.
+- Tax Filing links to six sections: Calendar, Monthly, Quarterly, Annual, 2307 Certificates and e-Invoicing. The duplicate Books of Accounts tab and sidebar link were removed; all books are accessed from Accounting.
 
 **Books of Accounts UX:** controls, period filters and the actual report now share one vertical scroll page; the top section is no longer fixed above and covering the table. The transaction grid has an independently scrollable viewport with a permanently visible horizontal scrollbar, a vertical scrollbar and explicit left/right arrows. Click a source reference to view all PayMongo fields retained by Hyperion or the complete manual entry. Source CSV columns excluded for privacy are not recoverable in the app; retain the original CSV securely.
 
