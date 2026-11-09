@@ -165,6 +165,8 @@ class ExportService {
     addSheet(book, 'BUSINESS PROFILE',
       ['Field', 'Value'], [
         [t('Business name'), t(workspace.businessName)],
+        [t('TIN (not verified)'), t(workspace.businessTin)],
+        [t('Business address'), t(workspace.businessAddress)],
         [t('Registration status'), t(workspace.registrationStatus)],
         [t('Tax method (user selected)'), t(workspace.taxStatus)],
         [t('Private notes'), t(workspace.notes)],
@@ -204,6 +206,8 @@ class ExportService {
     String title, List<String> headers, List<List<String>> rows, {
     required String period,
     required String businessName,
+    String businessTin = '',
+    String businessAddress = '',
   }) async {
     final workbook = Excel.createExcel();
     workbook.rename('Sheet1', 'READ ME');
@@ -211,6 +215,8 @@ class ExportService {
     for (final note in [
       'HYPERION BOOKS — DRAFT ACCOUNTING REPORT',
       'Business: ${businessName.trim().isEmpty ? "Not specified" : businessName}',
+      'TIN (user entered): $businessTin',
+      'Business address: $businessAddress',
       'Book: $title',
       'Covered period: $period',
       'Transactions are derived from local entries and PayMongo CSV imports.',
