@@ -88,8 +88,9 @@ class _PayMongoScreenState extends State<PayMongoScreen> {
               Icon(Icons.info_outline, color: Color(0xFF16865B), size: 19),
               SizedBox(width: 9),
               Expanded(child: Text('PayMongo transactions are stored on this device '
-                'for reference and Excel export. They do NOT add to cash payouts, '
-                'cashflow or the existing journal. Enter each actual PayMongo '
+                'for reference and Excel export. Customer payments also appear '
+                'as provisional sales postings in the four draft books. '
+                'They do NOT create actual cash/bank payouts. Enter each PayMongo '
                 'bank transfer once under Entries → Add payout. '
                 'Transaction dates/times are shown as exported, without timezone conversion.',
                 style: TextStyle(fontSize: 12, height: 1.45))),
