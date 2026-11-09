@@ -2,6 +2,9 @@ name: Validate Hyperion Books (local-only)
 on:
   push:
   pull_request:
+concurrency:
+  group: hyperion-books-validate-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
