@@ -15,22 +15,23 @@ bool printTable({
 }) {
   final escape = const HtmlEscape(HtmlEscapeMode.element);
   String e(String value) => escape.convert(value);
+  final pageOrientation = headers.length >= 7 ? 'landscape' : 'portrait';
   final markup = StringBuffer();
   markup.write('''
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <title>Hyperion Books — Report</title>
 <style>
-body{font:13px Arial,sans-serif;padding:32px;color:#112940}
+body{font:11px Arial,sans-serif;padding:15px;color:#112940}
 h1{margin:0;font-size:20px;color:#042353}
 h2{font-size:17px;margin-bottom:5px}
 p{color:#465871}
-table{width:100%;border-collapse:collapse;margin-top:22px}
-th,td{border:1px solid #cad5e3;padding:8px;text-align:left;vertical-align:top}
+table{width:100%;table-layout:fixed;border-collapse:collapse;margin-top:15px}
+th,td{border:1px solid #cad5e3;padding:5px;text-align:left;vertical-align:top;overflow-wrap:anywhere}
 th{background:#edf2f8;font-weight:bold}
-tr{break-inside:avoid}
+tr{break-inside:avoid}thead{display:table-header-group}
 .notice{margin-top:20px;font-size:11px;color:#465871}
 button{background:#042353;color:#fff;border:0;padding:10px 18px;border-radius:6px}
-@media print{@page{size:landscape;margin:12mm}button{display:none}body{padding:0}}
+@media print{@page{size:A4 $pageOrientation;margin:12mm}button{display:none}body{padding:0}}
 </style></head><body><button onclick="window.print()">Print Report</button>
 ''');
   markup.write('<h1>HYPERION BOOKS</h1>');
