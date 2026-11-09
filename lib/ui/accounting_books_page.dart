@@ -11,11 +11,7 @@ import '../services/export_service.dart';
 import '../services/report_printer.dart';
 
 final _money = NumberFormat.currency(locale: 'en_PH', symbol: '₱');
-String _peso(int centavos) => centavos == 0 ? '' : _money.format(centavos / 100);
 String _stamp(DateTime d) => DateFormat('yyyy-MM-dd').format(d);
-String _code(String account) => account.split(' ').first;
-String _account(String account) => account.contains(' ')
-    ? account.substring(account.indexOf(' ') + 1) : account;
 
 /// Report view derived from existing locally stored entries. It never posts new
 /// transactions or changes how PayMongo bank transfers are classified.
@@ -55,13 +51,6 @@ class _AccountingBooksPageState extends State<AccountingBooksPage> {
     final now = DateTime.now();
     _start = DateTime(now.year, now.month);
     _end = DateTime(now.year, now.month + 1, 0);
-  }
-
-  bool _within(DateTime date) {
-    if (_all) return true;
-    final day = DateTime(date.year, date.month, date.day);
-    return (_start == null || !day.isBefore(_start!)) &&
-        (_end == null || !day.isAfter(_end!));
   }
 
   Future<void> _pick(bool begin) async {
