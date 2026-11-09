@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hyperion_books/models/book_entry.dart';
 import 'package:hyperion_books/models/reports.dart';
+import 'package:hyperion_books/models/paymongo_transaction.dart';
 import 'package:hyperion_books/state/books_controller.dart';
 import 'package:hyperion_books/ui/home.dart';
 
@@ -23,6 +24,18 @@ class _DashboardFixture extends BooksController {
 
   @override
   BooksReport get report => BooksReport.fromEntries(entries);
+}
+
+class _ImportedDashboardFixture extends _DashboardFixture {
+  @override
+  List<PayMongoTransaction> get paymongoTransactions => [
+    PayMongoTransaction(
+      id: 'pay_dashboard_sample', type: 'Payment', status: 'Paid',
+      paymentMethod: 'qrph', occurredAt: DateTime(2026, 11, 5, 14, 22),
+      grossCentavos: 10000, feeCentavos: -150, vatCentavos: -16,
+      netCentavos: 9850,
+    ),
+  ];
 }
 
 void main() {
@@ -53,4 +66,23 @@ void main() {
 
   testWidgets('dashboard renders on desktop without overflow',
       (tester) async => expectDashboardAtSize(tester, const Size(1280, 900)));
+  testWidgets('imported PayMongo CSV activity appears on dashboard',
+      (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(1280, 900);
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    final fixture = _ImportedDashboardFixture();
+    addTearDown(fixture.dispose);
+    await tester.pumpWidget(MaterialApp(home: BooksHome(controller: fixture)));
+    await tester.pumpAndSettle();
+    expect(find.text('Imported PayMongo activity'), findsOneWidget);
+    expect(find.text('Gross customer payments'), findsOneWidget);
+    expect(find.text('1 paid transactions'), findsOneWidget);
+    expect(find.text('Bank and cash movements'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
 }

@@ -59,10 +59,13 @@ unsupported statuses and duplicates before any records are saved.
   or oldest first. No timezone conversion is assumed.
 - Re-imported Transaction IDs are skipped; overlapping CSV reports do not
   double-count. Names, emails, phone numbers and billing addresses are not saved.
-- **Transactions are not cash payouts.** They appear only in PayMongo activity
-  and the PAYMONGO TRANSACTIONS Excel sheet, not in the cash journal or net cash
-  balance. Record actual bank transfers once in Entries → Add payout, dated when
-  the funds are received. Expenses remain manual.
+- **Transactions are not bank payouts.** Successful imported payments are now
+  included in dashboard sales activity and draft accounting working papers:
+  debit PayMongo clearing, debit fees (including VAT), credit provisional gross sales.
+  A later bank payout entered in Entries is instead a transfer from PayMongo
+  clearing to the bank, not a second sale. Refunds/adjustments require review.
+  Record actual bank transfers once in Entries → Add payout, dated when the
+  funds are received. Expenses remain manual.
 - The PayMongo Fee column includes its VAT portion; the VAT column is shown for
   reference and is not deducted a second time.
 - JSON backups now include imported transactions. Existing v1 backups remain
@@ -70,3 +73,7 @@ unsupported statuses and duplicates before any records are saved.
   transactions only after a confirmation prompt.
 
 Do not commit private transaction CSVs or financial backups into this repository.
+
+## Four accounting books and BIR scope
+
+The Books page and Excel export now contain separately named **Cash Receipts Journal**, **Cash Disbursements Journal**, **General Journal** and **General Ledger**, each populated from imported PayMongo customer payments and/or manual bank payouts and expenses as appropriate. They are provisional working records, **not automatically compliant or BIR-registered computerized books**. The [accounting and BIR scope](docs/ACCOUNTING_AND_BIR_SCOPE.md) documents the classification assumptions, official BIR references, and missing data that must be reconciled against invoices and bank statements before formal use.

@@ -3,6 +3,7 @@ import 'package:excel/excel.dart';
 import 'package:file_saver/file_saver.dart';
 import 'package:intl/intl.dart';
 import '../models/reports.dart';
+import '../models/accounting_books.dart';
 import '../models/paymongo_transaction.dart';
 
 class ExportService {
@@ -35,21 +36,41 @@ class ExportService {
 
   static Future<void> export(BooksReport report,
       {Iterable<PayMongoTransaction> paymongo = const []}) async {
-    if (!report.journalBalanced) throw StateError('Journal does not balance. Export cancelled.');
+    if (!report.journalBalanced) {
+      throw StateError('Manual journal does not balance. Export cancelled.');
+    }
+    final imported = paymongo.toList()
+      ..sort((a, b) {
+        final order = a.occurredAt.compareTo(b.occurredAt);
+        return order != 0 ? order : a.id.compareTo(b.id);
+      });
+    final books = AccountingBooks.fromSources(
+      [...report.payouts, ...report.expenses], imported);
+    if (!books.balanced) {
+      throw StateError('Combined accounting journal is not balanced. Export cancelled.');
+    }
+    String stamp(DateTime d) => DateFormat('yyyy-MM-dd HH:mm').format(d);
+    CellValue moneyOrBlank(int value) => value == 0 ? t('') : amount(value);
     final book = Excel.createExcel();
     book.rename('Sheet1', 'READ ME');
     final info = book['READ ME'];
     for (final line in [
-      'HYPERION BOOKS — SIMPLE CASH TRACKER',
-      'Source: payouts and expenses entered in the app. Every book sheet is computed from these entries.',
-      'This is a convenience export, not independently certified BIR books of accounts.',
-      'Net platform payouts are not necessarily gross sales. Reconcile invoices, fees, withholding and sale dates for tax reporting.',
-      'When Gross is omitted, provisional receipts equal the net payout and deductions are shown as zero.',
-      'Dates are transaction/payout dates entered by the user, not verified sales dates.',
-      'Deleted entries are excluded. Data remains only in this browser unless exported.',
-      'Payout deductions are unclassified; do not assume every deduction is a deductible processing fee.',
-      'PAYMONGO TRANSACTIONS is imported payment activity, NOT bank transfers. It is not included in the cash journal or net payouts.',
-      'PayMongo Fee includes VAT; the VAT column is for reference and is not deducted again.',
+      'HYPERION BOOKS — ACCOUNTING WORKING PAPERS',
+      'Four separate journals/ledgers: Cash Receipts Journal, Cash Disbursements Journal, General Journal and General Ledger.',
+      'This Excel workbook is NOT a BIR-authorized computerized book or approved loose-leaf book. Confirm registration and approval requirements with your RDO.',
+      'Source records: PayMongo Transactions CSV, manually entered payouts and expenses. Dates and amounts require reconciliation against invoices and bank statements.',
+      'PayMongo payment: Debit PayMongo clearing (net), Debit processor fees (VAT already included), Credit provisional PayMongo sales (gross).',
+      'PayMongo bank payout (entered manually): Debit Cash/Bank, Credit PayMongo clearing; this is NOT a second sale.',
+      'Fees include their VAT component; do not subtract or recognize VAT twice. Input VAT treatment depends on taxpayer status and documentation.',
+      'Adjustments/refunds and gross/fee/net differences go into accounts labeled REVIEW until supporting documents justify their classification.',
+      'Google Play payouts and PayMongo payouts without source transactions remain provisional/unmatched, not verified gross tax receipts.',
+      'A period-filtered ledger does NOT automatically carry in prior period balances. Missing opening balances can affect reconciliation.',
+      'The Cash Receipts Journal separates gross PayMongo collections, net processor clearing and actual bank receipts. Do not sum these distinct columns as revenue.',
+      'The General Journal includes all postings consolidated; do not also post the specialized journal sheets a second time.',
+      'The reports are not a substitute for a registered set of books or verified invoices, official supporting documents and tax returns.',
+      'BIR RMC 65-2025: https://bir-cdn.bir.gov.ph/BIR/pdf/RMC%20No.%2065-2025%20Digest.pdf',
+      'BIR RMC 4-2026: https://bir-cdn.bir.gov.ph/BIR/pdf/RMC%20No.%204-2026.pdf',
+      'BIR RR 7-2024: https://bir-cdn.bir.gov.ph/BIR/pdf/RR%20No.%207-%202024.pdf',
     ]) { info.appendRow([t(line)]); }
     info.setColumnWidth(0, 110);
 
@@ -61,35 +82,72 @@ class ExportService {
     addSheet(book, 'EXPENSES', ['Date','Category','Description','Amount PHP','Entry ID'],
       report.expenses.map((e) => [dateCell(e.date),t(e.category),t(e.description),
         amount(e.amountCentavos),t(e.id)]), widths:[17,20,48,20,40]);
-    addSheet(book, 'CASH RECEIPTS', ['Date','Source','Cash received PHP','Provisional receipts PHP','Deduction PHP','Note'],
-      report.payouts.map((e) => [dateCell(e.date),t(e.platform),amount(e.amountCentavos),
-        amount(e.receiptsCentavos),amount(e.deductionCentavos),t(e.description)]),
-      widths:[18,20,24,26,22,45]);
-    addSheet(book, 'CASH DISBURSEMENTS', ['Date','Paid for','Category','Cash paid PHP'],
-      report.expenses.map((e) => [dateCell(e.date),t(e.description),t(e.category),amount(e.amountCentavos)]),
-      widths:[18,48,23,25]);
-    addSheet(book, 'GENERAL JOURNAL', ['Date','Reference','Account','Narration','Debit PHP','Credit PHP'],
-      report.journal.map((l) => [dateCell(l.date),t(l.entryId),t(l.account),t(l.narration),
-        amount(l.debit),amount(l.credit)]), widths:[18,40,37,54,20,20]);
+    addSheet(book, 'CASH RECEIPTS JOURNAL',
+      ['Date/time','Reference','Particulars','Collection channel',
+       'Gross collection PHP','Fees incl VAT PHP','Net to processor PHP',
+       'Bank received PHP','Classification'],
+      books.cashReceipts.map((e) => [
+        t(stamp(e.date)), t(e.reference), t(e.particulars), t(e.channel),
+        moneyOrBlank(e.gross), moneyOrBlank(e.fees),
+        moneyOrBlank(e.processorNet), moneyOrBlank(e.bankReceived),
+        t(e.bankTransfer ? 'Internal transfer, not revenue' :
+          e.provisional ? 'Provisional; verify' : 'Customer collection'),
+      ]),
+      widths: [24,40,51,35,23,22,24,22,34]);
+    addSheet(book, 'CASH DISBURSEMENTS JOURNAL',
+      ['Date/time','Reference','Particulars / payee',
+       'Debit expense account','Cash/bank paid PHP'],
+      books.cashDisbursements.map((e) => [
+        t(stamp(e.date)), t(e.reference), t(e.particulars),
+        t(e.account), amount(e.amount),
+      ]), widths: [24,40,55,40,23]);
+    addSheet(book, 'GENERAL JOURNAL',
+      ['Date/time','Reference','Account','Particulars','Source',
+       'Debit PHP','Credit PHP'],
+      books.journal.map((e) => [
+        t(stamp(e.date)),t(e.reference),t(e.account),t(e.particulars),
+        t(e.source),moneyOrBlank(e.debit),moneyOrBlank(e.credit),
+      ]), widths: [24,41,43,55,25,22,22]);
     final ledgerRows = <List<CellValue>>[];
-    for (final account in report.ledger.keys.toList()..sort()) {
-      for (final l in report.ledger[account]!) {
-        ledgerRows.add([t(account),dateCell(l.journal.date),t(l.journal.entryId),
-          t(l.journal.narration),amount(l.journal.debit),amount(l.journal.credit),
-          amount(l.debitMinusCreditBalance)]);
+    for (final account in books.ledger.keys.toList()..sort()) {
+      for (final line in books.ledger[account]!) {
+        ledgerRows.add([
+          t(account),t(stamp(line.posting.date)),t(line.posting.reference),
+          t(line.posting.particulars),
+          moneyOrBlank(line.posting.debit),moneyOrBlank(line.posting.credit),
+          moneyOrBlank(line.debitBalance),moneyOrBlank(line.creditBalance),
+        ]);
       }
     }
-    addSheet(book, 'GENERAL LEDGER', ['Account','Date','Reference','Narration','Debit PHP','Credit PHP','Running debit−credit PHP'],
-      ledgerRows, widths:[38,17,40,54,20,20,28]);
-    addSheet(book, 'MONTHLY SUMMARY', ['Month','Net payouts PHP','Known deductions PHP','Provisional receipts PHP','Expenses PHP','Net cash flow PHP'],
-      report.months.map((m) => [t(m.month),amount(m.payoutNet),amount(m.deductions),
-        amount(m.receipts),amount(m.expenses),amount(m.netCashFlow)]),
-      widths:[18,22,24,29,21,24]);
-    final imported = paymongo.toList()
-      ..sort((a, b) {
-        final order = a.occurredAt.compareTo(b.occurredAt);
-        return order != 0 ? order : a.id.compareTo(b.id);
-      });
+    addSheet(book, 'GENERAL LEDGER',
+      ['Account','Date/time','Reference','Particulars',
+       'Debit PHP','Credit PHP','Debit balance PHP','Credit balance PHP'],
+      ledgerRows, widths: [44,24,40,55,22,22,25,25]);
+    final monthKeys = <String>{
+      ...report.months.map((m) => m.month),
+      ...imported.map((t) => t.month),
+    }.toList()..sort();
+    final byMonth = {for (final m in report.months) m.month: m};
+    addSheet(book, 'MONTHLY SUMMARY',
+      ['Month','Imported gross sales PHP','Imported fees PHP',
+       'Imported net payments PHP','Adjustments/refunds PHP',
+       'Manual bank payouts PHP','Manual expenses PHP',
+       'Manual cash movement PHP'],
+      monthKeys.map((key) {
+        final m = byMonth[key];
+        final p = PayMongoTotals.fromTransactions(
+          imported.where((t) => t.month == key));
+        return [
+          t(key),amount(p.grossPaymentsCentavos),
+          amount(p.paymentFeesCentavos),amount(p.netPaymentsCentavos),
+          amount(p.adjustmentsNetCentavos),amount(m?.payoutNet ?? 0),
+          amount(m?.expenses ?? 0),amount(m?.netCashFlow ?? 0),
+        ];
+      }), widths: [17,28,23,29,26,29,26,29]);
+    addSheet(book, 'RECONCILIATION NOTES',
+      ['Review item / warning'],
+      books.warnings.map((warning) => [t(warning)]),
+      widths: [120]);
     addSheet(book, 'PAYMONGO TRANSACTIONS',
       ['Date & time (CSV)', 'Transaction ID', 'Type', 'Status', 'Gross PHP',
        'Fee PHP (incl VAT)', 'VAT component PHP', 'Net PHP', 'Method'],
