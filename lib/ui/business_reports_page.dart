@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/hyperion_theme.dart';
 import 'package:intl/intl.dart';
 import '../models/accounting_books.dart';
 import '../models/book_entry.dart';
@@ -6,9 +7,6 @@ import '../models/business_workspace.dart';
 import '../models/paymongo_transaction.dart';
 import 'business_insights_panel.dart';
 
-const _navy = Color(0xFF042353);
-const _ink = Color(0xFF112940);
-const _muted = Color(0xFF60738A);
 final _php = NumberFormat.currency(locale: 'en_PH', symbol: '₱');
 String _fmt(int cents) => _php.format(cents / 100);
 
@@ -54,42 +52,42 @@ class CompliancePage extends StatelessWidget {
     ];
     final complete = items.where((x) => x.done).length;
     return ListView(padding: const EdgeInsets.fromLTRB(16, 16, 16, 50), children: [
-      const Text('Compliance & Record Readiness', style: TextStyle(
-        fontSize: 23, color: _ink, fontWeight: FontWeight.w900)),
-      const SizedBox(height: 6),
-      const Text('Local bookkeeping health checks · not official BIR compliance',
-        style: TextStyle(color: _muted, fontSize: 12)),
-      const SizedBox(height: 14),
+      Text('Compliance & Record Readiness', style: TextStyle(
+        fontSize: 23, color: HyperionColors.ink, fontWeight: FontWeight.w900)),
+      SizedBox(height: 6),
+      Text('Local bookkeeping health checks · not official BIR compliance',
+        style: TextStyle(color: HyperionColors.muted, fontSize: 12)),
+      SizedBox(height: 14),
       Card(child: Padding(padding: const EdgeInsets.all(18),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('$complete of ${items.length} local checks complete',
-            style: const TextStyle(color: _navy,
+            style: TextStyle(color: HyperionColors.brand,
               fontWeight: FontWeight.w900, fontSize: 18)),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           LinearProgressIndicator(value: complete / items.length, minHeight: 9),
-          const SizedBox(height: 8),
-          const Text('Status depends only on device records and manually entered '
+          SizedBox(height: 8),
+          Text('Status depends only on device records and manually entered '
             'flags. It does not confirm forms are filed, taxes are paid, '
             'invoices are valid or books are BIR-authorized.',
-            style: TextStyle(color: _muted, fontSize: 12)),
+            style: TextStyle(color: HyperionColors.muted, fontSize: 12)),
         ]))),
-      const SizedBox(height: 10),
+      SizedBox(height: 10),
       for (final check in items)
         Card(child: ListTile(
           leading: Icon(check.done ? Icons.check_circle_outline :
             Icons.info_outline, color: check.done ?
-            const Color(0xFF16754B) : const Color(0xFFB27439)),
-          title: Text(check.label, style: const TextStyle(
+            HyperionColors.success : HyperionColors.warning),
+          title: Text(check.label, style: TextStyle(
             fontWeight: FontWeight.w800)),
           subtitle: Text(check.detail),
-          trailing: const Icon(Icons.chevron_right, size: 19),
+          trailing: Icon(Icons.chevron_right, size: 19),
           onTap: () => navigate(check.route),
         )),
-      const SizedBox(height: 10),
-      const Text('Real BIR filing, invoice issuance, permits, tax dates and '
+      SizedBox(height: 10),
+      Text('Real BIR filing, invoice issuance, permits, tax dates and '
         'reconciliations require independent verification with the BIR and '
         'underlying documentation.',
-        style: TextStyle(fontSize: 11, color: _muted)),
+        style: TextStyle(fontSize: 11, color: HyperionColors.muted)),
     ]);
   }
 }
@@ -111,16 +109,16 @@ class BusinessReportsPage extends StatelessWidget {
     if (mode == 'aging') return _aging();
     if (mode == 'management') {
       return ListView(padding: const EdgeInsets.all(16), children: [
-        const Text('Management Reports', style: TextStyle(
-          fontWeight: FontWeight.w900, fontSize: 23, color: _ink)),
-        const SizedBox(height: 6),
-        const Text('Revenue, costs and bank movements from locally entered data',
-          style: TextStyle(color: _muted, fontSize: 12)),
-        const SizedBox(height: 16),
+        Text('Management Reports', style: TextStyle(
+          fontWeight: FontWeight.w900, fontSize: 23, color: HyperionColors.ink)),
+        SizedBox(height: 6),
+        Text('Revenue, costs and bank movements from locally entered data',
+          style: TextStyle(color: HyperionColors.muted, fontSize: 12)),
+        SizedBox(height: 16),
         BusinessInsightsPanel(entries: entries, transactions: transactions,
           onSales: () => navigate('sales'),
           onExpenses: () => navigate('daily-expenses')),
-        const SizedBox(height: 25),
+        SizedBox(height: 25),
       ]);
     }
     final books = AccountingBooks.fromSources(entries, transactions);
@@ -141,29 +139,29 @@ class BusinessReportsPage extends StatelessWidget {
     final expenses = entries.where((e) => e.kind == EntryKind.expense && !e.deleted)
       .fold<int>(0, (n,e) => n + e.amountCentavos);
     return ListView(padding: const EdgeInsets.fromLTRB(16, 16, 16, 45), children: [
-      const Text('Financial Reports', style: TextStyle(
-        fontSize: 23, fontWeight: FontWeight.w900, color: _ink)),
-      const SizedBox(height: 5),
-      const Text('Provisional source-based trial balance and account summary',
-        style: TextStyle(color: _muted, fontSize: 12)),
-      const SizedBox(height: 12),
+      Text('Financial Reports', style: TextStyle(
+        fontSize: 23, fontWeight: FontWeight.w900, color: HyperionColors.ink)),
+      SizedBox(height: 5),
+      Text('Provisional source-based trial balance and account summary',
+        style: TextStyle(color: HyperionColors.muted, fontSize: 12)),
+      SizedBox(height: 12),
       Card(child: Padding(padding: const EdgeInsets.all(16),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('TRIAL BALANCE', style: TextStyle(
-            fontWeight: FontWeight.w900, color: _navy)),
-          const SizedBox(height: 10),
+          Text('TRIAL BALANCE', style: TextStyle(
+            fontWeight: FontWeight.w900, color: HyperionColors.brand)),
+          SizedBox(height: 10),
           Row(children: [
             Expanded(child: _metric('Total debits', _fmt(debit))),
             Expanded(child: _metric('Total credits', _fmt(credit))),
           ]),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(debit == credit ? 'Debits and credits balance mathematically.'
             : 'Trial balance does not balance: review the source records.',
-            style: const TextStyle(color: _muted, fontSize: 12)),
-          const SizedBox(height: 12),
+            style: TextStyle(color: HyperionColors.muted, fontSize: 12)),
+          SizedBox(height: 12),
           Scrollbar(thumbVisibility: false, child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            child: DataTable(columns: const [
+            child: DataTable(columns: [
               DataColumn(label: Text('Account')),
               DataColumn(label: Text('Debit balance')),
               DataColumn(label: Text('Credit balance')),
@@ -177,35 +175,35 @@ class BusinessReportsPage extends StatelessWidget {
               ]),
             ]))),
         ]))),
-      const SizedBox(height: 12),
+      SizedBox(height: 12),
       Card(child: Padding(padding: const EdgeInsets.all(16),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('SOURCE-BASED FINANCIAL SNAPSHOT', style: TextStyle(
-            fontWeight: FontWeight.w900, color: _navy)),
-          const SizedBox(height: 8),
+          Text('SOURCE-BASED FINANCIAL SNAPSHOT', style: TextStyle(
+            fontWeight: FontWeight.w900, color: HyperionColors.brand)),
+          SizedBox(height: 8),
           _line('Cash / bank (book balance)', bank),
           _line('PayMongo settlement clearing', clearing),
-          const Divider(),
+          Divider(),
           _line('Gross PayMongo sales (provisional)', sales),
           _line('Google Play receipts (provisional)', play),
           _line('Processor fees', fees),
           _line('Manual cash expenses', expenses),
-          const Divider(),
+          Divider(),
           _line('Indicative receipts less known costs',
             sales + play - fees - expenses, bold: true),
         ]))),
-      const SizedBox(height: 12),
+      SizedBox(height: 12),
       if (books.warnings.isNotEmpty)
         Card(child: ExpansionTile(title: Text(
           'Accounting review notices (${books.warnings.length})'),
           children: [for (final w in books.warnings)
-            ListTile(title: Text(w, style: const TextStyle(fontSize: 12)))])),
-      const SizedBox(height: 10),
-      const Text('This is NOT a formal income statement or balance sheet. '
+            ListTile(title: Text(w, style: TextStyle(fontSize: 12)))])),
+      SizedBox(height: 10),
+      Text('This is NOT a formal income statement or balance sheet. '
         'Opening balances, inventory, receivables, taxes, refunds, payroll '
         'liabilities and year-end adjustments are not fully captured. '
         'Do not use provisional amounts for tax filing without reconciliation.',
-        style: TextStyle(color: _muted, fontSize: 12)),
+        style: TextStyle(color: HyperionColors.muted, fontSize: 12)),
     ]);
   }
 
@@ -227,28 +225,28 @@ class BusinessReportsPage extends StatelessWidget {
         0,(n,r) => n + r.amountCentavos);
     final open = due.fold<int>(0, (n,r) => n + r.amountCentavos);
     return ListView(padding: const EdgeInsets.fromLTRB(16, 16, 16, 45), children: [
-      const Text('Aging Reports', style: TextStyle(
-        fontSize: 23, fontWeight: FontWeight.w900, color: _ink)),
-      const SizedBox(height: 5),
-      const Text('Manual invoice register · unpaid amounts grouped by due date',
-        style: TextStyle(color: _muted, fontSize: 12)),
-      const SizedBox(height: 13),
+      Text('Aging Reports', style: TextStyle(
+        fontSize: 23, fontWeight: FontWeight.w900, color: HyperionColors.ink)),
+      SizedBox(height: 5),
+      Text('Manual invoice register · unpaid amounts grouped by due date',
+        style: TextStyle(color: HyperionColors.muted, fontSize: 12)),
+      SizedBox(height: 13),
       Card(child: Padding(padding: const EdgeInsets.all(16),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('OPEN INVOICE AMOUNTS  ·  ${_fmt(open)}', style: const TextStyle(
-            fontWeight: FontWeight.w900, color: _navy, fontSize: 16)),
-          const Divider(height: 20),
+          Text('OPEN INVOICE AMOUNTS  ·  ${_fmt(open)}', style: TextStyle(
+            fontWeight: FontWeight.w900, color: HyperionColors.brand, fontSize: 16)),
+          Divider(height: 20),
           _line('Not yet due', band(-100000, -1)),
           _line('Due today — 30 days past due', band(0,30)),
           _line('31–60 days past due', band(31,60)),
           _line('61–90 days past due', band(61,90)),
           _line('More than 90 days past due', band(91,100000)),
           Text('${undated.length} open invoice(s) have no due date and are excluded.',
-            style: const TextStyle(color: _muted, fontSize: 12)),
+            style: TextStyle(color: HyperionColors.muted, fontSize: 12)),
         ]))),
-      const SizedBox(height: 12),
+      SizedBox(height: 12),
       Card(child: Column(children: [
-        if (invoices.isEmpty) const ListTile(title: Text(
+        if (invoices.isEmpty) ListTile(title: Text(
           'No issued, unpaid invoices in the local register.')),
         for (final invoice in invoices)
           ListTile(
@@ -261,34 +259,34 @@ class BusinessReportsPage extends StatelessWidget {
               invoice.status,
             ].where((s) => s.isNotEmpty).join(' · ')),
             trailing: Text(_fmt(invoice.amountCentavos),
-              style: const TextStyle(fontWeight: FontWeight.w800)),
+              style: TextStyle(fontWeight: FontWeight.w800)),
           ),
       ])),
-      const SizedBox(height: 12),
+      SizedBox(height: 12),
       OutlinedButton.icon(onPressed: () => navigate('tax-invoices'),
-        icon: const Icon(Icons.receipt_long_outlined),
-        label: const Text('Manage invoice records and due dates')),
-      const SizedBox(height: 9),
-      const Text('Aging reflects manually entered invoice due dates and '
+        icon: Icon(Icons.receipt_long_outlined),
+        label: Text('Manage invoice records and due dates')),
+      SizedBox(height: 9),
+      Text('Aging reflects manually entered invoice due dates and '
         'statuses only. No live receivables reconciliation or collection '
         'validation exists. Draft/paid/cancelled invoices are excluded.',
-        style: TextStyle(color: _muted, fontSize: 12)),
+        style: TextStyle(color: HyperionColors.muted, fontSize: 12)),
     ]);
   }
 
   Widget _metric(String label,String value) => Column(
     crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(label, style: const TextStyle(color: _muted, fontSize: 11)),
-      const SizedBox(height: 4),
-      Text(value, style: const TextStyle(color: _navy,
+      Text(label, style: TextStyle(color: HyperionColors.muted, fontSize: 11)),
+      SizedBox(height: 4),
+      Text(value, style: TextStyle(color: HyperionColors.brand,
         fontWeight: FontWeight.w900, fontSize: 16)),
     ]);
   Widget _line(String label,int value,{bool bold=false}) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 7), child: Row(children: [
       Expanded(child: Text(label, style: TextStyle(
         fontWeight: bold ? FontWeight.w900 : FontWeight.w500))),
-      const SizedBox(width: 9),
+      SizedBox(width: 9),
       Text(_fmt(value), style: TextStyle(
-        color: _navy, fontWeight: bold ? FontWeight.w900 : FontWeight.w700)),
+        color: HyperionColors.brand, fontWeight: bold ? FontWeight.w900 : FontWeight.w700)),
     ]));
 }
