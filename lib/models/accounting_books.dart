@@ -66,8 +66,8 @@ class AccountingBooks {
       journal.fold<int>(0, (v, x) => v + x.credit);
   int accountBalance(String account) => ledger[account]?.last.signedBalance ?? 0;
 
-  static String monthOf(DateTime d) => d.year.toString().padLeft(4, '0') +
-      '-' + d.month.toString().padLeft(2, '0');
+  static String monthOf(DateTime d) =>
+      "${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}";
 
   factory AccountingBooks.fromSources(
       Iterable<BookEntry> entries, Iterable<PayMongoTransaction> transactions,
@@ -96,7 +96,7 @@ class AccountingBooks {
     }
 
     for (final t in imported) {
-      final memo = t.type + ' via PayMongo';
+      final memo = '${t.type} via PayMongo';
       if (t.isPayment) {
         post(t.id, t.occurredAt, clearing, memo, 'PayMongo CSV', t.netCentavos);
         // PayMongo CSV Fee is negative, with its VAT portion already included.
@@ -118,22 +118,21 @@ class AccountingBooks {
         post(t.id, t.occurredAt, clearing, memo, 'PayMongo CSV', t.netCentavos);
         post(t.id, t.occurredAt,
             t.type == 'Refund' ? refunds : adjustments,
-            'Pending classification - ' + memo, 'PayMongo CSV', -t.netCentavos);
+            'Pending classification - $memo', 'PayMongo CSV', -t.netCentavos);
       }
     }
 
     for (final e in manual) {
       if (e.kind == EntryKind.expense) {
-        final account = '5xxx Expense: ' +
-            (e.category.isEmpty ? 'Uncategorized' : e.category);
+        final account = '5xxx Expense: ${e.category.isEmpty ? 'Uncategorized' : e.category}';
         final memo = e.description.isEmpty ? 'Expense paid' : e.description;
         post(e.id, e.date, account, memo, 'Manual expense', e.amountCentavos);
         post(e.id, e.date, bank, memo, 'Manual expense', -e.amountCentavos);
         disbursements.add(DisbursementRecord(e.id, e.date,
             memo, account, e.amountCentavos));
       } else if (e.platform == 'PayMongo' && hasImported) {
-        final memo = 'PayMongo payout to bank' +
-            (e.description.isEmpty ? '' : ': ' + e.description);
+        final memo = e.description.isEmpty ? 'PayMongo payout to bank'
+            : 'PayMongo payout to bank: ${e.description}';
         post(e.id, e.date, bank, memo, 'Manual bank payout', e.amountCentavos);
         post(e.id, e.date, clearing, memo, 'Manual bank payout', -e.amountCentavos);
         receipts.add(ReceiptRecord(e.id, e.date, memo,
@@ -143,8 +142,8 @@ class AccountingBooks {
           grossOverrides++;
         }
       } else {
-        final memo = e.platform + ' bank payout' +
-            (e.description.isEmpty ? '' : ': ' + e.description);
+        final memo = e.description.isEmpty ? '${e.platform} bank payout'
+            : '${e.platform} bank payout: ${e.description}';
         final gross = e.receiptsCentavos;
         post(e.id, e.date, bank, memo, 'Manual bank payout', e.amountCentavos);
         post(e.id, e.date, deductions, memo, 'Manual bank payout',
@@ -153,7 +152,7 @@ class AccountingBooks {
             e.platform == 'Google Play' ? google : unmatched,
             memo, 'Manual bank payout', -gross);
         receipts.add(ReceiptRecord(e.id, e.date, memo,
-            'Bank / ' + e.platform, gross, e.deductionCentavos,
+            'Bank / ${e.platform}', gross, e.deductionCentavos,
             0, e.amountCentavos, false, true));
       }
     }
@@ -177,15 +176,15 @@ class AccountingBooks {
       ledger.putIfAbsent(p.account, () => []).add(LedgerPosting(p, bal));
     }
     if (adjustmentsCount > 0) {
-      warnings.add(adjustmentsCount.toString() + ' PayMongo adjustments/refunds '
+      warnings.add('$adjustmentsCount PayMongo adjustments/refunds '
           'need supporting documents and classification.');
     }
     if (mismatchCount > 0) {
-      warnings.add(mismatchCount.toString() + ' PayMongo transactions fail '
+      warnings.add('$mismatchCount PayMongo transactions fail '
           'gross/fee/net reconciliation.');
     }
     if (grossOverrides > 0) {
-      warnings.add(grossOverrides.toString() + ' manually entered PayMongo '
+      warnings.add('$grossOverrides manually entered PayMongo '
           'gross amounts were not booked again because CSV sales are used.');
     }
     if (hasImported && (month == null || month == 'All time') &&
