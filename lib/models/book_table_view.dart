@@ -91,7 +91,7 @@ class BookTableData {
           if (!allowed(p.reference)) {
             continue;
           }
-          // Carry approved prior-period activity into the running balance.
+          // Carry included prior-period activity into the running balance.
           if (!allDates && start != null &&
               DateTime(p.date.year, p.date.month, p.date.day).isBefore(start)) {
             running += p.debit - p.credit;
