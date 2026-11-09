@@ -250,7 +250,7 @@ class ExportService {
       }
       final creditSide = raw.trim().endsWith(' Cr');
       final cleaned = raw.replaceAll('₱', '').replaceAll(',', '')
-          .replaceAll(RegExp(r'\s+(Dr|Cr), '').trim();
+          .replaceAll(RegExp(r'\s+(Dr|Cr)$'), '').trim();
       final value = double.tryParse(cleaned);
       if (value == null) {
         return t(raw);
@@ -263,10 +263,10 @@ class ExportService {
     ]);
     final sheetName = title.split(' - ').first.toUpperCase();
     final widths = switch (sheetName) {
-      'GENERAL JOURNAL' => [18.0, 37, 75, 22, 22],
-      'GENERAL LEDGER' => [18.0, 37, 58, 22, 22, 25],
-      'CASH RECEIPTS JOURNAL' => [18.0, 37, 58, 22, 22, 23, 23],
-      'CASH DISBURSEMENTS JOURNAL' => [18.0, 37, 57, 42, 23],
+      'GENERAL JOURNAL' => <double>[18.0, 37, 75, 22, 22],
+      'GENERAL LEDGER' => <double>[18.0, 37, 58, 22, 22, 25],
+      'CASH RECEIPTS JOURNAL' => <double>[18.0, 37, 58, 22, 22, 23, 23],
+      'CASH DISBURSEMENTS JOURNAL' => <double>[18.0, 37, 57, 42, 23],
       _ => List<double>.filled(headers.length, 24),
     };
     addSheet(workbook, sheetName, headers, reportRows, widths: widths);
