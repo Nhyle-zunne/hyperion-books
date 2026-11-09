@@ -25,6 +25,14 @@ class PayMongoScreen extends StatefulWidget {
 class _PayMongoScreenState extends State<PayMongoScreen> {
   bool _newestFirst = true;
   String _month = 'All time';
+  bool _tableMode = false;
+  int _tablePage = 0;
+  final _tableHorizontal = ScrollController();
+
+  @override void dispose() {
+    _tableHorizontal.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +50,7 @@ class _PayMongoScreenState extends State<PayMongoScreen> {
     return LayoutBuilder(builder: (context, size) => ListView.builder(
       padding: EdgeInsets.fromLTRB(size.maxWidth < 500 ? 16 : 24, 20,
         size.maxWidth < 500 ? 16 : 24, 80),
-      itemCount: items.length + 1,
+      itemCount: _tableMode ? 1 : items.length + 1,
       itemBuilder: (context, index) {
         if (index > 0) return _transactionTile(items[index - 1]);
         return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -93,12 +101,17 @@ class _PayMongoScreenState extends State<PayMongoScreen> {
                 value: selectedMonth,
                 items: ['All time', ...months].map((s) =>
                   DropdownMenuItem(value: s, child: Text(s))).toList(),
-                onChanged: (v) => setState(() => _month = v ?? 'All time'),
+                onChanged: (v) => setState(() { _month = v ?? 'All time'; _tablePage = 0; }),
               ),
               OutlinedButton.icon(
-                onPressed: () => setState(() => _newestFirst = !_newestFirst),
+                onPressed: () => setState(() { _newestFirst = !_newestFirst; _tablePage = 0; }),
                 icon: Icon(_newestFirst ? Icons.arrow_downward : Icons.arrow_upward, size: 17),
                 label: Text(_newestFirst ? 'Newest first' : 'Oldest first')),
+              FilterChip(
+                label: const Text('Full-width table'),
+                avatar: const Icon(Icons.table_chart_outlined, size: 17),
+                selected: _tableMode,
+                onSelected: (v) => setState(() { _tableMode = v; _tablePage = 0; })),
             ]),
           const SizedBox(height: 7),
           Text('${items.length} imported transaction(s) in this view',
@@ -106,6 +119,7 @@ class _PayMongoScreenState extends State<PayMongoScreen> {
           const SizedBox(height: 8),
           if (items.isEmpty) const Padding(padding: EdgeInsets.symmetric(vertical: 38),
             child: Center(child: Text('No PayMongo transactions imported yet.'))),
+          if (_tableMode && items.isNotEmpty) _transactionTable(items),
         ]);
       },
     ));
@@ -122,6 +136,117 @@ class _PayMongoScreenState extends State<PayMongoScreen> {
           fontWeight: strong ? FontWeight.w900 : FontWeight.w700)),
       ]));
 
+
+  Future<void> _transactionDetails(PayMongoTransaction txn) async {
+    final values = <MapEntry<String,String>>[
+      MapEntry('Transaction ID', txn.id),
+      MapEntry('Date/time (as exported)',
+        DateFormat('yyyy-MM-dd HH:mm:ss').format(txn.occurredAt)),
+      MapEntry('Type', txn.type),
+      MapEntry('Status', txn.status),
+      MapEntry('Payment method', txn.paymentMethod),
+      MapEntry('Gross amount', _php(txn.grossCentavos)),
+      MapEntry('PayMongo fee incl. VAT', _php(txn.feeCentavos)),
+      MapEntry('Fee VAT component', _php(txn.vatCentavos)),
+      MapEntry('Net amount', _php(txn.netCentavos)),
+    ];
+    await showDialog<void>(context: context, builder: (dialog) =>
+      AlertDialog(title: const Text('PayMongo transaction details'),
+        content: SizedBox(width: 520, child: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start, children: [
+              for (final value in values)
+                Padding(padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(value.key, style: const TextStyle(
+                      color: Color(0xFF64758A), fontSize: 11)),
+                    SelectableText(value.value, style: const TextStyle(
+                      fontWeight: FontWeight.w700, fontSize: 13)),
+                  ])),
+              const Divider(),
+              const Text('The original PayMongo CSV may contain additional columns '
+                'which are intentionally not stored in Hyperion Books.',
+                style: TextStyle(color: Color(0xFF64758A), fontSize: 11)),
+            ]))),
+        actions: [TextButton(onPressed: () => Navigator.pop(dialog),
+          child: const Text('Close'))]));
+  }
+
+  Widget _transactionTable(List<PayMongoTransaction> items) {
+    const pageSize = 40;
+    final maxPage = (items.length - 1) ~/ pageSize;
+    final page = _tablePage.clamp(0, maxPage);
+    final from = page * pageSize;
+    final until = (from + pageSize).clamp(0, items.length);
+    final visible = items.sublist(from, until);
+    final columns = ['Timestamp', 'Transaction ID', 'Type', 'Status',
+      'Method', 'Gross', 'Fees (incl VAT)', 'VAT portion', 'Net'];
+    return Card(child: Padding(padding: const EdgeInsets.all(12),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Row(children: [
+          const Expanded(child: Text('Drag scrollbar or use arrows to see all columns',
+            style: TextStyle(fontSize: 11, color: Color(0xFF64758A)))),
+          IconButton(tooltip: 'Scroll columns left',
+            onPressed: () => _moveTable(-380),
+            icon: const Icon(Icons.chevron_left)),
+          IconButton(tooltip: 'Scroll columns right',
+            onPressed: () => _moveTable(380),
+            icon: const Icon(Icons.chevron_right)),
+        ]),
+        Scrollbar(controller: _tableHorizontal,
+          thumbVisibility: true, trackVisibility: true,
+          interactive: true, thickness: 12,
+          scrollbarOrientation: ScrollbarOrientation.bottom,
+          child: SingleChildScrollView(
+            controller: _tableHorizontal,
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.only(bottom: 18),
+            child: DataTable(
+              horizontalMargin: 12, columnSpacing: 17,
+              headingTextStyle: const TextStyle(
+                fontWeight: FontWeight.w900, color: Color(0xFF112940)),
+              columns: [for (final label in columns)
+                DataColumn(label: Text(label))],
+              rows: [
+                for (final txn in visible) DataRow(
+                  onSelectChanged: (_) => _transactionDetails(txn),
+                  cells: [
+                    DataCell(Text(DateFormat('yyyy-MM-dd HH:mm').format(txn.occurredAt))),
+                    DataCell(ConstrainedBox(constraints: const BoxConstraints(maxWidth: 240),
+                      child: Text(txn.id, maxLines: 2, overflow: TextOverflow.ellipsis))),
+                    DataCell(Text(txn.type)),
+                    DataCell(Text(txn.status)),
+                    DataCell(Text(txn.paymentMethod)),
+                    DataCell(Text(_php(txn.grossCentavos))),
+                    DataCell(Text(_php(txn.feeCentavos))),
+                    DataCell(Text(_php(txn.vatCentavos))),
+                    DataCell(Text(_php(txn.netCentavos))),
+                  ]),
+              ],
+            ),
+          ),
+        ),
+        if (items.length > pageSize) Row(children: [
+          Expanded(child: Text('Rows ${from + 1}–$until of ${items.length}',
+            style: const TextStyle(fontSize: 12))),
+          IconButton(tooltip: 'Previous page',
+            onPressed: page == 0 ? null : () => setState(() => _tablePage = page - 1),
+            icon: const Icon(Icons.chevron_left)),
+          Text('${page + 1} / ${maxPage + 1}'),
+          IconButton(tooltip: 'Next page',
+            onPressed: page == maxPage ? null : () => setState(() => _tablePage = page + 1),
+            icon: const Icon(Icons.chevron_right)),
+        ]),
+      ])));
+  }
+
+  void _moveTable(double delta) {
+    if (!_tableHorizontal.hasClients) return;
+    _tableHorizontal.animateTo((_tableHorizontal.offset + delta)
+      .clamp(0.0, _tableHorizontal.position.maxScrollExtent),
+      duration: const Duration(milliseconds: 220), curve: Curves.easeOut);
+  }
+
   Widget _transactionTile(PayMongoTransaction txn) {
     final payment = txn.isPayment;
     final primary = payment ? const Color(0xFF16865B) : const Color(0xFFAD6651);
@@ -137,6 +262,9 @@ class _PayMongoScreenState extends State<PayMongoScreen> {
               fontWeight: FontWeight.w800, fontSize: 14))),
             Text(_php(txn.netCentavos), style: TextStyle(
               color: primary, fontWeight: FontWeight.w900, fontSize: 15)),
+            IconButton(tooltip: 'View all saved transaction fields',
+              onPressed: () => _transactionDetails(txn),
+              icon: const Icon(Icons.open_in_full_outlined, size: 19)),
           ]),
           const SizedBox(height: 6),
           Text(dateText, style: const TextStyle(
