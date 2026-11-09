@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/hyperion_theme.dart';
 import 'package:intl/intl.dart';
 import '../models/book_entry.dart';
 import '../models/paymongo_transaction.dart';
@@ -24,8 +25,6 @@ import 'hyperion_loading.dart';
 final _peso = NumberFormat.currency(locale: 'en_PH', symbol: '₱', decimalDigits: 2);
 String php(int centavos) => _peso.format(centavos / 100);
 String prettyDate(DateTime date) => DateFormat('MMM d, yyyy').format(date);
-const _ink = Color(0xFF112940);
-const _green = Color(0xFF16865B);
 
 class BooksHome extends StatefulWidget {
   final BooksController controller;
@@ -146,10 +145,10 @@ class _BooksHomeState extends State<BooksHome> {
 
   Future<void> _delete(BuildContext context, BookEntry entry) async {
     final confirmed = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
-      title: const Text('Delete entry?'),
-      content: const Text('This removes the entry from this device. Export a new backup afterward.'),
-      actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete'))],
+      title: Text('Delete entry?'),
+      content: Text('This removes the entry from this device. Export a new backup afterward.'),
+      actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancel')),
+        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text('Delete'))],
     ));
     if (confirmed == true) {
       try {
@@ -180,7 +179,7 @@ class _BooksHomeState extends State<BooksHome> {
     return AnimatedBuilder(animation: widget.controller, builder: (context, _) {
       final ctrl = widget.controller;
       if (ctrl.loading) {
-        return const Scaffold(body: Center(child: Text('Opening your local books…')));
+        return Scaffold(body: Center(child: Text('Opening your local books…')));
       }
       if (!ctrl.ready) {
         return Scaffold(body: Center(child: Padding(
@@ -266,8 +265,8 @@ class _BooksHomeState extends State<BooksHome> {
               IconButton(
                 tooltip: 'Open business navigation',
                 onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-                icon: const Icon(Icons.menu)),
-              const SizedBox(width: 4),
+                icon: Icon(Icons.menu)),
+              SizedBox(width: 4),
             ],
             InkWell(
               onTap: () => _navigate(0),
@@ -277,43 +276,43 @@ class _BooksHomeState extends State<BooksHome> {
                 child: Container(
                   width: 44, height: 44,
                   padding: const EdgeInsets.all(3),
-                  decoration: BoxDecoration(color: const Color(0xFF0B294A),
+                  decoration: BoxDecoration(color: Color(0xFF0B294A),
                     borderRadius: BorderRadius.circular(11)),
                   child: ClipRRect(borderRadius: BorderRadius.circular(8),
                     child: Image.asset('assets/brand/logo.png',
                       fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) => const Icon(
+                      errorBuilder: (context, error, stackTrace) => Icon(
                         Icons.anchor_rounded, color: Color(0xFFF2CB55)))),
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(child: Column(
               crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('HYPERION BOOKS', style: TextStyle(
+                Text('HYPERION BOOKS', style: TextStyle(
                   fontWeight: FontWeight.w900, letterSpacing: .2, fontSize: 16)),
-                const SizedBox(height: 2),
-                Text(title, style: const TextStyle(
-                  color: Color(0xFF64758A), fontSize: 11.5,
+                SizedBox(height: 2),
+                Text(title, style: TextStyle(
+                  color: HyperionColors.muted, fontSize: 11.5,
                   fontWeight: FontWeight.w500)),
               ],
             )),
             if (isWide) ...[
-              const Icon(Icons.circle, color: Color(0xFF16865B), size: 8),
-              const SizedBox(width: 7),
-              const Text('Local & offline', style: TextStyle(
-                color: Color(0xFF64758A), fontSize: 12)),
-              const SizedBox(width: 18),
+              Icon(Icons.circle, color: HyperionColors.accent, size: 8),
+              SizedBox(width: 7),
+              Text('Local & offline', style: TextStyle(
+                color: HyperionColors.muted, fontSize: 12)),
+              SizedBox(width: 18),
             ],
           ]),
           actions: [
             IconButton(
               tooltip: 'Search local records',
               onPressed: () => _searchRecords(context),
-              icon: const Icon(Icons.search_outlined)),
+              icon: Icon(Icons.search_outlined)),
             PopupMenuButton<String>(
               tooltip: 'Quick record',
-              icon: const Icon(Icons.add_circle_outline),
+              icon: Icon(Icons.add_circle_outline),
               onSelected: (action) {
                 if (action == 'payout') {
                   _edit(context, EntryKind.payout);
@@ -325,7 +324,7 @@ class _BooksHomeState extends State<BooksHome> {
                   _importExpenses(context);
                 }
               },
-              itemBuilder: (_) => const [
+              itemBuilder: (_) => [
                 PopupMenuItem(value: 'payout', child: Text('Add bank payout')),
                 PopupMenuItem(value: 'expense', child: Text('Add expense')),
                 PopupMenuItem(value: 'csv', child: Text('Import PayMongo CSV')),
@@ -335,16 +334,16 @@ class _BooksHomeState extends State<BooksHome> {
             IconButton(
               tooltip: 'Back up your records',
               onPressed: () => _backup(context),
-              icon: const Icon(Icons.backup_outlined)),
-            const SizedBox(width: 5),
+              icon: Icon(Icons.backup_outlined)),
+            SizedBox(width: 5),
           ],
         ),
         body: Row(children: [
           if (isWide) HyperionSidebar(
             selected: _route, onSelect: _openRoute),
-          if (isWide) const VerticalDivider(width: 1),
+          if (isWide) VerticalDivider(width: 1),
           Expanded(child: Center(child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1260),
+            constraints: BoxConstraints(maxWidth: 1260),
             child: body,
           ))),
         ]),
@@ -360,7 +359,7 @@ class _BooksHomeState extends State<BooksHome> {
               _navigate(index == 3 ? 5 : index);
             }
           },
-          destinations: const [
+          destinations: [
             NavigationDestination(icon: Icon(Icons.dashboard_outlined), label: 'Home'),
             NavigationDestination(icon: Icon(Icons.swap_vert), label: 'Entries'),
             NavigationDestination(icon: Icon(Icons.menu_book_outlined), label: 'Books'),
@@ -368,10 +367,10 @@ class _BooksHomeState extends State<BooksHome> {
             NavigationDestination(icon: Icon(Icons.more_horiz), label: 'More'),
           ]),
         floatingActionButton: _page == 1 ? FloatingActionButton.extended(
-          backgroundColor: _green, foregroundColor: Colors.white,
+          backgroundColor: HyperionColors.accent, foregroundColor: Colors.white,
           onPressed: () => _edit(context, _route == 'daily-expenses'
             ? EntryKind.expense : EntryKind.payout),
-          icon: const Icon(Icons.add),
+          icon: Icon(Icons.add),
           label: Text(_route == 'daily-expenses' ? 'Expense' : 'Payout')) : null,
       );
     });
@@ -380,66 +379,66 @@ class _BooksHomeState extends State<BooksHome> {
   Widget _bulkImport(BuildContext context) => ListView(
     padding: const EdgeInsets.fromLTRB(18, 18, 18, 55),
     children: [
-      const Text('Bulk Import', style: TextStyle(
-        color: _ink, fontSize: 23, fontWeight: FontWeight.w900)),
-      const SizedBox(height: 6),
-      const Text('Import transaction files locally, preview changes and '
+      Text('Bulk Import', style: TextStyle(
+        color: HyperionColors.ink, fontSize: 23, fontWeight: FontWeight.w900)),
+      SizedBox(height: 6),
+      Text('Import transaction files locally, preview changes and '
         'skip existing source references automatically.',
-        style: TextStyle(color: Color(0xFF64758A))),
-      const SizedBox(height: 14),
+        style: TextStyle(color: HyperionColors.muted)),
+      SizedBox(height: 14),
       Card(child: Padding(padding: const EdgeInsets.all(15),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('PAYMONGO TRANSACTIONS', style: TextStyle(
-            color: _ink, fontWeight: FontWeight.w900)),
-          const SizedBox(height: 7),
+          Text('PAYMONGO TRANSACTIONS', style: TextStyle(
+            color: HyperionColors.ink, fontWeight: FontWeight.w900)),
+          SizedBox(height: 7),
           Text('${widget.controller.paymongoTransactions.length} imported records '
             'in this browser'),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           FilledButton.icon(onPressed: () => _importPayMongo(context),
-            icon: const Icon(Icons.upload_file_outlined),
-            label: const Text('Import PayMongo CSV')),
+            icon: Icon(Icons.upload_file_outlined),
+            label: Text('Import PayMongo CSV')),
         ]))),
-      const SizedBox(height: 10),
+      SizedBox(height: 10),
       Card(child: Padding(padding: const EdgeInsets.all(15),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('EXPENSE TRANSACTIONS', style: TextStyle(
-            color: _ink, fontWeight: FontWeight.w900)),
-          const SizedBox(height: 7),
+          Text('EXPENSE TRANSACTIONS', style: TextStyle(
+            color: HyperionColors.ink, fontWeight: FontWeight.w900)),
+          SizedBox(height: 7),
           Text('${widget.controller.entries.where(
             (e) => e.kind == EntryKind.expense).length} expense entries'),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           Wrap(spacing: 8, runSpacing: 8, children: [
             FilledButton.icon(onPressed: () => _importExpenses(context),
-              icon: const Icon(Icons.upload_file),
-              label: const Text('Import expense CSV')),
+              icon: Icon(Icons.upload_file),
+              label: Text('Import expense CSV')),
             OutlinedButton.icon(onPressed: () => _downloadExpenseTemplate(context),
-              icon: const Icon(Icons.description_outlined),
-              label: const Text('Download CSV template')),
+              icon: Icon(Icons.description_outlined),
+              label: Text('Download CSV template')),
           ]),
         ]))),
-      const SizedBox(height: 10),
+      SizedBox(height: 10),
       Card(child: Padding(padding: const EdgeInsets.all(15),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('BACKUP & ACCOUNTING EXPORT', style: TextStyle(
-            fontWeight: FontWeight.w900, color: _ink)),
-          const SizedBox(height: 10),
+          Text('BACKUP & ACCOUNTING EXPORT', style: TextStyle(
+            fontWeight: FontWeight.w900, color: HyperionColors.ink)),
+          SizedBox(height: 10),
           Wrap(spacing: 8, runSpacing: 8, children: [
             OutlinedButton.icon(onPressed: () => _backup(context),
-              icon: const Icon(Icons.backup_outlined),
-              label: const Text('Export JSON backup')),
+              icon: Icon(Icons.backup_outlined),
+              label: Text('Export JSON backup')),
             OutlinedButton.icon(onPressed: () => _restore(context),
-              icon: const Icon(Icons.restore),
-              label: const Text('Restore JSON backup')),
+              icon: Icon(Icons.restore),
+              label: Text('Restore JSON backup')),
             OutlinedButton.icon(onPressed: () => _export(context),
-              icon: const Icon(Icons.table_view_outlined),
-              label: const Text('Export Excel reports')),
+              icon: Icon(Icons.table_view_outlined),
+              label: Text('Export Excel reports')),
           ]),
         ]))),
-      const SizedBox(height: 12),
-      const Text('Source imports do not automatically move bank cash. '
+      SizedBox(height: 12),
+      Text('Source imports do not automatically move bank cash. '
         'Importing a JSON backup is different: it REPLACES local records '
         'after explicit confirmation. Keep a fresh backup before restoring.',
-        style: TextStyle(color: Color(0xFF64758A), fontSize: 12)),
+        style: TextStyle(color: HyperionColors.muted, fontSize: 12)),
     ]);
 
   Future<void> _searchRecords(BuildContext context) =>
@@ -480,7 +479,7 @@ class _BooksHomeState extends State<BooksHome> {
       final skipped = records.length - novel.length;
       final accept = await showDialog<bool>(context: context, builder: (dialog) =>
         AlertDialog(
-          title: const Text('Import expense CSV?'),
+          title: Text('Import expense CSV?'),
           content: Text(
             'New expenses: ${novel.length}\n'
             'Previously imported (skipped): $skipped\n'
@@ -492,7 +491,7 @@ class _BooksHomeState extends State<BooksHome> {
             'Customer/vendor information is not sent to any server.'),
           actions: [
             TextButton(onPressed: () => Navigator.pop(dialog, false),
-              child: const Text('Cancel')),
+              child: Text('Cancel')),
             if (novel.isNotEmpty)
               FilledButton(onPressed: () => Navigator.pop(dialog, true),
                 child: Text('Import ${novel.length} expenses')),
@@ -533,7 +532,7 @@ class _BooksHomeState extends State<BooksHome> {
             'be overwritten.\n\n';
       final proceed = await showDialog<bool>(context: context, builder: (dialog) =>
         AlertDialog(
-          title: const Text('Import PayMongo transactions?'),
+          title: Text('Import PayMongo transactions?'),
           content: SingleChildScrollView(child: Text(
             'New successful payments: ${totals.payments}\n'
             'New adjustments/refunds: ${totals.adjustments}\n'
@@ -555,7 +554,7 @@ class _BooksHomeState extends State<BooksHome> {
           )),
           actions: [
             TextButton(onPressed: () => Navigator.pop(dialog, false),
-              child: const Text('Cancel')),
+              child: Text('Cancel')),
             if (newRows.isNotEmpty)
               FilledButton(
                 onPressed: () => Navigator.pop(dialog, true),
@@ -594,7 +593,7 @@ class _BooksHomeState extends State<BooksHome> {
       final current = widget.controller.entries;
       final summary = BooksReport.fromEntries(incoming.entries);
       final accepted = await showDialog<bool>(context: context, builder: (dialogContext) => AlertDialog(
-        title: const Text('Replace all local records?'),
+        title: Text('Replace all local records?'),
         content: Text('This JSON backup contains ${incoming.entries.length} payout/expense entries '
           'and ${incoming.paymongo.length} imported PayMongo transactions.\n'
           'Payouts: ${php(summary.netPayouts)}\n'
@@ -606,9 +605,9 @@ class _BooksHomeState extends State<BooksHome> {
           'This will not change other devices.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel')),
+            child: Text('Cancel')),
           FilledButton(onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Replace my local records')),
+            child: Text('Replace my local records')),
         ],
       ));
       if (accepted != true || !context.mounted) return;
@@ -625,8 +624,8 @@ class _BooksHomeState extends State<BooksHome> {
   }
 
   Widget _section(String title, {Widget? trailing}) => Row(children: [
-    Expanded(child: Text(title, style: const TextStyle(fontSize: 20,
-      fontWeight: FontWeight.w800, color: _ink))),
+    Expanded(child: Text(title, style: TextStyle(fontSize: 20,
+      fontWeight: FontWeight.w800, color: HyperionColors.ink))),
     ?trailing,
   ]);
 
@@ -665,28 +664,28 @@ class _BooksHomeState extends State<BooksHome> {
           else
             Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               _dashboardHeading(),
-              const SizedBox(height: 13),
+              SizedBox(height: 13),
               _periodPicker(period, available),
             ]),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
           _welcomeCard(wide),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
           _importedPanel(context, importedTotals, importedInPeriod.length),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
           BusinessInsightsPanel(
             entries: widget.controller.entries,
             transactions: widget.controller.paymongoTransactions,
             onSales: () => _navigate(3),
             onExpenses: () => _navigate(1),
           ),
-          const SizedBox(height: 20),
-          const Text('Bank and cash movements', style: TextStyle(
-            color: _ink, fontWeight: FontWeight.w800, fontSize: 17)),
-          const SizedBox(height: 6),
-          const Text('These totals come from manually entered bank payouts and expenses, '
+          SizedBox(height: 20),
+          Text('Bank and cash movements', style: TextStyle(
+            color: HyperionColors.ink, fontWeight: FontWeight.w800, fontSize: 17)),
+          SizedBox(height: 6),
+          Text('These totals come from manually entered bank payouts and expenses, '
             'not from imported customer payments.', style: TextStyle(
-              fontSize: 12, color: Color(0xFF64758A))),
-          const SizedBox(height: 13),
+              fontSize: 12, color: HyperionColors.muted)),
+          SizedBox(height: 13),
           LayoutBuilder(builder: (context, size) {
             final columns = size.maxWidth >= 790 ? 3 : size.maxWidth >= 490 ? 2 : 1;
             const spacing = 13.0;
@@ -694,41 +693,41 @@ class _BooksHomeState extends State<BooksHome> {
             return Wrap(spacing: spacing, runSpacing: spacing, children: [
               SizedBox(width: cardWidth, child: _statCard('Bank payouts', php(selected.netPayouts),
                 '${selected.payouts.length} recorded payouts',
-                Icons.south_west, _green)),
+                Icons.south_west, HyperionColors.accent)),
               SizedBox(width: cardWidth, child: _statCard('Expenses paid', php(selected.totalExpenses),
                 '${selected.expenses.length} recorded expenses',
-                Icons.north_east, const Color(0xFFB35D55))),
+                Icons.north_east, HyperionColors.danger)),
               SizedBox(width: cardWidth, child: _statCard('Net cash movement', php(selected.netCashMovement),
                 'Manual bank payouts minus expenses',
-                Icons.account_balance_wallet_outlined, _ink)),
+                Icons.account_balance_wallet_outlined, HyperionColors.ink)),
             ]);
           }),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
           if (wide)
             Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Expanded(flex: 7, child: _recentPanel(context, recent)),
-              const SizedBox(width: 16),
+              SizedBox(width: 16),
               Expanded(flex: 4, child: Column(children: [
                 _actionsPanel(context),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 _sourcesPanel(selected, paymongo, play, deductions),
               ])),
             ])
           else ...[
             _actionsPanel(context),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             _recentPanel(context, recent),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             _sourcesPanel(selected, paymongo, play, deductions),
           ],
-          const SizedBox(height: 18),
-          const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Icon(Icons.info_outline, size: 16, color: Color(0xFF64758A)),
+          SizedBox(height: 18),
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Icon(Icons.info_outline, size: 16, color: HyperionColors.muted),
             SizedBox(width: 8),
             Expanded(child: Text(
               'These figures track net payouts by settlement date, not necessarily gross sales. '
               'The generated books are provisional personal records.',
-              style: TextStyle(color: Color(0xFF64758A), fontSize: 11.5, height: 1.45))),
+              style: TextStyle(color: HyperionColors.muted, fontSize: 11.5, height: 1.45))),
           ]),
         ],
       );
@@ -741,26 +740,26 @@ class _BooksHomeState extends State<BooksHome> {
       children: [
         Row(children: [
           Container(padding: const EdgeInsets.all(9),
-            decoration: BoxDecoration(color: const Color(0xFFE0F5EC),
+            decoration: BoxDecoration(color: HyperionColors.accentSoft,
               borderRadius: BorderRadius.circular(11)),
-            child: const Icon(Icons.receipt_long_outlined, color: _green)),
-          const SizedBox(width: 11),
-          const Expanded(child: Column(
+            child: Icon(Icons.receipt_long_outlined, color: HyperionColors.accent)),
+          SizedBox(width: 11),
+          Expanded(child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('Imported PayMongo activity', style: TextStyle(
-                fontSize: 17, fontWeight: FontWeight.w800, color: _ink)),
+                fontSize: 17, fontWeight: FontWeight.w800, color: HyperionColors.ink)),
               SizedBox(height: 3),
               Text('Customer collections, fees and adjustments — not bank deposits',
-                style: TextStyle(fontSize: 11.5, color: Color(0xFF64758A))),
+                style: TextStyle(fontSize: 11.5, color: HyperionColors.muted)),
             ],
           )),
         ]),
-        const SizedBox(height: 15),
+        SizedBox(height: 15),
         if (rows == 0) ...[
-          const Text('No PayMongo transactions in this period. Import a CSV to see sales activity.',
-            style: TextStyle(fontSize: 12.5, color: Color(0xFF64758A))),
-          const SizedBox(height: 9),
+          Text('No PayMongo transactions in this period. Import a CSV to see sales activity.',
+            style: TextStyle(fontSize: 12.5, color: HyperionColors.muted)),
+          SizedBox(height: 9),
         ] else ...[
           LayoutBuilder(builder: (context, constraints) {
             final columns = constraints.maxWidth > 840 ? 4 :
@@ -782,16 +781,16 @@ class _BooksHomeState extends State<BooksHome> {
                 '${totals.adjustments} review items')),
             ]);
           }),
-          const SizedBox(height: 11),
+          SizedBox(height: 11),
         ],
         Wrap(spacing: 10, runSpacing: 8, children: [
           TextButton.icon(onPressed: () => _navigate(3),
-            icon: const Icon(Icons.visibility_outlined, size: 18),
+            icon: Icon(Icons.visibility_outlined, size: 18),
             label: Text(rows == 0 ? 'View PayMongo activity' :
               'View $rows transactions')),
           OutlinedButton.icon(onPressed: () => _importPayMongo(context),
-            icon: const Icon(Icons.upload_file_outlined, size: 17),
-            label: const Text('Import CSV')),
+            icon: Icon(Icons.upload_file_outlined, size: 17),
+            label: Text('Import CSV')),
         ]),
       ],
     ));
@@ -799,42 +798,42 @@ class _BooksHomeState extends State<BooksHome> {
   Widget _activityKpi(String label, String value, String note) =>
     Container(
       width: double.infinity, padding: const EdgeInsets.all(13),
-      decoration: BoxDecoration(color: const Color(0xFFF6F9FB),
-        border: Border.all(color: const Color(0xFFE5EBF1)),
+      decoration: BoxDecoration(color: HyperionColors.elevated,
+        border: Border.all(color: HyperionColors.border),
         borderRadius: BorderRadius.circular(12)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label, style: const TextStyle(fontSize: 11.5,
+        Text(label, style: TextStyle(fontSize: 11.5,
           color: Color(0xFF60748A), fontWeight: FontWeight.w700)),
-        const SizedBox(height: 7),
+        SizedBox(height: 7),
         FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft,
-          child: Text(value, style: const TextStyle(
-            fontSize: 22, fontWeight: FontWeight.w900, color: _ink))),
-        const SizedBox(height: 5),
-        Text(note, style: const TextStyle(fontSize: 11,
+          child: Text(value, style: TextStyle(
+            fontSize: 22, fontWeight: FontWeight.w900, color: HyperionColors.ink))),
+        SizedBox(height: 5),
+        Text(note, style: TextStyle(fontSize: 11,
           color: Color(0xFF60748A))),
       ]),
     );
 
   Widget _dashboardHeading() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    const Text('Financial overview', style: TextStyle(
-      color: _ink, fontSize: 25, fontWeight: FontWeight.w900, height: 1.15)),
-    const SizedBox(height: 5),
+    Text('Financial overview', style: TextStyle(
+      color: HyperionColors.ink, fontSize: 25, fontWeight: FontWeight.w900, height: 1.15)),
+    SizedBox(height: 5),
     Text(DateFormat('EEEE, MMM d, yyyy').format(DateTime.now()),
-      style: const TextStyle(color: Color(0xFF64758A), fontSize: 13)),
+      style: TextStyle(color: HyperionColors.muted, fontSize: 13)),
   ]);
 
   Widget _periodPicker(String period, List<String> available) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
     decoration: BoxDecoration(color: Colors.white,
-      border: Border.all(color: const Color(0xFFE0E7ED)),
+      border: Border.all(color: HyperionColors.border),
       borderRadius: BorderRadius.circular(12)),
     child: Row(mainAxisSize: MainAxisSize.min, children: [
-      const Icon(Icons.calendar_month_outlined, color: _green, size: 18),
-      const SizedBox(width: 9),
+      Icon(Icons.calendar_month_outlined, color: HyperionColors.accent, size: 18),
+      SizedBox(width: 9),
       DropdownButtonHideUnderline(child: DropdownButton<String>(
         value: period, isDense: true,
         borderRadius: BorderRadius.circular(12),
-        style: const TextStyle(fontSize: 13, color: _ink, fontWeight: FontWeight.w700),
+        style: TextStyle(fontSize: 13, color: HyperionColors.ink, fontWeight: FontWeight.w700),
         items: ['All time', ...available]
           .map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
         onChanged: (m) => setState(() => _month = m ?? 'All time'),
@@ -844,7 +843,7 @@ class _BooksHomeState extends State<BooksHome> {
 
   Widget _welcomeCard(bool wide) => Container(
     decoration: BoxDecoration(
-      gradient: const LinearGradient(
+      gradient: LinearGradient(
         colors: [Color(0xFF0B294A), Color(0xFF11506B)],
         begin: Alignment.topLeft, end: Alignment.bottomRight),
       borderRadius: BorderRadius.circular(20)),
@@ -860,31 +859,31 @@ class _BooksHomeState extends State<BooksHome> {
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: .11),
                 borderRadius: BorderRadius.circular(20)),
-              child: const Text('YOUR PERSONAL BOOKKEEPING SPACE',
+              child: Text('YOUR PERSONAL BOOKKEEPING SPACE',
                 style: TextStyle(color: Color(0xFFD0F4E5), fontSize: 10,
                   letterSpacing: 1, fontWeight: FontWeight.w800))),
-            const SizedBox(height: 13),
+            SizedBox(height: 13),
             Text('A clearer picture of your money.',
               style: TextStyle(color: Colors.white,
                 fontSize: wide ? 30 : 24, fontWeight: FontWeight.w900, height: 1.12)),
-            const SizedBox(height: 8),
-            const Text('Record payouts and expenses. Your books update automatically.',
+            SizedBox(height: 8),
+            Text('Record payouts and expenses. Your books update automatically.',
               style: TextStyle(color: Color(0xFFD3E5ED), fontSize: 13)),
-            const SizedBox(height: 19),
+            SizedBox(height: 19),
             Wrap(spacing: 10, runSpacing: 10, children: [
               FilledButton.icon(onPressed: () => _edit(context, EntryKind.payout),
                 style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF25A875), foregroundColor: Colors.white),
-                icon: const Icon(Icons.add_circle_outline, size: 18),
-                label: const Text('Add payout')),
+                  backgroundColor: HyperionColors.accent, foregroundColor: Colors.white),
+                icon: Icon(Icons.add_circle_outline, size: 18),
+                label: Text('Add payout')),
               OutlinedButton.icon(onPressed: () => _edit(context, EntryKind.expense),
                 style: OutlinedButton.styleFrom(foregroundColor: Colors.white,
-                  side: const BorderSide(color: Color(0xFF8AAEC0))),
-                icon: const Icon(Icons.receipt_long_outlined, size: 18),
-                label: const Text('Add expense')),
+                  side: BorderSide(color: Color(0xFF8AAEC0))),
+                icon: Icon(Icons.receipt_long_outlined, size: 18),
+                label: Text('Add expense')),
             ]),
-            const SizedBox(height: 16),
-            const Row(mainAxisSize: MainAxisSize.min, children: [
+            SizedBox(height: 16),
+            Row(mainAxisSize: MainAxisSize.min, children: [
               Icon(Icons.offline_bolt_outlined, size: 14, color: Color(0xFFACDFC8)),
               SizedBox(width: 7),
               Flexible(child: Text('Saved on this device · Works offline',
@@ -900,46 +899,46 @@ class _BooksHomeState extends State<BooksHome> {
         decoration: BoxDecoration(color: accent.withValues(alpha: .10),
           borderRadius: BorderRadius.circular(11)),
         child: Icon(icon, size: 21, color: accent)),
-      const SizedBox(height: 14),
-      Text(title, style: const TextStyle(color: Color(0xFF64758A), fontSize: 12.5,
+      SizedBox(height: 14),
+      Text(title, style: TextStyle(color: HyperionColors.muted, fontSize: 12.5,
         fontWeight: FontWeight.w600)),
-      const SizedBox(height: 5),
+      SizedBox(height: 5),
       FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft,
-        child: Text(amount, style: const TextStyle(
-          color: _ink, fontSize: 25, fontWeight: FontWeight.w900))),
-      const SizedBox(height: 8),
-      Text(detail, style: const TextStyle(color: Color(0xFF64758A), fontSize: 11.5)),
+        child: Text(amount, style: TextStyle(
+          color: HyperionColors.ink, fontSize: 25, fontWeight: FontWeight.w900))),
+      SizedBox(height: 8),
+      Text(detail, style: TextStyle(color: HyperionColors.muted, fontSize: 11.5)),
     ]));
 
   Widget _recentPanel(BuildContext context, List<BookEntry> entries) =>
     _dashboardPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [
-        const Expanded(child: Text('Recent activity', style: TextStyle(
-          color: _ink, fontWeight: FontWeight.w800, fontSize: 17))),
-        TextButton(onPressed: () => _navigate(1), child: const Text('View all')),
+        Expanded(child: Text('Recent activity', style: TextStyle(
+          color: HyperionColors.ink, fontWeight: FontWeight.w800, fontSize: 17))),
+        TextButton(onPressed: () => _navigate(1), child: Text('View all')),
       ]),
       if (entries.isEmpty)
-        const Padding(padding: EdgeInsets.symmetric(vertical: 28),
+        Padding(padding: EdgeInsets.symmetric(vertical: 28),
           child: Column(children: [
-            Icon(Icons.inbox_outlined, color: Color(0xFF8AA0B2), size: 40),
+            Icon(Icons.inbox_outlined, color: HyperionColors.muted, size: 40),
             SizedBox(height: 10),
             Text('Your activity will show up here.',
-              style: TextStyle(color: _ink, fontWeight: FontWeight.w800)),
+              style: TextStyle(color: HyperionColors.ink, fontWeight: FontWeight.w800)),
             SizedBox(height: 5),
             Text('Add your first payout or expense to get started.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Color(0xFF64758A), fontSize: 12)),
+              style: TextStyle(color: HyperionColors.muted, fontSize: 12)),
           ]))
       else
         for (var i = 0; i < entries.length; i++) ...[
-          if (i > 0) const Divider(height: 1, color: Color(0xFFE4EBF0)),
+          if (i > 0) Divider(height: 1, color: HyperionColors.border),
           _activityRow(context, entries[i]),
         ],
     ]));
 
   Widget _activityRow(BuildContext context, BookEntry e) {
     final payout = e.kind == EntryKind.payout;
-    final accent = payout ? _green : const Color(0xFFB35D55);
+    final accent = payout ? HyperionColors.accent : HyperionColors.danger;
     final name = payout ? e.platform : (e.description.isEmpty ? 'Expense' : e.description);
     return InkWell(onTap: () => _edit(context, e.kind, initial: e),
       borderRadius: BorderRadius.circular(10),
@@ -949,15 +948,15 @@ class _BooksHomeState extends State<BooksHome> {
             decoration: BoxDecoration(color: accent.withValues(alpha: .10),
               borderRadius: BorderRadius.circular(11)),
             child: Icon(payout ? Icons.south_west : Icons.north_east, color: accent, size: 18)),
-          const SizedBox(width: 11),
+          SizedBox(width: 11),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(name, overflow: TextOverflow.ellipsis, maxLines: 1,
-              style: const TextStyle(color: _ink, fontSize: 13, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 3),
+              style: TextStyle(color: HyperionColors.ink, fontSize: 13, fontWeight: FontWeight.w800)),
+            SizedBox(height: 3),
             Text(prettyDate(e.date),
-              style: const TextStyle(color: Color(0xFF64758A), fontSize: 11.5)),
+              style: TextStyle(color: HyperionColors.muted, fontSize: 11.5)),
           ])),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           Flexible(child: Text('${payout ? '+' : '−'}${php(e.amountCentavos)}',
             overflow: TextOverflow.ellipsis, maxLines: 1, textAlign: TextAlign.end,
             style: TextStyle(fontSize: 13, color: accent, fontWeight: FontWeight.w900))),
@@ -966,15 +965,15 @@ class _BooksHomeState extends State<BooksHome> {
 
   Widget _actionsPanel(BuildContext context) => _dashboardPanel(
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const Text('Tools & shortcuts', style: TextStyle(
-        color: _ink, fontWeight: FontWeight.w800, fontSize: 17)),
-      const SizedBox(height: 8),
+      Text('Tools & shortcuts', style: TextStyle(
+        color: HyperionColors.ink, fontWeight: FontWeight.w800, fontSize: 17)),
+      SizedBox(height: 8),
       _shortcut(Icons.menu_book_outlined, 'Open your books',
         'Journal, ledger and cash books', () => _navigate(2)),
-      const Divider(height: 1, color: Color(0xFFE4EBF0)),
+      Divider(height: 1, color: HyperionColors.border),
       _shortcut(Icons.file_download_outlined, 'Export Excel',
         'Download your accounting reports', () => _export(context)),
-      const Divider(height: 1, color: Color(0xFFE4EBF0)),
+      Divider(height: 1, color: HyperionColors.border),
       _shortcut(Icons.backup_outlined, 'Back up records',
         'Save a restorable JSON file', () => _backup(context)),
     ]));
@@ -983,35 +982,35 @@ class _BooksHomeState extends State<BooksHome> {
     InkWell(onTap: onTap, borderRadius: BorderRadius.circular(10),
       child: Padding(padding: const EdgeInsets.symmetric(vertical: 12),
         child: Row(children: [
-          Icon(icon, size: 20, color: _green),
-          const SizedBox(width: 12),
+          Icon(icon, size: 20, color: HyperionColors.accent),
+          SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(title, style: const TextStyle(
-              color: _ink, fontSize: 13, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 3),
-            Text(detail, style: const TextStyle(
-              color: Color(0xFF64758A), fontSize: 11.5)),
+            Text(title, style: TextStyle(
+              color: HyperionColors.ink, fontSize: 13, fontWeight: FontWeight.w800)),
+            SizedBox(height: 3),
+            Text(detail, style: TextStyle(
+              color: HyperionColors.muted, fontSize: 11.5)),
           ])),
-          const Icon(Icons.chevron_right, size: 19, color: Color(0xFF64758A)),
+          Icon(Icons.chevron_right, size: 19, color: HyperionColors.muted),
         ])));
 
   Widget _sourcesPanel(BooksReport report, int paymongo, int play, int deductions) =>
     _dashboardPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const Text('Payout sources', style: TextStyle(
-        color: _ink, fontWeight: FontWeight.w800, fontSize: 17)),
-      const SizedBox(height: 4),
-      const Text('Net deposits by payment platform',
-        style: TextStyle(color: Color(0xFF64758A), fontSize: 11.5)),
-      const SizedBox(height: 18),
-      _sourceBar('PayMongo', paymongo, report.netPayouts, _green),
-      const SizedBox(height: 16),
-      _sourceBar('Google Play', play, report.netPayouts, const Color(0xFF376B9A)),
-      const Divider(height: 28, color: Color(0xFFE4EBF0)),
+      Text('Payout sources', style: TextStyle(
+        color: HyperionColors.ink, fontWeight: FontWeight.w800, fontSize: 17)),
+      SizedBox(height: 4),
+      Text('Net deposits by payment platform',
+        style: TextStyle(color: HyperionColors.muted, fontSize: 11.5)),
+      SizedBox(height: 18),
+      _sourceBar('PayMongo', paymongo, report.netPayouts, HyperionColors.accent),
+      SizedBox(height: 16),
+      _sourceBar('Google Play', play, report.netPayouts, HyperionColors.chartBlue),
+      Divider(height: 28, color: HyperionColors.border),
       Row(children: [
-        const Expanded(child: Text('Known platform deductions',
-          style: TextStyle(color: Color(0xFF64758A), fontSize: 11))),
-        Text(php(deductions), style: const TextStyle(
-          color: _ink, fontWeight: FontWeight.w800, fontSize: 12)),
+        Expanded(child: Text('Known platform deductions',
+          style: TextStyle(color: HyperionColors.muted, fontSize: 11))),
+        Text(php(deductions), style: TextStyle(
+          color: HyperionColors.ink, fontWeight: FontWeight.w800, fontSize: 12)),
       ]),
     ]));
 
@@ -1020,25 +1019,25 @@ class _BooksHomeState extends State<BooksHome> {
     return Column(children: [
       Row(children: [
         Expanded(child: Text(name,
-          style: const TextStyle(color: _ink, fontWeight: FontWeight.w700, fontSize: 12.5))),
-        Text(php(value), style: const TextStyle(
-          color: _ink, fontWeight: FontWeight.w800, fontSize: 12.5)),
+          style: TextStyle(color: HyperionColors.ink, fontWeight: FontWeight.w700, fontSize: 12.5))),
+        Text(php(value), style: TextStyle(
+          color: HyperionColors.ink, fontWeight: FontWeight.w800, fontSize: 12.5)),
       ]),
-      const SizedBox(height: 9),
+      SizedBox(height: 9),
       ClipRRect(borderRadius: BorderRadius.circular(20),
         child: LinearProgressIndicator(value: share, minHeight: 7,
-          backgroundColor: const Color(0xFFEDF2F5), color: color)),
+          backgroundColor: HyperionColors.elevated, color: color)),
     ]);
   }
 
   Widget _dashboardPanel({required Widget child}) => Container(
     width: double.infinity, padding: const EdgeInsets.all(19),
     decoration: BoxDecoration(color: Colors.white,
-      border: Border.all(color: const Color(0xFFE2E9F0)),
+      border: Border.all(color: HyperionColors.border),
       borderRadius: BorderRadius.circular(18),
       boxShadow: [BoxShadow(
-        color: _ink.withValues(alpha: .035),
-        blurRadius: 18, offset: const Offset(0, 5))]),
+        color: HyperionColors.ink.withValues(alpha: .035),
+        blurRadius: 18, offset: Offset(0, 5))]),
     child: child);
 
   Widget _transactions(BuildContext context) {
@@ -1049,22 +1048,22 @@ class _BooksHomeState extends State<BooksHome> {
     }).toList()..sort((a, b) => b.date.compareTo(a.date));
     return ListView(padding: const EdgeInsets.fromLTRB(20, 18, 20, 110), children: [
       _section('Your entries'),
-      const SizedBox(height: 8),
-      const Text('Tap an entry to edit. Changes stay on this device until you export a backup.'),
-      const SizedBox(height: 15),
+      SizedBox(height: 8),
+      Text('Tap an entry to edit. Changes stay on this device until you export a backup.'),
+      SizedBox(height: 15),
       Wrap(spacing: 8, children: [
         for (final label in ['All', 'Payouts', 'Expenses']) ChoiceChip(
           label: Text(label), selected: _filter == label,
           onSelected: (_) => setState(() => _filter = label)),
         OutlinedButton.icon(onPressed: () => _edit(context, EntryKind.expense),
-          icon: const Icon(Icons.add), label: const Text('Expense')),
+          icon: Icon(Icons.add), label: Text('Expense')),
         OutlinedButton.icon(onPressed: () => _navigate(3),
-          icon: const Icon(Icons.receipt_long_outlined), label: const Text('PayMongo CSV')),
+          icon: Icon(Icons.receipt_long_outlined), label: Text('PayMongo CSV')),
         OutlinedButton.icon(onPressed: () => _importExpenses(context),
-          icon: const Icon(Icons.upload_file_outlined), label: const Text('Import expenses CSV')),
+          icon: Icon(Icons.upload_file_outlined), label: Text('Import expenses CSV')),
       ]),
-      const SizedBox(height: 10),
-      if (entries.isEmpty) const _EmptyState('No matching entries', 'Use the buttons above to add your first transaction.'),
+      SizedBox(height: 10),
+      if (entries.isEmpty) _EmptyState('No matching entries', 'Use the buttons above to add your first transaction.'),
       ...entries.map((e) => _entryTile(context, e, editable: true)),
     ]);
   }
@@ -1074,16 +1073,16 @@ class _BooksHomeState extends State<BooksHome> {
     return Card(margin: const EdgeInsets.only(bottom: 9), child: ListTile(
       onTap: () => _edit(context, e.kind, initial: e),
       contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 3),
-      leading: CircleAvatar(backgroundColor: payout ? const Color(0xFFE0F5EC) : const Color(0xFFFAE9E6),
+      leading: CircleAvatar(backgroundColor: payout ? HyperionColors.accentSoft : HyperionColors.dangerSoft,
         child: Icon(payout ? Icons.south_west : Icons.north_east,
-          color: payout ? _green : const Color(0xFFC25751))),
+          color: payout ? HyperionColors.accent : HyperionColors.danger)),
       title: Text(payout ? e.platform : e.description, maxLines: 2, overflow: TextOverflow.ellipsis,
-        style: const TextStyle(fontWeight: FontWeight.w700)),
+        style: TextStyle(fontWeight: FontWeight.w700)),
       subtitle: Text('${prettyDate(e.date)}${payout && e.description.isNotEmpty ? ' · ${e.description}' : ''}'
         '', maxLines: 2),
       trailing: Row(mainAxisSize: MainAxisSize.min, children: [
         Text('${payout ? '+' : '−'}${php(e.amountCentavos)}', style: TextStyle(
-          fontWeight: FontWeight.w800, color: payout ? _green : const Color(0xFFC25751))),
+          fontWeight: FontWeight.w800, color: payout ? HyperionColors.accent : HyperionColors.danger)),
         if (editable) PopupMenuButton<String>(
           onSelected: (v) {
             if (v == 'edit') {
@@ -1092,7 +1091,7 @@ class _BooksHomeState extends State<BooksHome> {
               _delete(context, e);
             }
           },
-          itemBuilder: (_) => const [PopupMenuItem(value: 'edit', child: Text('Edit')),
+          itemBuilder: (_) => [PopupMenuItem(value: 'edit', child: Text('Edit')),
             PopupMenuItem(value: 'delete', child: Text('Delete'))],
         ),
       ]),
@@ -1103,42 +1102,42 @@ class _BooksHomeState extends State<BooksHome> {
     final ctrl = widget.controller;
     return ListView(padding: const EdgeInsets.all(20), children: [
       _section('Your records & backups'),
-      const SizedBox(height: 14),
+      SizedBox(height: 14),
       Card(child: Padding(padding: const EdgeInsets.all(18), child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        const Text('Private device storage', style: TextStyle(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
+        Text('Private device storage', style: TextStyle(fontWeight: FontWeight.bold)),
+        SizedBox(height: 8),
         Text('${ctrl.workspace.masters.length} master-list items, '
           '${ctrl.workspace.reminders.length} reminders, '
           '${ctrl.entries.length} cash entries and '
           '${ctrl.paymongoTransactions.length} imported PayMongo transactions in this browser.'),
         Text(ctrl.status),
-        const SizedBox(height: 12),
-        const Text('To move records between devices, export a JSON backup here, '
+        SizedBox(height: 12),
+        Text('To move records between devices, export a JSON backup here, '
           'then import it on the other device. Excel exports are for reading and printing, '
           'and cannot be restored into the app.'),
-        const SizedBox(height: 14),
+        SizedBox(height: 14),
         Wrap(spacing: 10, runSpacing: 10, children: [
           FilledButton.icon(onPressed: () => _backup(context),
-            icon: const Icon(Icons.save_alt), label: const Text('Export JSON backup')),
+            icon: Icon(Icons.save_alt), label: Text('Export JSON backup')),
           OutlinedButton.icon(onPressed: () => _restore(context),
-            icon: const Icon(Icons.restore_page_outlined), label: const Text('Import JSON backup')),
+            icon: Icon(Icons.restore_page_outlined), label: Text('Import JSON backup')),
           OutlinedButton.icon(onPressed: () => _export(context),
-            icon: const Icon(Icons.file_download_outlined), label: const Text('Export Excel books')),
+            icon: Icon(Icons.file_download_outlined), label: Text('Export Excel books')),
           OutlinedButton.icon(onPressed: () => _importPayMongo(context),
-            icon: const Icon(Icons.upload_file), label: const Text('Import PayMongo CSV')),
+            icon: Icon(Icons.upload_file), label: Text('Import PayMongo CSV')),
           OutlinedButton.icon(onPressed: () => _importExpenses(context),
-            icon: const Icon(Icons.upload_file_outlined), label: const Text('Import expenses CSV')),
+            icon: Icon(Icons.upload_file_outlined), label: Text('Import expenses CSV')),
           OutlinedButton.icon(onPressed: () => _downloadExpenseTemplate(context),
-            icon: const Icon(Icons.description_outlined), label: const Text('Expense CSV template')),
+            icon: Icon(Icons.description_outlined), label: Text('Expense CSV template')),
         ]),
       ]))),
-      const SizedBox(height: 15),
+      SizedBox(height: 15),
       Card(child: Padding(padding: const EdgeInsets.all(17), child: Column(
         crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Important notes', style: TextStyle(fontWeight: FontWeight.w800)),
-          const SizedBox(height: 8),
-          const Text('• No Google login, Supabase, cloud sync or external financial database.\n'
+          Text('Important notes', style: TextStyle(fontWeight: FontWeight.w800)),
+          SizedBox(height: 8),
+          Text('• No Google login, Supabase, cloud sync or external financial database.\n'
             '• Records are kept in this browser’s IndexedDB and are not encrypted. Use a trusted, screen-locked device.\n'
             '• Browser cleanup, device loss, or changing the hosting URL can erase local records. Make JSON backups regularly.\n'
             '• Import REPLACES all local records. Export your current backup before importing another one.\n'
@@ -1154,13 +1153,13 @@ class _BooksHomeState extends State<BooksHome> {
 class _EmptyState extends StatelessWidget {
   final String title;
   final String subtitle;
-  const _EmptyState(this.title, this.subtitle);
+  _EmptyState(this.title, this.subtitle);
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 38), child: Column(children: [
       Icon(Icons.inbox_outlined, size: 48, color: Theme.of(context).colorScheme.outline),
-      const SizedBox(height: 8),
-      Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+      SizedBox(height: 8),
+      Text(title, style: TextStyle(fontWeight: FontWeight.w800)),
       Text(subtitle, textAlign: TextAlign.center),
     ]),
   );
