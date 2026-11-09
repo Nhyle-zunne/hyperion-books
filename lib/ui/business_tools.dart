@@ -130,7 +130,7 @@ class _BusinessToolsState extends State<BusinessTools> {
           onTap: () => editItem(item),
           trailing: IconButton(tooltip: 'Delete item',
             icon: const Icon(Icons.delete_outline),
-            onPressed: () => _confirmMasterDelete(item))))),
+            onPressed: () => _confirmMasterDelete(item)))),
     ]);
   }
 
@@ -238,7 +238,7 @@ class _BusinessToolsState extends State<BusinessTools> {
           onTap: () => editTask(task),
           trailing: IconButton(tooltip: 'Delete task',
             icon: const Icon(Icons.delete_outline),
-            onPressed: () => _confirmTaskDelete(task))))),
+            onPressed: () => _confirmTaskDelete(task)))),
     ]);
   }
 
