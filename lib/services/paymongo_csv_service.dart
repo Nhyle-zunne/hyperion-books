@@ -107,126 +107,20 @@ class PayMongoCsvService {
   }
 
   static DateTime _parseDateTime(String raw, int row) {
-    // PayMongo CSV exports have used both forms, including in reports from
-    // different payout dates. Preserve the displayed wall-clock timestamp:
-    // the source CSV does not declare a timezone.
-    // Examples: 2026-11-04 13:51, 2026-11-04T13:51:00,
-    //           11/04/2026 13:51 and 11/9/2026 6:34.
+    // PayMongo CSV exports use both ISO dates and slash-separated US dates.
+    // Preserve the wall-clock time: these files don't declare a timezone.
+    // E.g. 2026-11-04 13:51, 2026-11-04T13:51:00, 11/04/2026 13:51.
     final iso = RegExp(r'^(\d{4})-(\d{1,2})-(\d{1,2})[ T]'
-      r'(\d{1,2}):(\d{2})(?::(\d{2}))?
-
-  /// RFC 4180-style quoted CSV handling, including embedded commas/newlines.
-  static List<List<String>> _parseCsv(String text) {
-    final rows = <List<String>>[];
-    var row = <String>[];
-    final field = StringBuffer();
-    var quoted = false, atFieldStart = true;
-    void pushField() {
-      row.add(field.toString());
-      field.clear();
-      atFieldStart = true;
-    }
-    void pushRow() {
-      pushField();
-      if (row.any((c) => c.isNotEmpty)) rows.add(row);
-      row = <String>[];
-      if (rows.length > maxRows + 1) {
-        throw const FormatException('CSV contains too many rows.');
-      }
-    }
-    for (var i = 0; i < text.length; i++) {
-      final char = text[i];
-      if (char == '"') {
-        if (quoted && i + 1 < text.length && text[i + 1] == '"') {
-          field.write('"');
-          i++;
-        } else if (quoted) {
-          quoted = false;
-        } else if (atFieldStart) {
-          quoted = true;
-          atFieldStart = false;
-        } else {
-          throw const FormatException('Malformed quoted CSV field.');
-        }
-      } else if (quoted) {
-        field.write(char);
-      } else if (char == ',') {
-        pushField();
-      } else if (char == '\n' || char == '\r') {
-        if (char == '\r' && i + 1 < text.length && text[i + 1] == '\n') i++;
-        pushRow();
-      } else {
-        field.write(char);
-        atFieldStart = false;
-      }
-    }
-    if (quoted) throw const FormatException('Unclosed quoted field in CSV.');
-    if (row.isNotEmpty || field.isNotEmpty) pushRow();
-    return rows;
-  }
-}
-).firstMatch(raw);
+      r'(\d{1,2}):(\d{2})(?::(\d{2}))?$').firstMatch(raw);
     final monthFirst = iso == null
       ? RegExp(r'^(\d{1,2})/(\d{1,2})/(\d{4})\s+'
-          r'(\d{1,2}):(\d{2})(?::(\d{2}))?
-
-  /// RFC 4180-style quoted CSV handling, including embedded commas/newlines.
-  static List<List<String>> _parseCsv(String text) {
-    final rows = <List<String>>[];
-    var row = <String>[];
-    final field = StringBuffer();
-    var quoted = false, atFieldStart = true;
-    void pushField() {
-      row.add(field.toString());
-      field.clear();
-      atFieldStart = true;
-    }
-    void pushRow() {
-      pushField();
-      if (row.any((c) => c.isNotEmpty)) rows.add(row);
-      row = <String>[];
-      if (rows.length > maxRows + 1) {
-        throw const FormatException('CSV contains too many rows.');
-      }
-    }
-    for (var i = 0; i < text.length; i++) {
-      final char = text[i];
-      if (char == '"') {
-        if (quoted && i + 1 < text.length && text[i + 1] == '"') {
-          field.write('"');
-          i++;
-        } else if (quoted) {
-          quoted = false;
-        } else if (atFieldStart) {
-          quoted = true;
-          atFieldStart = false;
-        } else {
-          throw const FormatException('Malformed quoted CSV field.');
-        }
-      } else if (quoted) {
-        field.write(char);
-      } else if (char == ',') {
-        pushField();
-      } else if (char == '\n' || char == '\r') {
-        if (char == '\r' && i + 1 < text.length && text[i + 1] == '\n') i++;
-        pushRow();
-      } else {
-        field.write(char);
-        atFieldStart = false;
-      }
-    }
-    if (quoted) throw const FormatException('Unclosed quoted field in CSV.');
-    if (row.isNotEmpty || field.isNotEmpty) pushRow();
-    return rows;
-  }
-}
-).firstMatch(raw)
+          r'(\d{1,2}):(\d{2})(?::(\d{2}))?$').firstMatch(raw)
       : null;
     final match = iso ?? monthFirst;
     if (match == null) {
       throw FormatException(
-        'Unsupported date/time on CSV row $row: use YYYY-MM-DD HH:MM '
-        'or MM/DD/YYYY HH:MM (optional seconds).');
+        'Unsupported date/time on CSV row $row: expected '
+        'YYYY-MM-DD HH:MM or MM/DD/YYYY HH:MM.');
     }
     final year = int.parse(match.group(iso != null ? 1 : 3)!);
     final month = int.parse(match.group(iso != null ? 2 : 1)!);
