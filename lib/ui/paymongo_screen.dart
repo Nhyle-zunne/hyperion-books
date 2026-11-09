@@ -55,17 +55,17 @@ class _PayMongoScreenState extends State<PayMongoScreen> {
       itemBuilder: (context, index) {
         if (index > 0) return _transactionTile(items[index - 1]);
         return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('PayMongo transactions', style: TextStyle(
+          Text('Sales', style: TextStyle(
             fontSize: 23, fontWeight: FontWeight.w900, color: HyperionColors.ink)),
           SizedBox(height: 7),
-          Text('Import successful customer payments and adjustments from '
-            'a PayMongo Transactions CSV. These are NOT bank payouts.',
+          Text('Manage customer sales, processing fees, refunds, and adjustments. '
+            'Import CSV or Excel spreadsheets from your business records.',
             style: TextStyle(color: HyperionColors.muted, fontSize: 13)),
           SizedBox(height: 15),
           Wrap(spacing: 10, runSpacing: 10, children: [
             FilledButton.icon(
               onPressed: widget.onImport, icon: Icon(Icons.upload_file),
-              label: Text('Import PayMongo CSV')),
+              label: Text('Import Sales CSV / Excel')),
             OutlinedButton.icon(
               onPressed: widget.onExport, icon: Icon(Icons.file_download_outlined),
               label: Text('Export Excel books')),
@@ -73,14 +73,14 @@ class _PayMongoScreenState extends State<PayMongoScreen> {
           SizedBox(height: 16),
           Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(
             crossAxisAlignment: CrossAxisAlignment.start, children: [
-              _valueRow('Paid payments', '${totals.payments}'),
-              _valueRow('Gross payment sales', _php(totals.grossPaymentsCentavos)),
-              _valueRow('Total PayMongo fees (includes VAT)', _php(totals.paymentFeesCentavos)),
+              _valueRow('Paid sales', '${totals.payments}'),
+              _valueRow('Gross sales', _php(totals.grossPaymentsCentavos)),
+              _valueRow('Processing fees (including VAT)', _php(totals.paymentFeesCentavos)),
               _valueRow('VAT portion of those fees', _php(totals.paymentVatCentavos)),
               Divider(),
-              _valueRow('Net payments', _php(totals.netPaymentsCentavos), strong: true),
+              _valueRow('Net sales after fees', _php(totals.netPaymentsCentavos), strong: true),
               _valueRow('Adjustments / refunds', _php(totals.adjustmentsNetCentavos)),
-              _valueRow('Net activity including adjustments',
+              _valueRow('Net sales and adjustments',
                 _php(totals.activityNetCentavos), strong: true),
             ]))),
           SizedBox(height: 12),
@@ -88,12 +88,11 @@ class _PayMongoScreenState extends State<PayMongoScreen> {
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Icon(Icons.info_outline, color: HyperionColors.accent, size: 19),
               SizedBox(width: 9),
-              Expanded(child: Text('PayMongo transactions are stored on this device '
-                'for reference and Excel export. Customer payments also appear '
-                'as provisional sales postings in the four draft books. '
-                'They do NOT create actual cash/bank payouts. Enter each PayMongo '
-                'bank transfer once under Entries → Add payout. '
-                'Transaction dates/times are shown as exported, without timezone conversion.',
+              Expanded(child: Text('Sales imports are stored only on this device. Paid customer sales '
+                'appear as provisional sales in draft accounting books, but '
+                'are not actual bank deposits. Record each bank transfer once '
+                'under Entries → Add payout to avoid double-counting. '
+                'Dates and times follow the source file.',
                 style: TextStyle(fontSize: 12, height: 1.45))),
             ]))),
           SizedBox(height: 17),
@@ -120,7 +119,7 @@ class _PayMongoScreenState extends State<PayMongoScreen> {
             style: TextStyle(fontSize: 12, color: HyperionColors.muted)),
           SizedBox(height: 8),
           if (items.isEmpty) Padding(padding: EdgeInsets.symmetric(vertical: 38),
-            child: Center(child: Text('No PayMongo transactions imported yet.'))),
+            child: Center(child: Text('No sales records yet. Import a CSV or Excel file to begin.'))),
           if (_tableMode && items.isNotEmpty) _transactionTable(items),
         ]);
       },
@@ -148,12 +147,12 @@ class _PayMongoScreenState extends State<PayMongoScreen> {
       MapEntry('Status', txn.status),
       MapEntry('Payment method', txn.paymentMethod),
       MapEntry('Gross amount', _php(txn.grossCentavos)),
-      MapEntry('PayMongo fee incl. VAT', _php(txn.feeCentavos)),
+      MapEntry('Processing fee (incl. VAT)', _php(txn.feeCentavos)),
       MapEntry('Fee VAT component', _php(txn.vatCentavos)),
       MapEntry('Net amount', _php(txn.netCentavos)),
     ];
     await showDialog<void>(context: context, builder: (dialog) =>
-      AlertDialog(title: Text('PayMongo transaction details'),
+      AlertDialog(title: Text('Sales transaction details'),
         content: SizedBox(width: 520, child: SingleChildScrollView(
           child: Column(mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -166,8 +165,8 @@ class _PayMongoScreenState extends State<PayMongoScreen> {
                       fontWeight: FontWeight.w700, fontSize: 13)),
                   ])),
               Divider(),
-              Text('The original PayMongo CSV may contain additional columns '
-                'which are intentionally not stored in Hyperion Books.',
+              Text('The original sales file may contain additional columns. '
+                'Only non-personal accounting fields are stored locally.',
                 style: TextStyle(color: HyperionColors.muted, fontSize: 11)),
             ]))),
         actions: [TextButton(onPressed: () => Navigator.pop(dialog),
