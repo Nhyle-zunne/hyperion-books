@@ -14,7 +14,7 @@ class HyperionSidebar extends StatelessWidget {
 
   @override Widget build(BuildContext context) => Material(
     color: Colors.white,
-    child: SizedBox(width: 250, child: Column(children: [
+    child: SizedBox(width: 214, child: Column(children: [
       const Padding(padding: EdgeInsets.fromLTRB(18, 16, 12, 10),
         child: Row(children: [
           Icon(Icons.dashboard_customize_outlined, size: 18, color: _navy),
