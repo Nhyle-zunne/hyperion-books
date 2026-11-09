@@ -8,6 +8,8 @@ bool printTable({
   required String title,
   required String period,
   required String businessName,
+  required String businessTin,
+  required String businessAddress,
   required List<String> headers,
   required List<List<String>> rows,
 }) {
@@ -34,6 +36,16 @@ button{background:#042353;color:#fff;border:0;padding:10px 18px;border-radius:6p
   markup.write('<h1>HYPERION BOOKS</h1>');
   if (businessName.trim().isNotEmpty) {
     markup.write('<p>${e(businessName.trim())}</p>');
+  }
+  if (businessTin.trim().isNotEmpty || businessAddress.trim().isNotEmpty) {
+    markup.write('<p>');
+    if (businessTin.trim().isNotEmpty) {
+      markup.write('TIN ${e(businessTin.trim())}');
+    }
+    if (businessAddress.trim().isNotEmpty) {
+      markup.write(' · ${e(businessAddress.trim())}');
+    }
+    markup.write('</p>');
   }
   markup.write('<h2>${e(title)}</h2><p>Covered period: ${e(period)}</p>');
   markup.write('<table><thead><tr>');
