@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'browser_theme_stub.dart' if (dart.library.html) 'browser_theme_web.dart' as browser;
 
 /// Hyperion PWA's light/dark palette adapted for the Flutter bookkeeping app.
 /// Theme preferences are separate from private financial records and remain
@@ -33,6 +34,7 @@ class HyperionColors {
   static Color get brandFill => _dark
     ? const Color(0xFF22406C) : const Color(0xFF042353);
   static Color get onBrandFill => Colors.white;
+  static Color get onAccent => _dark ? const Color(0xFF04110A) : Colors.white;
   static Color get selected => _dark
     ? const Color(0xFF243858) : const Color(0xFFE8EFFC);
   static Color get danger => _dark
@@ -134,6 +136,7 @@ class HyperionThemeController extends ChangeNotifier {
       _mode = ThemeMode.light;
     }
     HyperionColors.useDark(isDark);
+    browser.applyBrowserTheme(isDark);
     notifyListeners();
   }
 
