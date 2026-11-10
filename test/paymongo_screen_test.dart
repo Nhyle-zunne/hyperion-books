@@ -14,6 +14,7 @@ void main() {
     });
     var imports = 0;
     var templates = 0;
+    var addedSales = 0;
     final sample = PayMongoTransaction(
       id: 'pay_test0001', type: 'Payment', status: 'Paid',
       paymentMethod: 'qrph', occurredAt: DateTime(2026, 11, 5, 23, 12),
@@ -25,6 +26,7 @@ void main() {
       onImport: () => imports++,
       onExport: () {},
       onTemplate: () => templates++,
+      onAddManual: () => addedSales++,
     ))));
     await tester.pumpAndSettle();
     expect(find.text('Sales'), findsOneWidget);
@@ -33,7 +35,12 @@ void main() {
     expect(find.text('Import Sales CSV / Excel'), findsOneWidget);
     expect(find.textContaining('PayMongo'), findsNothing);
     expect(find.text('Sales CSV template'), findsOneWidget);
+    expect(find.text('Add sale'), findsOneWidget);
+    expect(find.text('Add sale manually'), findsNothing);
+    expect(find.text('Add manual sale'), findsNothing);
     expect(tester.takeException(), isNull);
+    await tester.tap(find.text('Add sale'));
+    expect(addedSales, 1);
     await tester.tap(find.text('Import Sales CSV / Excel'));
     expect(imports, 1);
     await tester.tap(find.text('Sales CSV template'));
