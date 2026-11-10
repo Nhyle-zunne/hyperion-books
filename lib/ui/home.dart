@@ -40,6 +40,7 @@ class _BooksHomeState extends State<BooksHome> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   String _filter = 'All';
   String _month = 'All time';
+  String? _invoiceSourceId;
 
   void _navigate(int page) {
     final target = switch (page) {
@@ -52,6 +53,15 @@ class _BooksHomeState extends State<BooksHome> {
       _ => 'dashboard',
     };
     _openRoute(target);
+  }
+
+  void _prepareInvoice(PayMongoTransaction sale) {
+    setState(() {
+      _invoiceSourceId = sale.id;
+      _route = 'tax-invoices';
+      _page = 5;
+    });
+    HyperionLoading.pageTransition('Preparing linked invoice record');
   }
 
   void _openRoute(String route) {
@@ -67,8 +77,9 @@ class _BooksHomeState extends State<BooksHome> {
       'tax-annual' || 'tax-2307' || 'tax-invoices' => 5,
       _ => 6,
     };
-    if (_route == route) return;
+    if (_route == route && _invoiceSourceId == null) return;
     setState(() {
+      _invoiceSourceId = null;
       _route = route;
       _page = page;
       if (route == 'daily-expenses') _filter = 'Expenses';
@@ -242,6 +253,7 @@ class _BooksHomeState extends State<BooksHome> {
           onAddManual: () => _manualSale(context),
           onEditManual: (sale) => _manualSale(context, initial: sale),
           onDeleteManual: (sale) => _deleteManualSale(context, sale),
+          onPrepareInvoice: _prepareInvoice,
         ),
         'compliance' => CompliancePage(
           workspace: ctrl.workspace,
@@ -266,8 +278,9 @@ class _BooksHomeState extends State<BooksHome> {
         'tax-calendar' || 'tax-monthly' || 'tax-quarterly' ||
         'tax-annual' || 'tax-2307' || 'tax-invoices' =>
           TaxFilingPage(
-            key: ValueKey(_route),
+            key: ValueKey('$_route-${_invoiceSourceId ?? ''}'),
             initialSection: _taxSection,
+            initialSaleId: _invoiceSourceId,
             entries: ctrl.entries,
             transactions: ctrl.paymongoTransactions,
             workspace: ctrl.workspace,
@@ -279,6 +292,7 @@ class _BooksHomeState extends State<BooksHome> {
             key: ValueKey(_route), initialTab: _businessTab,
             initialKind: _masterKind,
             workspace: ctrl.workspace,
+            transactions: ctrl.paymongoTransactions,
             save: ctrl.saveWorkspace,
             backupPage: _settings(context),
           ),
