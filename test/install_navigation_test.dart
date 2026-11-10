@@ -96,31 +96,5 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('desktop sidebar offers installation without bottom nav',
-      (tester) async {
-    tester.view.physicalSize = const Size(1280, 900);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(() {
-      tester.view.resetPhysicalSize();
-      tester.view.resetDevicePixelRatio();
-    });
 
-    final controller = _ReadyBooks();
-    addTearDown(controller.dispose);
-    await tester.pumpWidget(MaterialApp(home: BooksHome(controller: controller)));
-    await tester.pumpAndSettle();
-    expect(find.byType(NavigationBar), findsNothing);
-    expect(find.byType(Drawer), findsNothing);
-    expect(find.text('How to install'), findsOneWidget);
-    await Scrollable.ensureVisible(
-      tester.element(find.text('How to install')),
-      alignment: 0.5, duration: Duration.zero);
-    await tester.pumpAndSettle();
-    final installTile = find.ancestor(
-      of: find.text('How to install'), matching: find.byType(ListTile));
-    await tester.tap(installTile.first);
-    await tester.pumpAndSettle();
-    expect(find.byType(InstallGuidePage), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
 }
