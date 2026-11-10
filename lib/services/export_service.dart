@@ -207,15 +207,20 @@ class ExportService {
         amount(item.amountCentavos),t(item.notes),
       ]), widths: [20,18,38,55,44,20,23,60]);
     addSheet(book, 'TAX TRACKING RECORDS',
-      ['Kind','Date','Due Date','Period','Name / form','Reference','Status',
-       'Direction','Amount PHP','Notes'],
+      ['Kind','Date','Due Date','Period','Name / buyer','Reference','Status',
+       'Direction','Amount PHP','Linked sale ID','Buyer email',
+       'Buyer phone','Buyer address','Buyer TIN','Goods / service',
+       'CWT if applicable PHP','Notes'],
       workspace.taxRecords.map((item) => [
         t(item.kind),dateCell(item.date),
         item.dueDate == null ? t('') : dateCell(item.dueDate!),
         t(item.period),t(item.name),
         t(item.reference),t(item.status),t(item.direction),
-        amount(item.amountCentavos),t(item.notes),
-      ]), widths: [17,19,19,17,45,39,20,19,20,55]);
+        amount(item.amountCentavos),t(item.sourceSaleId),
+        t(item.buyerEmail),t(item.buyerPhone),t(item.buyerAddress),
+        t(item.buyerTin),t(item.itemDescription),
+        amount(item.cwtCentavos),t(item.notes),
+      ]), widths: [17,19,19,17,45,39,20,19,20,38,34,24,45,25,52,24,55]);
     final bytes = book.save();
     if (bytes == null) throw StateError('Excel could not generate the workbook');
     await FileSaver.instance.saveFile(
