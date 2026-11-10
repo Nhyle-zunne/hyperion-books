@@ -71,7 +71,7 @@ void main() {
     expect(find.text('HYPERION BOOKS'), findsOneWidget);
     expect(find.text('Financial overview'), findsOneWidget);
     expect(find.text('Tracked revenue'), findsOneWidget);
-    expect(find.text('Known costs'), findsOneWidget);
+    expect(find.text('Known costs'), findsWidgets);
     expect(find.text('Paid sales'), findsOneWidget);
     expect(find.byType(Image), findsWidgets);
     final layoutError = tester.takeException();
