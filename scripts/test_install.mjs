@@ -4,9 +4,11 @@ import assert from 'node:assert/strict';
 
 const html = readFileSync('web/index.html', 'utf8');
 const manifest = JSON.parse(readFileSync('web/manifest.json', 'utf8'));
-const script = html.match(
-  /<script id="hyperion-books-install-controller">([\\s\\S]*?)<\\/script>/,
-)?.[1];
+const opening = '<script id="hyperion-books-install-controller">';
+const start = html.indexOf(opening);
+const end = html.indexOf('</script>', start);
+const script = start >= 0 && end > start
+  ? html.slice(start + opening.length, end) : null;
 assert.ok(script, 'Install controller must run before Flutter starts');
 assert.ok(html.indexOf('hyperion-books-install-controller') <
   html.indexOf('flutter_bootstrap.js'), 'Install capture must precede Flutter');
@@ -82,6 +84,6 @@ for (const iconSize of ['192x192', '512x512']) {
   assert.ok(manifest.icons.some(icon => icon.sizes === iconSize),
     `Missing PWA icon ${iconSize}`);
 }
-assert.match(html, /serviceWorker\\.register\('\.\/sw\.js'\)/,
+assert.ok(html.includes("navigator.serviceWorker.register('./sw.js')"),
   'App shell worker registration missing');
 console.log('Install prompt capture, browser fallback, manifest and SW tests passed.');
