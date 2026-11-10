@@ -186,7 +186,7 @@ class _DashboardOverviewState extends State<DashboardOverview> {
     return Material(color: Colors.transparent, child: InkWell(
       key: ValueKey('kpi-${title.toLowerCase().replaceAll(' ', '-')}'),
       borderRadius: BorderRadius.circular(13), onTap: onTap,
-      child: _card(height: 123, child: Column(
+      child: _card(height: 135, child: Column(
         crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           Expanded(child: Text(title,
