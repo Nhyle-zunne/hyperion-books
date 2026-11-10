@@ -135,10 +135,12 @@ class _DashboardOverviewState extends State<DashboardOverview> {
           icon: const Icon(Icons.add, size: 16),
           label: const Text('Add sale')),
       ]);
-    if (compact) return Column(
-      crossAxisAlignment: CrossAxisAlignment.start, children: [
-        heading, const SizedBox(height: 11), controls,
-      ]);
+    if (compact) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start, children: [
+          heading, const SizedBox(height: 11), controls,
+        ]);
+    }
     return Row(children: [
       Expanded(child: heading),
       controls,
@@ -173,7 +175,7 @@ class _DashboardOverviewState extends State<DashboardOverview> {
         widget.onExpenses)),
       SizedBox(width: width, child: _kpi('Paid sales',
         NumberFormat.decimalPattern().format(data.salesCount),
-        '${days}-day transaction count',
+        '$days-day transaction count',
         Icons.shopping_bag_outlined, HyperionColors.chartBlue,
         widget.onSales)),
     ]);
@@ -217,7 +219,7 @@ class _DashboardOverviewState extends State<DashboardOverview> {
               style: TextStyle(fontSize: 10.5, color: HyperionColors.muted)),
           ],
         ])),
-      if (trailing != null) trailing,
+      ?trailing,
     ]);
 
   Widget _trendPanel(DashboardMetrics data) {
