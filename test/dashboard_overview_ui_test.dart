@@ -40,20 +40,23 @@ void main() {
 
   testWidgets('desktop uses 4 aligned KPIs and 2 top charts', (tester) async {
     await render(tester, const Size(1280, 900));
-    for (final name in [
-      'Financial overview','Tracked revenue','Indicative result',
-      'Known costs','Paid sales','Revenue vs Expenses','Sales by Category',
-    ]) {
-      expect(find.text(name), name == 'Known costs' ? findsWidgets : findsOneWidget);
+    for (final name in ['Financial overview','Revenue vs Expenses',
+      'Sales by Category']) {
+      expect(find.text(name), findsOneWidget);
+    }
+    for (final title in ['Revenue', 'Net Profit', 'Expenses', 'Sales']) {
+      final key = ValueKey('kpi-${title.toLowerCase().replaceAll(' ', '-')}');
+      expect(find.descendant(of: find.byKey(key),
+        matching: find.text(title)), findsOneWidget);
     }
     final first = tester.getTopLeft(find.byKey(
-      const ValueKey('kpi-tracked-revenue')));
+      const ValueKey('kpi-revenue')));
     final second = tester.getTopLeft(find.byKey(
-      const ValueKey('kpi-indicative-result')));
+      const ValueKey('kpi-net-profit')));
     final third = tester.getTopLeft(find.byKey(
-      const ValueKey('kpi-known-costs')));
+      const ValueKey('kpi-expenses')));
     final fourth = tester.getTopLeft(find.byKey(
-      const ValueKey('kpi-paid-sales')));
+      const ValueKey('kpi-sales')));
     expect(first.dy, second.dy);
     expect(second.dy, third.dy);
     expect(third.dy, fourth.dy);
@@ -67,8 +70,8 @@ void main() {
     var added = 0;
     await render(tester, const Size(360, 760), addSale: () => added++);
     expect(find.text('Financial overview'), findsOneWidget);
-    expect(find.text('Tracked revenue'), findsOneWidget);
-    expect(find.text('Known costs'), findsWidgets);
+    expect(find.byKey(const ValueKey('kpi-revenue')), findsOneWidget);
+    expect(find.byKey(const ValueKey('kpi-expenses')), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('dashboard-days-7')));
     await tester.pumpAndSettle();
@@ -101,7 +104,7 @@ void main() {
     var opened = 0;
     await render(tester, const Size(1000, 800),
       viewSales: () => opened++);
-    await tester.tap(find.byKey(const ValueKey('kpi-paid-sales')));
+    await tester.tap(find.byKey(const ValueKey('kpi-sales')));
     await tester.pump();
     expect(opened, 1);
     expect(tester.takeException(), isNull);
