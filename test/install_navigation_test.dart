@@ -112,8 +112,13 @@ void main() {
     expect(find.byType(NavigationBar), findsNothing);
     expect(find.byType(Drawer), findsNothing);
     expect(find.text('How to install'), findsOneWidget);
-    await tester.ensureVisible(find.text('How to install'));
-    await tester.tap(find.text('How to install'));
+    await Scrollable.ensureVisible(
+      tester.element(find.text('How to install')),
+      alignment: 0.5, duration: Duration.zero);
+    await tester.pumpAndSettle();
+    final installTile = find.ancestor(
+      of: find.text('How to install'), matching: find.byType(ListTile));
+    await tester.tap(installTile.first);
     await tester.pumpAndSettle();
     expect(find.byType(InstallGuidePage), findsOneWidget);
     expect(tester.takeException(), isNull);
