@@ -78,6 +78,8 @@ void main() {
     final page = find.byKey(const PageStorageKey<String>('hyperion-dashboard'));
     await tester.scrollUntilVisible(menu, 220, scrollable: find.descendant(
       of: page, matching: find.byType(Scrollable)).first);
+    await tester.ensureVisible(menu);
+    await tester.pumpAndSettle();
     await tester.tap(menu);
     await tester.pumpAndSettle();
     await tester.tap(find.text('By payment method').last);
@@ -88,6 +90,8 @@ void main() {
     await tester.scrollUntilVisible(find.text('Quick actions'), 300,
       scrollable: find.descendant(
         of: page, matching: find.byType(Scrollable)).first);
+    await tester.ensureVisible(find.text('Quick actions'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Add sale').last);
     expect(added, 1);
     expect(tester.takeException(), isNull);
