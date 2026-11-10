@@ -47,14 +47,18 @@ class _SearchDialogState extends State<_SearchDialog> {
           e.kind == EntryKind.expense ? 'Expenses' : 'Payouts',
           widget.onEntries),
       for (final e in widget.paymongo)
-        _Hit(e.isManual ? e.description : 'Sales ${e.type}',
+        _Hit(e.customer.isNotEmpty ? e.customer :
+            e.isManual ? e.description : 'Sales ${e.type}',
           '${e.id} • ${DateFormat('yyyy-MM-dd HH:mm').format(e.occurredAt)}'
           ' • ${money(e.grossCentavos)} • ${money(e.netCentavos)}'
           ' • ${e.paymentMethod} ${e.status} ${e.reference}'
-          ' ${e.description} ${e.customer} ${e.depositAccount}',
+          ' ${e.description} ${e.customer} ${e.customerEmail}'
+          ' ${e.customerPhone} ${e.customerAddress} ${e.customerTin}'
+          ' ${e.depositAccount}',
           'Sales', widget.onPayMongo),
       for (final m in widget.workspace.masters)
-        _Hit(m.name, '${m.kind} • ${m.details}', 'Master lists',
+        _Hit(m.name, '${m.kind} • ${m.details} • ${m.email}'
+          ' • ${m.phone} • ${m.address} • ${m.tin}', 'Master lists',
           widget.onTools),
       for (final t in widget.workspace.reminders)
         _Hit(t.title,
