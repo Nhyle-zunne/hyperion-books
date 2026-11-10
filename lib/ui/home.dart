@@ -17,6 +17,7 @@ import 'dashboard_overview.dart';
 import 'business_tools.dart';
 import 'accounting_books_page.dart';
 import 'hyperion_sidebar.dart';
+import 'install_guide_page.dart';
 import 'operation_records_page.dart';
 import 'business_reports_page.dart';
 import 'tax_filing_page.dart';
@@ -35,7 +36,6 @@ class BooksHome extends StatefulWidget {
 }
 
 class _BooksHomeState extends State<BooksHome> {
-  int _page = 0;
   String _route = 'dashboard';
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   String _filter = 'All';
@@ -58,29 +58,15 @@ class _BooksHomeState extends State<BooksHome> {
     setState(() {
       _invoiceSourceId = sale.id;
       _route = 'tax-invoices';
-      _page = 5;
     });
     HyperionLoading.pageTransition('Preparing linked invoice record');
   }
 
   void _openRoute(String route) {
-    final page = switch (route) {
-      'dashboard' => 0,
-      'entries' || 'daily-expenses' => 1,
-      'books' || 'tax-books' || 'journal' || 'ledger' => 2,
-      'sales' => 3,
-      'my-business' || 'product-to-sell' || 'master-customers' ||
-      'master-vendors' || 'master-products' || 'master-categories' ||
-      'backups' => 4,
-      'tax-calendar' || 'tax-monthly' || 'tax-quarterly' ||
-      'tax-annual' || 'tax-2307' || 'tax-invoices' => 5,
-      _ => 6,
-    };
     if (_route == route && _invoiceSourceId == null) return;
     setState(() {
       _invoiceSourceId = null;
       _route = route;
-      _page = page;
       if (route == 'daily-expenses') _filter = 'Expenses';
       if (route == 'entries') _filter = 'All';
     });
@@ -93,6 +79,7 @@ class _BooksHomeState extends State<BooksHome> {
     'books': 'Books of Accounts',
     'my-business': 'My Business',
     'backups': 'Backups & Exports',
+    'install': 'How to install',
     'compliance': 'Compliance',
     'sales': 'Sales',
     'product-to-sell': 'Product to Sell',
@@ -235,6 +222,7 @@ class _BooksHomeState extends State<BooksHome> {
       final title = _routeTitle;
       final body = switch (_route) {
         'dashboard' => _overview(context),
+        'install' => const InstallGuidePage(),
         'entries' || 'daily-expenses' => _transactions(context),
         'books' || 'tax-books' || 'journal' || 'ledger' =>
           AccountingBooksPage(
@@ -364,7 +352,7 @@ class _BooksHomeState extends State<BooksHome> {
               tooltip: 'Search local records',
               onPressed: () => _searchRecords(context),
               icon: Icon(Icons.search_outlined)),
-            PopupMenuButton<String>(
+            if (isWide) PopupMenuButton<String>(
               tooltip: 'Quick record',
               icon: Icon(Icons.add_circle_outline),
               onSelected: (action) {
@@ -388,7 +376,7 @@ class _BooksHomeState extends State<BooksHome> {
                 PopupMenuItem(value: 'expenseCsv', child: Text('Import expenses CSV')),
               ],
             ),
-            IconButton(
+            if (isWide) IconButton(
               tooltip: 'Back up your records',
               onPressed: () => _backup(context),
               icon: Icon(Icons.backup_outlined)),
@@ -404,35 +392,6 @@ class _BooksHomeState extends State<BooksHome> {
             child: body,
           ))),
         ]),
-        bottomNavigationBar: isWide ? null : NavigationBar(
-          labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
-          selectedIndex: switch (_page) {
-            0 => 0, 1 => 1, 2 => 2, 5 => 3, _ => 4,
-          },
-          onDestinationSelected: (index) {
-            if (index == 4) {
-              _scaffoldKey.currentState?.openDrawer();
-            } else {
-              _navigate(index == 3 ? 5 : index);
-            }
-          },
-          destinations: [
-            NavigationDestination(icon: Icon(Icons.dashboard_outlined), label: 'Home'),
-            NavigationDestination(icon: Icon(Icons.swap_vert), label: 'Entries'),
-            NavigationDestination(icon: Icon(Icons.menu_book_outlined), label: 'Books'),
-            NavigationDestination(icon: Icon(Icons.account_balance_outlined), label: 'Tax Filing'),
-            NavigationDestination(icon: Icon(Icons.more_horiz), label: 'More'),
-          ]),
-        floatingActionButton: _route == 'sales' ? FloatingActionButton.extended(
-          backgroundColor: HyperionColors.accent,
-          foregroundColor: HyperionColors.onAccent,
-          onPressed: () => _manualSale(context),
-          icon: Icon(Icons.add), label: Text('Sale')) : _page == 1 ? FloatingActionButton.extended(
-          backgroundColor: HyperionColors.accent, foregroundColor: HyperionColors.onAccent,
-          onPressed: () => _edit(context, _route == 'daily-expenses'
-            ? EntryKind.expense : EntryKind.payout),
-          icon: Icon(Icons.add),
-          label: Text(_route == 'daily-expenses' ? 'Expense' : 'Payout')) : null,
       );
     });
   }
@@ -736,6 +695,8 @@ class _BooksHomeState extends State<BooksHome> {
           onSelected: (_) => setState(() => _filter = label)),
         OutlinedButton.icon(onPressed: () => _edit(context, EntryKind.expense),
           icon: Icon(Icons.add), label: Text('Expense')),
+        OutlinedButton.icon(onPressed: () => _edit(context, EntryKind.payout),
+          icon: Icon(Icons.add), label: Text('Payout')),
         OutlinedButton.icon(onPressed: () => _navigate(3),
           icon: Icon(Icons.receipt_long_outlined), label: Text('Sales imports')),
         OutlinedButton.icon(onPressed: () => _importExpenses(context),
