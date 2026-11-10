@@ -413,10 +413,40 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
                 labelText: kind == 'Filing' ? 'BIR form / filing name'
                   : kind == '2307' ? 'Customer or vendor' : 'Buyer / recipient'),
               onChanged: (v) => name = v),
+            if (kind == 'Invoice') ...[
+              if (sourceSaleId.isNotEmpty)
+                Padding(padding: const EdgeInsets.only(bottom: 9),
+                  child: SelectableText('Linked paid sale: $sourceSaleId',
+                    style: TextStyle(color: HyperionColors.muted,
+                      fontSize: 12))),
+              TextFormField(initialValue: buyerEmail, maxLength: 254,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                  labelText: 'Buyer email (optional; not printed on BIR books)'),
+                onChanged: (v) => buyerEmail = v),
+              TextFormField(initialValue: buyerPhone, maxLength: 60,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(
+                  labelText: 'Buyer contact number (optional)'),
+                onChanged: (v) => buyerPhone = v),
+              TextFormField(initialValue: buyerAddress, maxLength: 400,
+                maxLines: 2, decoration: const InputDecoration(
+                  labelText: 'Buyer registered address (B2B if applicable)'),
+                onChanged: (v) => buyerAddress = v),
+              TextFormField(initialValue: buyerTin, maxLength: 40,
+                decoration: const InputDecoration(
+                  labelText: 'Buyer TIN (if applicable; not verified)'),
+                onChanged: (v) => buyerTin = v),
+              TextFormField(initialValue: itemDescription, maxLength: 500,
+                maxLines: 2, decoration: const InputDecoration(
+                  labelText: 'Goods / service details (for invoice preparation)'),
+                onChanged: (v) => itemDescription = v),
+            ],
             TextFormField(initialValue: ref, maxLength: 160,
               decoration: InputDecoration(labelText: kind == '2307'
                 ? 'Certificate reference' : kind == 'Invoice'
-                ? 'Invoice reference (manual)' : 'Filing reference / receipt'),
+                ? 'Issued invoice no. (enter from approved invoice, if any)'
+                : 'Filing reference / receipt'),
               onChanged: (v) => ref = v),
             TextFormField(initialValue: period, maxLength: 40,
               decoration: InputDecoration(
@@ -450,6 +480,15 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
                 ? 'Tax withheld PHP' : kind == 'Invoice'
                 ? 'Invoice amount PHP' : 'Tax paid PHP (if known)'),
               onChanged: (v) => amount = v),
+            if (kind == 'Invoice') ...[
+              const SizedBox(height: 8),
+              TextFormField(initialValue: cwt, maxLength: 20,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Less: Creditable Withholding Tax (if applicable)',
+                  helperText: 'Only if buyer confirms CWT; do not infer from B2B/B2C.'),
+                onChanged: (v) => cwt = v),
+            ],
             SizedBox(height: 8),
             DropdownButtonFormField<String>(
               initialValue: status, isExpanded: true,
@@ -479,7 +518,14 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
             child: Text('Cancel')),
           FilledButton(onPressed: () {
             final parsed = amount.trim().isEmpty ? 0 : parsePesos(amount);
+            final parsedCwt = kind == 'Invoice' && cwt.trim().isNotEmpty
+              ? parsePesos(cwt) : 0;
             if (name.trim().isEmpty || name.length > 180 ||
+                buyerEmail.length > 254 || buyerPhone.length > 60 ||
+                buyerAddress.length > 400 || buyerTin.length > 40 ||
+                sourceSaleId.length > 160 || itemDescription.length > 500 ||
+                parsedCwt == null || parsedCwt < 0 ||
+                (parsed != null && parsedCwt > parsed) ||
                 ref.length > 160 || period.length > 40 || parsed == null ||
                 parsed < 0 || notes.length > 1500 ||
                 (ref.trim().isNotEmpty && widget.workspace.taxRecords.any((x) =>
@@ -493,7 +539,14 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
               kind: kind, name: name.trim(), reference: ref.trim(),
               date: date, dueDate: dueDate, period: period.trim(), status: status,
               direction: direction, notes: notes.trim(),
-              amountCentavos: parsed));
+              amountCentavos: parsed,
+              buyerEmail: kind == 'Invoice' ? buyerEmail.trim() : '',
+              buyerPhone: kind == 'Invoice' ? buyerPhone.trim() : '',
+              buyerAddress: kind == 'Invoice' ? buyerAddress.trim() : '',
+              buyerTin: kind == 'Invoice' ? buyerTin.trim() : '',
+              sourceSaleId: kind == 'Invoice' ? sourceSaleId : '',
+              itemDescription: kind == 'Invoice' ? itemDescription.trim() : '',
+              cwtCentavos: kind == 'Invoice' ? parsedCwt : 0));
           }, child: Text('Save locally')),
         ])));
     if (result == null) return;
