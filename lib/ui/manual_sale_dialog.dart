@@ -25,6 +25,10 @@ class _ManualSaleEditorState extends State<_ManualSaleEditor> {
   late final TextEditingController _description;
   late final TextEditingController _reference;
   late final TextEditingController _customer;
+  late final TextEditingController _email;
+  late final TextEditingController _phone;
+  late final TextEditingController _address;
+  late final TextEditingController _tin;
   late final TextEditingController _account;
   late final TextEditingController _notes;
   late DateTime _date;
@@ -48,6 +52,10 @@ class _ManualSaleEditorState extends State<_ManualSaleEditor> {
     _description = TextEditingController(text: item?.description ?? '');
     _reference = TextEditingController(text: item?.reference ?? '');
     _customer = TextEditingController(text: item?.customer ?? '');
+    _email = TextEditingController(text: item?.customerEmail ?? '');
+    _phone = TextEditingController(text: item?.customerPhone ?? '');
+    _address = TextEditingController(text: item?.customerAddress ?? '');
+    _tin = TextEditingController(text: item?.customerTin ?? '');
     _account = TextEditingController(text: item?.depositAccount ?? '');
     _notes = TextEditingController(text: item?.notes ?? '');
   }
@@ -55,7 +63,7 @@ class _ManualSaleEditorState extends State<_ManualSaleEditor> {
   @override
   void dispose() {
     for (final c in [_amount, _fee, _description, _reference,
-      _customer, _account, _notes]) {
+      _customer, _email, _phone, _address, _tin, _account, _notes]) {
       c.dispose();
     }
     super.dispose();
@@ -89,6 +97,10 @@ class _ManualSaleEditorState extends State<_ManualSaleEditor> {
     }
     if (_reference.text.trim().length > 160 ||
         _customer.text.trim().length > 160 ||
+        _email.text.trim().length > 254 ||
+        _phone.text.trim().length > 60 ||
+        _address.text.trim().length > 400 ||
+        _tin.text.trim().length > 40 ||
         _account.text.trim().length > 160 || _notes.text.trim().length > 1000) {
       setState(() => _error = 'One of the optional fields is too long.');
       return;
@@ -103,6 +115,10 @@ class _ManualSaleEditorState extends State<_ManualSaleEditor> {
       reference: _reference.text.trim(),
       description: description,
       customer: _customer.text.trim(),
+      customerEmail: _email.text.trim(),
+      customerPhone: _phone.text.trim(),
+      customerAddress: _address.text.trim(),
+      customerTin: _tin.text.trim(),
       depositAccount: _account.text.trim(),
       notes: _notes.text.trim(),
     );
@@ -174,11 +190,29 @@ class _ManualSaleEditorState extends State<_ManualSaleEditor> {
               labelText: 'Bank / transaction fee (optional)',
               prefixText: '₱  ', hintText: '0.00')),
           const SizedBox(height: 14),
-          TextField(controller: _customer,
+          TextField(controller: _customer, maxLength: 160,
             textInputAction: TextInputAction.next,
             decoration: const InputDecoration(
-              labelText: 'Customer (optional)',
-              hintText: 'Name or internal customer code')),
+              labelText: 'Buyer / customer name (optional)',
+              hintText: 'Customer name for sales and invoice preparation')),
+          const SizedBox(height: 8),
+          TextField(controller: _email, maxLength: 254,
+            keyboardType: TextInputType.emailAddress,
+            decoration: const InputDecoration(
+              labelText: 'Customer email (optional)')),
+          const SizedBox(height: 8),
+          TextField(controller: _phone, maxLength: 60,
+            keyboardType: TextInputType.phone,
+            decoration: const InputDecoration(
+              labelText: 'Contact number (optional)')),
+          const SizedBox(height: 8),
+          TextField(controller: _address, maxLength: 400, maxLines: 2,
+            decoration: const InputDecoration(
+              labelText: 'Buyer address (optional for B2C)')),
+          const SizedBox(height: 8),
+          TextField(controller: _tin, maxLength: 40,
+            decoration: const InputDecoration(
+              labelText: 'Buyer TIN (if applicable; not verified)')),
           const SizedBox(height: 14),
           TextField(controller: _notes,
             maxLines: 2, maxLength: 1000,
