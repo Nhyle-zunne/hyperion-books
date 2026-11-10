@@ -20,9 +20,10 @@ class TaxFilingPage extends StatefulWidget {
   final BusinessWorkspace workspace;
   final Future<void> Function(BusinessWorkspace) save;
   final int initialSection;
+  final String? initialSaleId;
   const TaxFilingPage({super.key, required this.entries,
     required this.transactions, required this.workspace,
-    required this.save, this.initialSection = 0});
+    required this.save, this.initialSection = 0, this.initialSaleId});
   @override State<TaxFilingPage> createState() => _TaxFilingPageState();
 }
 
@@ -33,6 +34,17 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
   @override void initState() {
     super.initState();
     section = widget.initialSection.clamp(0, 5);
+    if (widget.initialSaleId != null && section == 5) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        for (final sale in widget.transactions) {
+          if (sale.id == widget.initialSaleId && sale.isPayment) {
+            _editTax('Invoice', sourceSale: sale);
+            break;
+          }
+        }
+      });
+    }
   }
 
   static const sections = [
@@ -247,10 +259,17 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
           : 'Maintain a manual invoice reference register and draft list.',
           style: TextStyle(color: HyperionColors.muted, fontSize: 12)),
         SizedBox(height: 13),
-        FilledButton.icon(
-          onPressed: busy ? null : () => _editTax(kind),
-          icon: Icon(Icons.add), label: Text(kind == '2307'
-            ? 'Add 2307 record' : 'Add invoice record')),
+        Wrap(spacing: 8, runSpacing: 8, children: [
+          FilledButton.icon(
+            onPressed: busy ? null : () => _editTax(kind),
+            icon: const Icon(Icons.add), label: Text(kind == '2307'
+              ? 'Add 2307 record' : 'Add invoice record')),
+          if (kind == 'Invoice')
+            OutlinedButton.icon(
+              onPressed: busy ? null : _chooseSaleForInvoice,
+              icon: const Icon(Icons.receipt_long_outlined),
+              label: const Text('Prepare from a paid sale')),
+        ]),
       ]),
       SizedBox(height: 12),
       _panel([
@@ -266,9 +285,12 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
       Text(kind == '2307'
         ? 'Records and withheld amounts are user-entered and not validated '
           'against BIR systems. Retain the actual signed 2307 documents.'
-        : 'An invoice record here is NOT a BIR-authorized invoice or official '
-          'electronic invoice. Hyperion Books does not issue invoice numbers '
-          'on your behalf or transmit data to BIR.',
+        : 'These are draft invoice reference records, NOT issued or '
+          'BIR-authorized electronic invoices. Confirm the registered seller, '
+          'buyer details, approved invoice serial number, item quantities, '
+          'applicable tax/CWT and issuance requirements before issuing a real '
+          'invoice through an authorized process. No email or BIR transmission '
+          'occurs in this app.',
         style: TextStyle(color: HyperionColors.muted, fontSize: 12)),
     ]);
   }
@@ -280,6 +302,8 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
         style: TextStyle(color: HyperionColors.ink, fontWeight: FontWeight.w700)),
       subtitle: Text([
         item.reference, item.period, item.direction, item.status,
+        if (item.kind == 'Invoice' && item.sourceSaleId.isNotEmpty)
+          'Linked sale: ${item.sourceSaleId}',
         DateFormat('MMM d, yyyy').format(item.date),
       ].where((s) => s.isNotEmpty).join(' · ')),
       trailing: PopupMenuButton<String>(onSelected: (action) {
@@ -324,17 +348,59 @@ class _TaxFilingPageState extends State<TaxFilingPage> {
     }
   }
 
+  Future<void> _chooseSaleForInvoice() async {
+    final sales = widget.transactions.where((t) => t.isPayment).toList()
+      ..sort((a, b) => b.occurredAt.compareTo(a.occurredAt));
+    if (sales.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Import or add a paid sale before preparing a linked invoice.')));
+      return;
+    }
+    final selected = await showDialog<PayMongoTransaction>(
+      context: context,
+      builder: (d) => AlertDialog(
+        title: const Text('Select a paid sale'),
+        content: SizedBox(width: 460, height: 380,
+          child: ListView.builder(
+            itemCount: sales.length.clamp(0, 150),
+            itemBuilder: (context, index) {
+              final sale = sales[index];
+              return ListTile(
+                title: Text(sale.customer.isEmpty
+                  ? sale.id : sale.customer),
+                subtitle: Text('${sale.id} · ${DateFormat('MMM d, yyyy').format(sale.occurredAt)}'),
+                trailing: Text(_pesos(sale.grossCentavos)),
+                onTap: () => Navigator.pop(d, sale));
+            })),
+        actions: [TextButton(onPressed: () => Navigator.pop(d),
+          child: const Text('Cancel'))],
+      ));
+    if (selected != null && mounted) {
+      await _editTax('Invoice', sourceSale: selected);
+    }
+  }
+
   Future<void> _editTax(String kind, {TaxRecord? original,
+      PayMongoTransaction? sourceSale,
       String proposedPeriod = '', DateTime? proposedDate}) async {
-    var name = original?.name ?? '';
+    var name = original?.name ?? sourceSale?.customer ?? '';
+    var buyerEmail = original?.buyerEmail ?? sourceSale?.customerEmail ?? '';
+    var buyerPhone = original?.buyerPhone ?? sourceSale?.customerPhone ?? '';
+    var buyerAddress = original?.buyerAddress ?? sourceSale?.customerAddress ?? '';
+    var buyerTin = original?.buyerTin ?? sourceSale?.customerTin ?? '';
+    var sourceSaleId = original?.sourceSaleId ?? sourceSale?.id ?? '';
+    var itemDescription = original?.itemDescription ?? sourceSale?.description ?? '';
+    var cwt = original == null ? '' :
+      (original.cwtCentavos / 100).toStringAsFixed(2);
     var ref = original?.reference ?? '';
     var period = original?.period ?? proposedPeriod;
     var status = original?.status ?? 'Draft';
     var direction = original?.direction ?? (kind == '2307' ? 'Incoming' : '');
     var notes = original?.notes ?? '';
-    var amount = original == null ? '' :
-      (original.amountCentavos / 100).toStringAsFixed(2);
-    var date = original?.date ?? proposedDate ?? DateTime.now();
+    var amount = original == null
+      ? (sourceSale == null ? '' : (sourceSale.grossCentavos / 100).toStringAsFixed(2))
+      : (original.amountCentavos / 100).toStringAsFixed(2);
+    var date = original?.date ?? sourceSale?.occurredAt ?? proposedDate ?? DateTime.now();
     DateTime? dueDate = original?.dueDate;
     String? errorText;
     final result = await showDialog<TaxRecord>(context: context,
