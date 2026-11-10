@@ -90,7 +90,7 @@ void main() {
     await tester.scrollUntilVisible(find.text('Quick actions'), 300,
       scrollable: find.descendant(
         of: page, matching: find.byType(Scrollable)).first);
-    await tester.ensureVisible(find.text('Quick actions'));
+    await tester.ensureVisible(find.text('Add sale').last);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Add sale').last);
     expect(added, 1);
