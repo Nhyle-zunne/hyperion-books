@@ -3,6 +3,7 @@ import 'package:hyperion_books/data/local_repository.dart';
 import 'package:hyperion_books/services/paymongo_csv_service.dart';
 import 'package:hyperion_books/services/expense_csv_service.dart';
 import 'package:hyperion_books/models/business_workspace.dart';
+import 'package:hyperion_books/models/paymongo_transaction.dart';
 
 const csvHeader = 'Transaction ID,Type,Currency,Gross Amount,Fee,VAT,'
   'Net Amount,Status,Transaction Date,Payment Method\n';
@@ -87,4 +88,49 @@ void main() {
       await repo.close();
     }
   });
+  test('repeat payment CSV enriches only missing customer contact details',
+      () async {
+    final repo = await LocalRepository.open();
+    try {
+      await repo.replaceAll([], []);
+      final original = PayMongoCsvService.parse(csvHeader + row1)
+          .transactions.single;
+      expect(await repo.importPayMongo([original]), 1);
+      final updated = PayMongoTransaction.fromJson(original.toJson()
+        ..['customer'] = 'Sample Buyer'
+        ..['customer_email'] = 'buyer@example.test'
+        ..['customer_phone'] = '+639000000000'
+        ..['customer_address'] = 'Cebu City'
+        ..['customer_tin'] = '123-456-789');
+      expect(await repo.importPayMongo([updated]), 0,
+        reason: 'Customer details must not create another sale');
+      final found = (await repo.listPayMongo()).single;
+      expect(found.customer, 'Sample Buyer');
+      expect(found.customerEmail, 'buyer@example.test');
+      expect(found.grossCentavos, 10000);
+      expect(found.netCentavos, 9850);
+
+      final competing = PayMongoTransaction.fromJson(updated.toJson()
+        ..['gross_centavos'] = 20000
+        ..['customer_email'] = 'wrong@example.test');
+      expect(await repo.importPayMongo([competing]), 0);
+      expect((await repo.listPayMongo()).single.customerEmail,
+        'buyer@example.test',
+        reason: 'Conflicting transaction amounts cannot overwrite buyer data');
+
+      await repo.close();
+      final reopened = await LocalRepository.open();
+      try {
+        expect((await reopened.listPayMongo()).single.customerEmail,
+          'buyer@example.test');
+      } finally {
+        await reopened.replaceAll([], []);
+        await reopened.close();
+      }
+    } finally {
+      // Opening a second handle in a test is safe; closed handles can no
+      // longer be accessed. The reopened handle above owns final cleanup.
+    }
+  });
+
 }
