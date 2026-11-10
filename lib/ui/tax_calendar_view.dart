@@ -5,7 +5,7 @@ import '../models/bir_tax_calendar.dart';
 import '../models/business_workspace.dart';
 import '../theme/hyperion_theme.dart';
 
-/// A CPALLY-inspired but original, Hyperion-themed BIR reference calendar.
+/// Calendar for reviewing BIR-related reference dates and local reminders.
 /// All BIR dates are read-only projections; only user-created reminders and
 /// filing logs can be saved locally. No BIR submission is performed here.
 class TaxCalendarView extends StatefulWidget {
@@ -246,7 +246,7 @@ class _TaxCalendarViewState extends State<TaxCalendarView> {
   Widget _monthGrid(List<BirCalendarEvent> events) {
     final first = DateTime(_viewing.year, _viewing.month);
     final days = DateTime(_viewing.year, _viewing.month + 1, 0).day;
-    final leading = first.weekday % 7; // Sunday-first, as in CPALLY
+    final leading = first.weekday % 7; // Sunday-first calendar
     final count = ((days + leading + 6) ~/ 7) * 7;
     final window = [
       for (var i = 0; i < count; i++)

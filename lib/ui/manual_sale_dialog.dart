@@ -133,7 +133,7 @@ class _ManualSaleEditorState extends State<_ManualSaleEditor> {
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(22),
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Text(widget.initial == null ? 'Add manual sale' : 'Edit manual sale',
+          Text(widget.initial == null ? 'Add sale' : 'Edit sale',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.w800)),
           const SizedBox(height: 6),

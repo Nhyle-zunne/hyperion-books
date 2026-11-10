@@ -9,7 +9,7 @@ BirCalendarEvent event(int year, String code, String period) =>
     (e) => e.code == code && e.period == period);
 
 void main() {
-  test('2027 CPALLY-like individual filing examples are generated from BIR rules', () {
+  test('2027 individual filing reference dates are generated from BIR rules', () {
     expect(event(2027, 'Inventory List', '2026').due,
       DateTime(2027, 2, 1)); // Jan 30 Saturday -> estimated Monday
     expect(event(2027, '1701A', '2026').due, DateTime(2027, 4, 15));

@@ -17,8 +17,8 @@ String _compact(int centavos) {
   return _pesos(centavos);
 }
 
-/// CPAlly-inspired proportions, but Hyperion-themed and powered entirely by
-/// local receipts, imported sales and manual business entries. No sample data.
+/// Hyperion Books dashboard powered by locally stored receipts, imported
+/// sales and business entries. No placeholder financial data.
 class DashboardOverview extends StatefulWidget {
   final List<BookEntry> entries;
   final List<PayMongoTransaction> sales;

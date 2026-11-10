@@ -1,12 +1,12 @@
 # Hyperion Books — Business workflow expansion
 
-This work adds original local-first workflows inspired by the types of features visible in the CPAlly demonstration dashboard and its public feature list. No CPAlly source code, branding, private demo content, user personal information, or transaction records were copied into the repository.
+Hyperion Books provides local business records, reporting, record search, tax planning, and backup workflows.
 
 ## Implemented
 
 - **Business performance dashboard:** independently selected last 7/30/90 calendar days, indicative tracked receipts, known costs, cash movement, revenue-vs-cost daily bars, expense category breakdown, recent PayMongo payments and recent expenses. Money is calculated from the locally imported PayMongo transactions and manually entered bank payouts and expenses.
 - **Global record search:** find PayMongo transaction IDs, payout records, expenses, list items and reminders. Search is performed in the browser without a network request.
-- **Quick record:** add bank payout, add expense, import PayMongo CSV, or import expenses CSV from the top bar.
+- **Transaction entry:** add sales from the Sales page and the dashboard; add payouts or expenses from Entries. CSV imports are available from the corresponding pages.
 - **Bulk expense import:** download an example CSV and import expenses using `Reference,Date,Amount,Description,Category`. A stable Reference is mandatory to prevent duplicates. Import previews new and skipped records and never overwrites a matching existing reference. Date is `YYYY-MM-DD` or `MM/DD/YYYY`, money is PHP with at most two decimal places.
 - **Local master lists:** editable customers, vendors, products and expense categories. Your expense category list appears when recording expenses. These lists are references; automatic stock movement and receivable aging have not been implemented.
 - **Business profile:** optional business name, registration status, tax-method note, and private notes. These are user-selected informational fields; no BIR record is changed.
@@ -30,6 +30,6 @@ Importing any JSON backup **replaces**, rather than merges, device-local records
 
 ## Intentionally not included
 
-CPAlly also advertises richer capabilities such as automated tax forms, statutory .DAT outputs, invoice document capture, inventory valuation, receivables/payables, payroll, multiple business organizations and cloud-based multi-user collaboration. These need additional accounting rules and/or a backend, and they should not be represented as working features in this GitHub-only offline PWA.
+Automated statutory filings, DAT exports, invoice scanning, inventory valuation, and cross-device collaboration are not provided. These require additional accounting rules, authorization, or a supporting backend.
 
 For BIR matters, verify current rules with your RDO and qualified accountant rather than treating local reminders or spreadsheet layouts as authorization to use computerized books.

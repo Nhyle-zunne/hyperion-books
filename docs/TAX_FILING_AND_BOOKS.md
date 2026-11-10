@@ -8,7 +8,7 @@ Dark colors match Hyperion PWA's deep slate background/card/elevated surfaces, r
 
 # Hyperion Books — Books of Accounts & Tax Filing (local-first)
 
-This is an **original, Hyperion-themed implementation** of workflows visible in CPAlly's sample Books of Accounts screen and its Tax Filing menu. No third-party source code or private demo records are included.
+This workspace organizes locally recorded accounting entries, tax-related tasks, and invoice preparation records.
 
 ## Books of Accounts
 
@@ -22,7 +22,7 @@ This is an **original, Hyperion-themed implementation** of workflows visible in 
 - **Include voided entries** and **Include unverified** filter working-paper rows by local manual flags. Tap a reference number to mark it reviewed/verified or void it in draft reports. A void flag excludes the complete reference from draft book views without deleting the original transaction. Filtering recalculates the provisional ledger balances from all included historical entries. These flags **are not** official BIR verification, statutory void/reversal entries, or tamper-proof audit logs. Tax period management totals still use underlying source records.
 - Separate **full Excel export** from Tools includes all four books, raw PayMongo records, business lists and tax tracking items.
 
-## CPALLY-inspired navigation and report usability
+## Navigation and report usability
 
 The desktop navigation is a scrollable, hierarchical sidebar (a full drawer on phones). It contains **Dashboard, Compliance, Sales, Purchases, Expenses, Tax Filing, Accounting, Master List, Bulk Import and My Business**. It deliberately **does not** contain Inbox or Help & Docs.
 
@@ -40,9 +40,9 @@ The desktop navigation is a scrollable, hierarchical sidebar (a full drawer on p
 
 ## Tax Filing menu
 
-Use **Tax Filing** on the desktop navigation rail or the mobile bottom navigation. It includes:
+Open **Tax Filing** from the desktop sidebar or the mobile app drawer. It includes:
 
-1. **Calendar** — CPALLY-inspired Sunday-first month grid and year/upcoming views, month/year selectors, cadence filters (monthly/quarterly/annual), audience/category filter and Due Date Only toggle. Click deadlines to see filing-window opening dates, standard due dates, estimated weekend rollover, applicability, official source link, and save them as editable local reminders. Personal reminders, completion checkboxes and filing logs remain available.
+1. **Calendar** — Sunday-first month grid and year/upcoming views, month/year selectors, cadence filters (monthly/quarterly/annual), audience/category filter and Due Date Only toggle. Click deadlines to see filing-window opening dates, standard due dates, estimated weekend rollover, applicability, official source link, and save them as editable local reminders. Personal reminders, completion checkboxes and filing logs remain available.
 2. **Monthly** — monthly management totals and manually recorded filing references/status.
 3. **Quarterly** — quarterly management totals, a filing register, and examples of potentially relevant return categories.
 4. **Annual** — yearly management totals and a filing register.
