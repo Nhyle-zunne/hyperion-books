@@ -25,6 +25,64 @@
   <!-- hyperion-pwa uses its gold/navy logo.png as the tab icon. -->
   <link rel="icon" type="image/png" href="logo.png?v=3">
   <link rel="manifest" href="manifest.json">
+  <script id="hyperion-books-install-controller">
+    // Capture the install event before Flutter initializes. Browser-specific
+    // native install prompts are available only after an actual user gesture.
+    (() => {
+      let pendingPrompt = null;
+      let installed = window.matchMedia('(display-mode: standalone)').matches
+        || navigator.standalone === true;
+      const agent = navigator.userAgent || '';
+      const appleMobile = /iPhone|iPad|iPod/i.test(agent)
+        || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const platform = appleMobile ? 'ios' :
+        /Android/i.test(agent) ? 'android' : 'desktop';
+      const browser = /Brave/i.test(agent) || navigator.brave ? 'brave' :
+        /SamsungBrowser/i.test(agent) ? 'samsung' :
+        /Edg|Edge/i.test(agent) ? 'edge' :
+        /FxiOS|Firefox/i.test(agent) ? 'firefox' :
+        /CriOS|Chrome/i.test(agent) ? 'chrome' :
+        /Safari/i.test(agent) ? 'safari' : 'other';
+
+      function status() {
+        // Installed state can change without reloading this tab.
+        installed = installed
+          || window.matchMedia('(display-mode: standalone)').matches
+          || navigator.standalone === true;
+        return JSON.stringify({
+          platform, browser, installed,
+          canPrompt: !installed && !!pendingPrompt,
+        });
+      }
+
+      async function prompt() {
+        if (installed) return 'installed';
+        if (!pendingPrompt) return 'unavailable';
+        const event = pendingPrompt;
+        pendingPrompt = null;
+        try {
+          await event.prompt();
+          const decision = await event.userChoice;
+          if (decision && decision.outcome === 'accepted') return 'accepted';
+          return 'dismissed';
+        } catch (_) {
+          return 'unavailable';
+        }
+      }
+
+      window.hyperionBooksInstall = { status, prompt };
+      window.addEventListener('beforeinstallprompt', event => {
+        event.preventDefault();
+        pendingPrompt = event;
+        window.dispatchEvent(new Event('hyperion-books-install-ready'));
+      });
+      window.addEventListener('appinstalled', () => {
+        installed = true;
+        pendingPrompt = null;
+        window.dispatchEvent(new Event('hyperion-books-installed'));
+      });
+    })();
+  </script>
   <title>Hyperion Books</title>
   <style>
     :root { --loader-accent: #22c55e; --loader-text: #102840; }

@@ -9,6 +9,9 @@ for (const file of [
   'lib/models/dashboard_metrics.dart','lib/ui/dashboard_overview.dart',
   'lib/ui/business_insights_panel.dart','lib/ui/business_tools.dart',
   'lib/ui/hyperion_sidebar.dart','lib/ui/operation_records_page.dart',
+  'lib/ui/install_guide_page.dart','lib/services/install_platform.dart',
+  'lib/services/install_platform_stub.dart','lib/services/install_platform_web.dart',
+  'lib/services/install_status.dart','scripts/test_install.mjs',
   'lib/ui/business_reports_page.dart','lib/ui/accounting_books_page.dart',
   'lib/ui/record_search.dart','lib/services/expense_csv_service.dart',
   'test/business_workspace_test.dart','test/business_analytics_test.dart','test/expense_csv_test.dart',
@@ -87,4 +90,11 @@ for (const icon of ['web/logo.png','web/favicon.png','web/apple-touch-icon.png',
   assert(existsSync(join(root, icon)), `Missing shared Hyperion PWA branding asset: ${icon}`);
 }
 assert(source('web/manifest.json').includes('"start_url": "."'), 'GitHub Pages subpath support missing');
+assert(source('lib/ui/home.dart').includes('InstallGuidePage'), 'Install route missing');
+assert(source('lib/ui/hyperion_sidebar.dart').includes("_item('install', 'How to install'"),
+  'Drawer install entry missing');
+assert(!source('lib/ui/home.dart').includes('bottomNavigationBar:'),
+  'Duplicate bottom More navigation remains');
+assert(source('web/index.html').includes('hyperion-books-install-controller'),
+  'Install prompt must be captured before Flutter starts');
 console.log('PASS: local-first storage, picker, journal, Excel, JSON backup/restore, GitHub Pages subpath, offline shell.');

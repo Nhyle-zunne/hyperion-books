@@ -62,6 +62,8 @@ class HyperionSidebar extends StatelessWidget {
           _item('bulk-import', 'Bulk Import', Icons.upload_file_outlined),
           _item('my-business', 'My Business', Icons.business_outlined),
           _item('backups', 'Backups & Exports', Icons.backup_outlined),
+          Divider(height: 20),
+          _item('install', 'How to install', Icons.install_mobile_outlined),
         ],
       )),
       Divider(height: 1),
