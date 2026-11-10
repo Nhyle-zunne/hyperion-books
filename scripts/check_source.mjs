@@ -6,6 +6,7 @@ const source = (file) => readFileSync(join(root, file), 'utf8');
 for (const file of [
   'lib/main.dart','lib/models/book_entry.dart','lib/models/reports.dart',
   'lib/models/business_workspace.dart','lib/models/business_analytics.dart',
+  'lib/models/dashboard_metrics.dart','lib/ui/dashboard_overview.dart',
   'lib/ui/business_insights_panel.dart','lib/ui/business_tools.dart',
   'lib/ui/hyperion_sidebar.dart','lib/ui/operation_records_page.dart',
   'lib/ui/business_reports_page.dart','lib/ui/accounting_books_page.dart',
@@ -39,7 +40,10 @@ const bookModel = source('lib/models/book_table_view.dart');
 for (const name of ['Cash Receipts Journal','Cash Disbursements Journal','General Journal','General Ledger']) {
   assert(bookModel.includes(name), `Missing accounting book view: ${name}`);
 }
-assert(source('lib/ui/home.dart').includes('Sales activity'), 'Sales dashboard missing');
+assert(source('lib/ui/home.dart').includes('DashboardOverview'), 'Dashboard entry missing');
+for (const panel of ['Revenue vs Expenses','Sales by Category','Recent Transactions','Recent Expenses','Cash Flow']) {
+  assert(source('lib/ui/dashboard_overview.dart').includes(panel), `Dashboard panel missing: ${panel}`);
+}
 assert(!source('lib/ui/hyperion_sidebar.dart').includes("_item('paymongo'"), 'Duplicate activity navigation remains');
 assert(source('lib/ui/home.dart').includes('SalesImportService.select'), 'Generic sales file import missing');
 assert(source('lib/services/sales_import_service.dart').includes('parseWorkbook'), 'Sales XLSX parser missing');
@@ -71,7 +75,7 @@ for (const item of ['Calendar','Monthly','Quarterly','Annual','2307 Certificates
 for (const tab of ['BUSINESS PROFILE','MASTER LISTS','COMPLIANCE TASKS']) {
   assert(excel.includes("'" + tab + "'"), "Excel business sheet missing: " + tab);
 }
-assert(source('lib/ui/home.dart').includes('BusinessInsightsPanel'), 'Dashboard insights missing');
+assert(source('lib/ui/home.dart').includes('DashboardOverview'), 'Dashboard overview missing');
 assert(source('lib/ui/home.dart').includes('ExpenseCsvService.select'), 'Expense CSV import missing');
 assert(source('lib/ui/home.dart').includes('openRecordSearch'), 'Global search missing');
 const report = source('lib/models/reports.dart');

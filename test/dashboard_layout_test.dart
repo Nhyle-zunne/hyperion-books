@@ -65,13 +65,14 @@ void main() {
     // ignore: avoid_print
     print('DASHBOARD CHECK $size: HYPERION BOOKS=${find.text('HYPERION BOOKS').evaluate().length}, '
       'overview=${find.text('Financial overview').evaluate().length}, '
-      'payout=${find.text('Add payout').evaluate().length}, '
-      'expense=${find.text('Add expense').evaluate().length}, '
+      'revenue=${find.text('Tracked revenue').evaluate().length}, '
+      'costs=${find.text('Known costs').evaluate().length}, '
       'images=${find.byType(Image).evaluate().length}');
     expect(find.text('HYPERION BOOKS'), findsOneWidget);
     expect(find.text('Financial overview'), findsOneWidget);
-    expect(find.text('Add payout'), findsOneWidget);
-    expect(find.text('Add expense'), findsOneWidget);
+    expect(find.text('Tracked revenue'), findsOneWidget);
+    expect(find.text('Known costs'), findsWidgets);
+    expect(find.text('Paid sales'), findsOneWidget);
     expect(find.byType(Image), findsWidgets);
     final layoutError = tester.takeException();
     // ignore: avoid_print
@@ -97,25 +98,21 @@ void main() {
     await tester.pumpWidget(MaterialApp(home: BooksHome(controller: fixture)));
     await tester.pumpAndSettle();
     // ignore: avoid_print
-    print('IMPORT MARKERS: activity=${find.text('Sales activity').evaluate().length}, '
-      'gross=${find.text('Gross customer payments').evaluate().length}, '
-      'count=${find.text('1 paid transactions').evaluate().length}');
-    expect(find.text('Sales activity'), findsOneWidget);
-    expect(find.text('PayMongo Activity'), findsNothing);
-    expect(find.text('Imported PayMongo activity'), findsNothing);
-    expect(find.text('Gross customer payments'), findsOneWidget);
-    expect(find.text('1 paid transactions'), findsOneWidget);
+    print('IMPORT MARKERS: revenue=${find.text('Tracked revenue').evaluate().length}, '
+      'count=${find.text('Paid sales').evaluate().length}');
+    expect(find.text('Tracked revenue'), findsOneWidget);
+    expect(find.text('Paid sales'), findsOneWidget);
+    expect(find.text('Revenue vs Expenses'), findsOneWidget);
+    expect(find.text('Sales by Category'), findsOneWidget);
     final dashboard = find.descendant(
       of: find.byKey(const PageStorageKey<String>('hyperion-dashboard')),
       matching: find.byType(Scrollable)).first;
     await tester.scrollUntilVisible(
-      find.text('Business performance'), 360,
+      find.text('Recent Transactions'), 280,
       scrollable: dashboard);
-    expect(find.text('Business performance'), findsOneWidget);
-    await tester.scrollUntilVisible(
-      find.text('Bank and cash movements'), 360,
-      scrollable: dashboard);
-    expect(find.text('Bank and cash movements'), findsOneWidget);
+    expect(find.text('Recent Transactions'), findsOneWidget);
+    expect(find.text('Recent Expenses'), findsOneWidget);
+    expect(find.text('Cash Flow'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

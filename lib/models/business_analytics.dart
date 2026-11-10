@@ -8,6 +8,7 @@ class DailyBusinessMetric {
   final int processingFees;
   final int manualExpenses;
   final int bankPayouts;
+  final int manualDirectReceipts;
   final int payments;
   final int adjustments;
 
@@ -15,12 +16,12 @@ class DailyBusinessMetric {
     required this.date, required this.grossPaymongo,
     required this.provisionalGooglePlay, required this.processingFees,
     required this.manualExpenses, required this.bankPayouts,
-    required this.payments, required this.adjustments,
+    required this.manualDirectReceipts, required this.payments, required this.adjustments,
   });
 
   int get trackedReceipts => grossPaymongo + provisionalGooglePlay;
   int get trackedCosts => processingFees + manualExpenses;
-  int get cashMovement => bankPayouts - manualExpenses;
+  int get cashMovement => bankPayouts + manualDirectReceipts - manualExpenses;
 }
 
 class BusinessAnalytics {
@@ -83,6 +84,7 @@ class BusinessAnalytics {
     final feesByDate = <DateTime, int>{};
     final expensesByDate = <DateTime, int>{};
     final bankByDate = <DateTime, int>{};
+    final directByDate = <DateTime, int>{};
     final salesByDate = <DateTime, int>{};
     final adjustmentByDate = <DateTime, int>{};
     final categories = <String, int>{};
@@ -93,7 +95,10 @@ class BusinessAnalytics {
       final date = dateOnly(txn.occurredAt);
       if (txn.isPayment) {
         sales++;
-        if (txn.isManual) manualDirect += txn.netCentavos;
+        if (txn.isManual) {
+          manualDirect += txn.netCentavos;
+          directByDate[date] = (directByDate[date] ?? 0) + txn.netCentavos;
+        }
         gross += txn.grossCentavos;
         fees += -txn.feeCentavos;
         income[date] = (income[date] ?? 0) + txn.grossCentavos;
@@ -145,6 +150,7 @@ class BusinessAnalytics {
         processingFees: feesByDate[d] ?? 0,
         manualExpenses: expensesByDate[d] ?? 0,
         bankPayouts: bankByDate[d] ?? 0,
+        manualDirectReceipts: directByDate[d] ?? 0,
         payments: salesByDate[d] ?? 0,
         adjustments: adjustmentByDate[d] ?? 0,
       ))),
