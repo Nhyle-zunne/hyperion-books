@@ -43,8 +43,8 @@ void main() {
     expect(snapshot.revenue, 15000,
       reason: 'Bank payout is only a transfer, not new revenue');
     expect(snapshot.salesCount, 2);
-    expect(snapshot.knownCosts, 300);
-    expect(snapshot.indicativeResult, 14700);
+    expect(snapshot.knownCosts, 1200);
+    expect(snapshot.indicativeResult, 13800);
     expect(snapshot.cashMovement, 13800,
       reason: 'Bank payout plus directly received cash less expenses');
     expect(snapshot.salesByMethod['qrph'], 10000);
