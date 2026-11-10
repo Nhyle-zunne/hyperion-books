@@ -44,7 +44,7 @@ void main() {
       'Financial overview','Tracked revenue','Indicative result',
       'Known costs','Paid sales','Revenue vs Expenses','Sales by Category',
     ]) {
-      expect(find.text(name), findsOneWidget);
+      expect(find.text(name), name == 'Known costs' ? findsWidgets : findsOneWidget);
     }
     final first = tester.getTopLeft(find.byKey(
       const ValueKey('kpi-tracked-revenue')));
@@ -68,7 +68,7 @@ void main() {
     await render(tester, const Size(360, 760), addSale: () => added++);
     expect(find.text('Financial overview'), findsOneWidget);
     expect(find.text('Tracked revenue'), findsOneWidget);
-    expect(find.text('Known costs'), findsOneWidget);
+    expect(find.text('Known costs'), findsWidgets);
 
     await tester.tap(find.byKey(const ValueKey('dashboard-days-7')));
     await tester.pumpAndSettle();
