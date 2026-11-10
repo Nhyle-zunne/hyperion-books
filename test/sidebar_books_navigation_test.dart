@@ -40,7 +40,7 @@ void main() {
 
     await Scrollable.ensureVisible(
       tester.element(find.text('Books of Accounts')),
-      alignment: 0.45, duration: const Duration(milliseconds: 120));
+      alignment: 0.45, duration: Duration.zero);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Books of Accounts'));
     expect(destination, 'books');
