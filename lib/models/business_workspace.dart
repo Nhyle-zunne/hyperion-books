@@ -4,31 +4,41 @@ const businessListKinds = ['Customer', 'Vendor', 'Product', 'Expense category'];
 
 class BusinessListItem {
   final String id, kind, name, details;
+  final String email, phone, address, tin;
   final int? priceCentavos;
   const BusinessListItem({
     required this.id, required this.kind,
     required this.name, this.details = '', this.priceCentavos,
+    this.email = '', this.phone = '', this.address = '', this.tin = '',
   });
 
   Map<String, Object?> toJson() => {
     'id': id, 'kind': kind, 'name': name,
     'details': details, 'price_centavos': priceCentavos,
+    'email': email, 'phone': phone, 'address': address, 'tin': tin,
   };
 
   factory BusinessListItem.fromJson(Map<String, dynamic> json) {
     final id = json['id'], kind = json['kind'];
     final name = json['name'], details = json['details'] ?? '';
+    final email = json['email'] ?? '', phone = json['phone'] ?? '';
+    final address = json['address'] ?? '', tin = json['tin'] ?? '';
     final price = json['price_centavos'];
     if (id is! String || id.isEmpty || id.length > 120 ||
         kind is! String || !businessListKinds.contains(kind) ||
         name is! String || name.trim().isEmpty || name.length > 160 ||
         details is! String || details.length > 500 ||
+        email is! String || email.length > 254 ||
+        phone is! String || phone.length > 60 ||
+        address is! String || address.length > 400 ||
+        tin is! String || tin.length > 40 ||
         (price != null && (price is! int || price < 0 ||
             price > 100000000000000))) {
       throw const FormatException('Invalid business master-list item.');
     }
     return BusinessListItem(id: id, kind: kind, name: name.trim(),
-      details: details, priceCentavos: price);
+      details: details, priceCentavos: price,
+      email: email, phone: phone, address: address, tin: tin);
   }
 }
 
@@ -90,6 +100,9 @@ const taxRecordDirections = ['', 'Incoming', 'Outgoing'];
 /// tax certificate or legally issued electronic invoice.
 class TaxRecord {
   final String id, kind, name, reference, period, status, direction, notes;
+  final String buyerEmail, buyerPhone, buyerAddress, buyerTin;
+  final String sourceSaleId, itemDescription;
+  final int cwtCentavos;
   final DateTime date;
   final DateTime? dueDate;
   final int amountCentavos;
@@ -99,6 +112,10 @@ class TaxRecord {
     this.dueDate,
     this.period = '', this.status = 'Draft', this.direction = '',
     this.notes = '', this.amountCentavos = 0,
+    this.buyerEmail = '', this.buyerPhone = '',
+    this.buyerAddress = '', this.buyerTin = '',
+    this.sourceSaleId = '', this.itemDescription = '',
+    this.cwtCentavos = 0,
   });
   Map<String, Object?> toJson() => {
     'id': id, 'kind': kind, 'name': name, 'reference': reference,
@@ -106,6 +123,11 @@ class TaxRecord {
     'due_date': dueDate == null ? null : BookEntry.dateKeyOf(dueDate!),
     'status': status, 'direction': direction,
     'notes': notes, 'amount_centavos': amountCentavos,
+    'buyer_email': buyerEmail, 'buyer_phone': buyerPhone,
+    'buyer_address': buyerAddress, 'buyer_tin': buyerTin,
+    'source_sale_id': sourceSaleId,
+    'item_description': itemDescription,
+    'cwt_centavos': cwtCentavos,
   };
   factory TaxRecord.fromJson(Map<String, dynamic> json) {
     final id = json['id'], kind = json['kind'];
@@ -116,6 +138,13 @@ class TaxRecord {
     final dueDate = rawDue is String ? DateTime.tryParse(rawDue) : null;
     final direction = json['direction'] ?? '', notes = json['notes'] ?? '';
     final amount = json['amount_centavos'] ?? 0;
+    final buyerEmail = json['buyer_email'] ?? '';
+    final buyerPhone = json['buyer_phone'] ?? '';
+    final buyerAddress = json['buyer_address'] ?? '';
+    final buyerTin = json['buyer_tin'] ?? '';
+    final sourceSaleId = json['source_sale_id'] ?? '';
+    final itemDescription = json['item_description'] ?? '';
+    final cwt = json['cwt_centavos'] ?? 0;
     final parsed = date is String ? DateTime.tryParse(date) : null;
     if (id is! String || id.isEmpty || id.length > 120 ||
         kind is! String || !taxRecordKinds.contains(kind) ||
@@ -128,6 +157,13 @@ class TaxRecord {
         status is! String || !taxRecordStatuses.contains(status) ||
         direction is! String || !taxRecordDirections.contains(direction) ||
         notes is! String || notes.length > 1500 ||
+        buyerEmail is! String || buyerEmail.length > 254 ||
+        buyerPhone is! String || buyerPhone.length > 60 ||
+        buyerAddress is! String || buyerAddress.length > 400 ||
+        buyerTin is! String || buyerTin.length > 40 ||
+        sourceSaleId is! String || sourceSaleId.length > 160 ||
+        itemDescription is! String || itemDescription.length > 500 ||
+        cwt is! int || cwt < 0 || cwt > 100000000000000 ||
         amount is! int || amount < 0 || amount > 100000000000000) {
       throw const FormatException('Invalid local tax tracking record.');
     }
@@ -135,7 +171,10 @@ class TaxRecord {
       reference: reference.trim(), period: period.trim(), date: parsed,
       dueDate: dueDate,
       status: status, direction: direction, notes: notes,
-      amountCentavos: amount);
+      amountCentavos: amount, buyerEmail: buyerEmail,
+      buyerPhone: buyerPhone, buyerAddress: buyerAddress,
+      buyerTin: buyerTin, sourceSaleId: sourceSaleId,
+      itemDescription: itemDescription, cwtCentavos: cwt);
   }
 }
 
