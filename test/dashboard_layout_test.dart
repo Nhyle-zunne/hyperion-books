@@ -65,14 +65,14 @@ void main() {
     // ignore: avoid_print
     print('DASHBOARD CHECK $size: HYPERION BOOKS=${find.text('HYPERION BOOKS').evaluate().length}, '
       'overview=${find.text('Financial overview').evaluate().length}, '
-      'revenue=${find.text('Tracked revenue').evaluate().length}, '
-      'costs=${find.text('Known costs').evaluate().length}, '
+      'revenue=${find.byKey(const ValueKey('kpi-revenue')).evaluate().length}, '
+      'expenses=${find.byKey(const ValueKey('kpi-expenses')).evaluate().length}, '
       'images=${find.byType(Image).evaluate().length}');
     expect(find.text('HYPERION BOOKS'), findsOneWidget);
     expect(find.text('Financial overview'), findsOneWidget);
-    expect(find.text('Tracked revenue'), findsOneWidget);
-    expect(find.text('Known costs'), findsWidgets);
-    expect(find.text('Paid sales'), findsOneWidget);
+    for (final key in ['revenue', 'net-profit', 'expenses', 'sales']) {
+      expect(find.byKey(ValueKey('kpi-$key')), findsOneWidget);
+    }
     expect(find.byType(Image), findsWidgets);
     final layoutError = tester.takeException();
     // ignore: avoid_print
@@ -99,9 +99,9 @@ void main() {
     await tester.pumpAndSettle();
     // ignore: avoid_print
     print('IMPORT MARKERS: revenue=${find.text('Tracked revenue').evaluate().length}, '
-      'count=${find.text('Paid sales').evaluate().length}');
-    expect(find.text('Tracked revenue'), findsOneWidget);
-    expect(find.text('Paid sales'), findsOneWidget);
+      'count=${find.byKey(const ValueKey('kpi-sales')).evaluate().length}');
+    expect(find.byKey(const ValueKey('kpi-revenue')), findsOneWidget);
+    expect(find.byKey(const ValueKey('kpi-sales')), findsOneWidget);
     expect(find.text('Revenue vs Expenses'), findsOneWidget);
     expect(find.text('Sales by Category'), findsOneWidget);
     final dashboard = find.descendant(
