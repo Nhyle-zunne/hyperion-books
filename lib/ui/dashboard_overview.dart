@@ -160,20 +160,20 @@ class _DashboardOverviewState extends State<DashboardOverview> {
     const gap = 12.0;
     final width = (size.maxWidth - gap * (count - 1)) / count;
     return Wrap(spacing: gap, runSpacing: gap, children: [
-      SizedBox(width: width, child: _kpi('Tracked revenue',
+      SizedBox(width: width, child: _kpi('Revenue',
         _pesos(data.revenue), 'Paid sales + provisional receipts',
         Icons.trending_up, HyperionColors.accent, widget.onSales)),
-      SizedBox(width: width, child: _kpi('Indicative result',
-        _pesos(data.indicativeResult), 'Revenue less known costs',
+      SizedBox(width: width, child: _kpi('Net Profit',
+        _pesos(data.indicativeResult), 'Estimate · revenue less known costs',
         Icons.account_balance_wallet_outlined,
         data.indicativeResult >= 0
           ? HyperionColors.accent : HyperionColors.danger,
         widget.onReports)),
-      SizedBox(width: width, child: _kpi('Known costs',
+      SizedBox(width: width, child: _kpi('Expenses',
         _pesos(data.knownCosts), 'Expenses + processing fees',
         Icons.receipt_long_outlined, HyperionColors.danger,
         widget.onExpenses)),
-      SizedBox(width: width, child: _kpi('Paid sales',
+      SizedBox(width: width, child: _kpi('Sales',
         NumberFormat.decimalPattern().format(data.salesCount),
         '$days-day transaction count',
         Icons.shopping_bag_outlined, HyperionColors.chartBlue,
