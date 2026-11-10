@@ -369,7 +369,7 @@ class _BooksHomeState extends State<BooksHome> {
                 }
               },
               itemBuilder: (_) => [
-                PopupMenuItem(value: 'sale', child: Text('Add manual sale')),
+                PopupMenuItem(value: 'sale', child: Text('Add sale')),
                 PopupMenuItem(value: 'payout', child: Text('Add bank payout')),
                 PopupMenuItem(value: 'expense', child: Text('Add expense')),
                 PopupMenuItem(value: 'csv', child: Text('Import sales CSV / Excel')),
