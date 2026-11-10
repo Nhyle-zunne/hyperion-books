@@ -70,15 +70,15 @@ class _PayMongoScreenState extends State<PayMongoScreen> {
           Text('Sales', style: TextStyle(
             fontSize: 23, fontWeight: FontWeight.w900, color: HyperionColors.ink)),
           SizedBox(height: 7),
-          Text('Record QR Ph, bank transfer and cash sales manually, or import '
-            'CSV/Excel transactions. Direct receipts and imported payments '
-            'appear together in totals and draft accounting books.',
+          Text('Record sales paid by QR Ph, bank transfer or cash, or import '
+            'sales transactions from CSV / Excel. View payments, fees '
+            'and sales totals in one place.',
             style: TextStyle(color: HyperionColors.muted, fontSize: 13)),
           SizedBox(height: 15),
           Wrap(spacing: 10, runSpacing: 10, children: [
             if (widget.onAddManual != null) FilledButton.icon(
               onPressed: widget.onAddManual, icon: Icon(Icons.add),
-              label: Text('Add sale manually')),
+              label: Text('Add sale')),
             OutlinedButton.icon(
               onPressed: widget.onImport, icon: Icon(Icons.upload_file),
               label: Text('Import Sales CSV / Excel')),
@@ -144,7 +144,7 @@ class _PayMongoScreenState extends State<PayMongoScreen> {
             style: TextStyle(fontSize: 12, color: HyperionColors.muted)),
           SizedBox(height: 8),
           if (items.isEmpty) Padding(padding: EdgeInsets.symmetric(vertical: 38),
-            child: Center(child: Text('No matching sales. Add a sale manually or import a CSV / Excel file.'))),
+            child: Center(child: Text('No matching sales. Add a sale or import a CSV / Excel file.'))),
           if (_tableMode && items.isNotEmpty) _transactionTable(items),
         ]);
       },
@@ -332,7 +332,7 @@ class _PayMongoScreenState extends State<PayMongoScreen> {
             Text(_php(txn.netCentavos), style: TextStyle(
               color: primary, fontWeight: FontWeight.w900, fontSize: 15)),
             if (txn.isManual && widget.onEditManual != null)
-              IconButton(tooltip: 'Edit manual sale',
+              IconButton(tooltip: 'Edit sale',
                 onPressed: () => widget.onEditManual?.call(txn),
                 icon: Icon(Icons.edit_outlined, size: 19)),
             IconButton(tooltip: 'View all saved transaction fields',
