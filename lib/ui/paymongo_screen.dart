@@ -16,6 +16,7 @@ class PayMongoScreen extends StatefulWidget {
   final VoidCallback? onAddManual;
   final ValueChanged<PayMongoTransaction>? onEditManual;
   final ValueChanged<PayMongoTransaction>? onDeleteManual;
+  final ValueChanged<PayMongoTransaction>? onPrepareInvoice;
   const PayMongoScreen({
     super.key,
     required this.transactions,
@@ -25,6 +26,7 @@ class PayMongoScreen extends StatefulWidget {
     this.onAddManual,
     this.onEditManual,
     this.onDeleteManual,
+    this.onPrepareInvoice,
   });
 
   @override
@@ -168,8 +170,15 @@ class _PayMongoScreenState extends State<PayMongoScreen> {
       if (txn.isManual && txn.reference.isNotEmpty)
         MapEntry('Payment reference', txn.reference),
       if (txn.isManual) MapEntry('Product / service', txn.description),
-      if (txn.isManual && txn.customer.isNotEmpty)
-        MapEntry('Customer', txn.customer),
+      if (txn.customer.isNotEmpty) MapEntry('Buyer / customer', txn.customer),
+      if (txn.customerEmail.isNotEmpty)
+        MapEntry('Customer email', txn.customerEmail),
+      if (txn.customerPhone.isNotEmpty)
+        MapEntry('Contact number', txn.customerPhone),
+      if (txn.customerAddress.isNotEmpty)
+        MapEntry('Buyer address', txn.customerAddress),
+      if (txn.customerTin.isNotEmpty)
+        MapEntry('Buyer TIN (not verified)', txn.customerTin),
       if (txn.isManual && txn.depositAccount.isNotEmpty)
         MapEntry('Received into', txn.depositAccount),
       if (txn.isManual && txn.notes.isNotEmpty)
@@ -201,11 +210,17 @@ class _PayMongoScreenState extends State<PayMongoScreen> {
               Text(txn.isManual
                 ? 'Manual receipt recorded locally; verify against bank/QR evidence. '
                   'A JSON backup may contain optional customer details.'
-                : 'The original sales file may contain additional columns. '
-                  'Only non-personal accounting fields are stored locally.',
+                : 'Only selected customer identity/contact and accounting fields '
+                  'are retained locally. Exported Excel/JSON backups may contain '
+                  'personal data; store them securely.',
                 style: TextStyle(color: HyperionColors.muted, fontSize: 11)),
             ]))),
         actions: [
+          if (txn.isPayment && widget.onPrepareInvoice != null)
+            TextButton(onPressed: () {
+              Navigator.pop(dialog);
+              widget.onPrepareInvoice?.call(txn);
+            }, child: Text('Prepare invoice record')),
           if (txn.isManual && widget.onDeleteManual != null)
             TextButton(onPressed: () {
               Navigator.pop(dialog);
@@ -227,7 +242,7 @@ class _PayMongoScreenState extends State<PayMongoScreen> {
     final from = page * pageSize;
     final until = (from + pageSize).clamp(0, items.length);
     final visible = items.sublist(from, until);
-    final columns = ['Timestamp', 'Transaction ID', 'Type', 'Status',
+    final columns = ['Timestamp', 'Transaction ID', 'Buyer', 'Type', 'Status',
       'Method', 'Gross', 'Fees (incl VAT)', 'VAT portion', 'Net'];
     return Card(child: Padding(padding: const EdgeInsets.all(12),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -262,6 +277,9 @@ class _PayMongoScreenState extends State<PayMongoScreen> {
                     DataCell(Text(DateFormat('yyyy-MM-dd HH:mm').format(txn.occurredAt))),
                     DataCell(ConstrainedBox(constraints: BoxConstraints(maxWidth: 240),
                       child: Text(txn.id, maxLines: 2, overflow: TextOverflow.ellipsis))),
+                    DataCell(ConstrainedBox(constraints: BoxConstraints(maxWidth: 160),
+                      child: Text(txn.customer.isEmpty ? '—' : txn.customer,
+                        overflow: TextOverflow.ellipsis))),
                     DataCell(Text(txn.isManual ? 'Manual sale' : txn.type)),
                     DataCell(Text(txn.status)),
                     DataCell(Text(txn.paymentMethod)),
@@ -306,9 +324,10 @@ class _PayMongoScreenState extends State<PayMongoScreen> {
             Icon(payment ? Icons.payments_outlined : Icons.tune_outlined,
               color: primary, size: 20),
             SizedBox(width: 9),
-            Expanded(child: Text(txn.isManual
-              ? (txn.description.isEmpty ? 'Manual sale' : txn.description)
-              : txn.type, style: TextStyle(
+            Expanded(child: Text(txn.customer.isNotEmpty
+              ? txn.customer
+              : txn.isManual && txn.description.isNotEmpty
+                  ? txn.description : txn.type, style: TextStyle(
               fontWeight: FontWeight.w800, fontSize: 14))),
             Text(_php(txn.netCentavos), style: TextStyle(
               color: primary, fontWeight: FontWeight.w900, fontSize: 15)),
@@ -323,6 +342,9 @@ class _PayMongoScreenState extends State<PayMongoScreen> {
           SizedBox(height: 6),
           Text(dateText, style: TextStyle(
             color: HyperionColors.muted, fontSize: 12)),
+          if (txn.customer.isNotEmpty && txn.description.isNotEmpty)
+            Text(txn.description, maxLines: 1, overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: HyperionColors.muted, fontSize: 11)),
           SizedBox(height: 6),
           Text('Gross ${_php(txn.grossCentavos)}   •   Fee ${_php(txn.feeCentavos)}'
             '   •   VAT portion ${_php(txn.vatCentavos)}',

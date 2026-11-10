@@ -19,6 +19,10 @@ class PayMongoTransaction {
   final String reference;
   final String description;
   final String customer;
+  final String customerEmail;
+  final String customerPhone;
+  final String customerAddress;
+  final String customerTin;
   final String depositAccount;
   final String notes;
 
@@ -36,6 +40,10 @@ class PayMongoTransaction {
     this.reference = '',
     this.description = '',
     this.customer = '',
+    this.customerEmail = '',
+    this.customerPhone = '',
+    this.customerAddress = '',
+    this.customerTin = '',
     this.depositAccount = '',
     this.notes = '',
   });
@@ -43,6 +51,46 @@ class PayMongoTransaction {
   bool get isManual => source == 'manual';
 
   bool get isPayment => type == 'Payment';
+
+  /// Existing IDs may be enriched only when their accounting values match.
+  /// Customer fields are filled when blank; no booked amount is ever changed.
+  bool sameAccountingIdentity(PayMongoTransaction other) =>
+      id == other.id && type == other.type && status == other.status &&
+      paymentMethod == other.paymentMethod &&
+      occurredAt.isAtSameMomentAs(other.occurredAt) &&
+      grossCentavos == other.grossCentavos &&
+      feeCentavos == other.feeCentavos &&
+      vatCentavos == other.vatCentavos &&
+      netCentavos == other.netCentavos;
+
+  PayMongoTransaction withMissingCustomerDetails(PayMongoTransaction other) =>
+      PayMongoTransaction(
+        id: id, type: type, status: status, paymentMethod: paymentMethod,
+        occurredAt: occurredAt, grossCentavos: grossCentavos,
+        feeCentavos: feeCentavos, vatCentavos: vatCentavos,
+        netCentavos: netCentavos, source: source,
+        reference: reference, description: description, customer:
+            customer.isEmpty ? other.customer : customer,
+        customerEmail: customerEmail.isEmpty
+            ? other.customerEmail : customerEmail,
+        customerPhone: customerPhone.isEmpty
+            ? other.customerPhone : customerPhone,
+        customerAddress: customerAddress.isEmpty
+            ? other.customerAddress : customerAddress,
+        customerTin: customerTin.isEmpty
+            ? other.customerTin : customerTin,
+        depositAccount: depositAccount, notes: notes,
+      );
+
+  bool canEnrichFrom(PayMongoTransaction other) {
+    if (isManual || !sameAccountingIdentity(other)) return false;
+    final merged = withMissingCustomerDetails(other);
+    return merged.customer != customer ||
+        merged.customerEmail != customerEmail ||
+        merged.customerPhone != customerPhone ||
+        merged.customerAddress != customerAddress ||
+        merged.customerTin != customerTin;
+  }
 
   String get month => '${occurredAt.year.toString().padLeft(4, '0')}-'
       '${occurredAt.month.toString().padLeft(2, '0')}';
@@ -61,6 +109,10 @@ class PayMongoTransaction {
     'reference': reference,
     'description': description,
     'customer': customer,
+    'customer_email': customerEmail,
+    'customer_phone': customerPhone,
+    'customer_address': customerAddress,
+    'customer_tin': customerTin,
     'deposit_account': depositAccount,
     'notes': notes,
   };
@@ -79,6 +131,10 @@ class PayMongoTransaction {
     final reference = json['reference'] ?? '';
     final description = json['description'] ?? '';
     final customer = json['customer'] ?? '';
+    final email = json['customer_email'] ?? '';
+    final phone = json['customer_phone'] ?? '';
+    final address = json['customer_address'] ?? '';
+    final tin = json['customer_tin'] ?? '';
     final account = json['deposit_account'] ?? '';
     final notes = json['notes'] ?? '';
     final d = datetime is String ? DateTime.tryParse(datetime) : null;
@@ -94,6 +150,10 @@ class PayMongoTransaction {
         reference is! String || reference.length > 160 ||
         description is! String || description.length > 180 ||
         customer is! String || customer.length > 160 ||
+        email is! String || email.length > 254 ||
+        phone is! String || phone.length > 60 ||
+        address is! String || address.length > 400 ||
+        tin is! String || tin.length > 40 ||
         account is! String || account.length > 160 ||
         notes is! String || notes.length > 1000 ||
         (source == 'manual' && (!id.startsWith('manual_') ||
@@ -107,7 +167,9 @@ class PayMongoTransaction {
       grossCentavos: gross, feeCentavos: fee,
       vatCentavos: vat, netCentavos: net,
       source: source, reference: reference, description: description,
-      customer: customer, depositAccount: account, notes: notes,
+      customer: customer, customerEmail: email, customerPhone: phone,
+      customerAddress: address, customerTin: tin,
+      depositAccount: account, notes: notes,
     );
   }
 }

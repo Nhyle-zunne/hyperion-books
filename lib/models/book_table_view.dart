@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
 import 'accounting_books.dart';
+import 'paymongo_transaction.dart';
 
 /// Presentation-only columns for the four BIR-style working books.
 /// Source records, postings, and audit references are never altered.
@@ -28,6 +29,7 @@ class BookTableData {
 
   static BookTableData build({
     required AccountingBooks books,
+    Iterable<PayMongoTransaction> transactions = const [],
     required int bookIndex,
     DateTime? start,
     DateTime? end,
@@ -129,11 +131,20 @@ class BookTableData {
           summaryRows: opening == 0 ? const {} : const {0},
         );
       case 2:
+        final buyerById = {
+          for (final txn in transactions)
+            if (txn.customer.trim().isNotEmpty) txn.id: txn.customer.trim(),
+        };
+        String receiptParticulars(String ref, String particulars) {
+          final buyer = buyerById[ref];
+          return buyer == null ? particulars : '$particulars · $buyer';
+        }
         final lines = books.cashReceipts.where((r) =>
             allowed(r.reference) && within(r.date)).toList();
         final result = <List<String>>[
           for (final r in lines) [
-            day(r.date), r.reference, r.particulars,
+            day(r.date), r.reference,
+            receiptParticulars(r.reference, r.particulars),
             amount(r.gross), amount(r.fees), amount(r.bankReceived),
             amount(r.processorNet),
           ],

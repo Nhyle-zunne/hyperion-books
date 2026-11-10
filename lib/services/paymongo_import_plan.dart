@@ -8,11 +8,13 @@ class PayMongoImportPlan {
   final List<PayMongoTransaction> newTransactions;
   final int alreadyImported;
   final int conflictingExisting;
+  final int customerDetailsToEnrich;
 
   const PayMongoImportPlan({
     required this.newTransactions,
     required this.alreadyImported,
     required this.conflictingExisting,
+    this.customerDetailsToEnrich = 0,
   });
 
   int get newCount => newTransactions.length;
@@ -28,7 +30,7 @@ class PayMongoImportPlan {
     };
     final seenInFile = <String>{};
     final add = <PayMongoTransaction>[];
-    var skipped = 0, conflicts = 0;
+    var skipped = 0, conflicts = 0, enrichable = 0;
     for (final item in incoming) {
       // Parsing already rejects repeated IDs within one CSV; retain this
       // safeguard if the plan is ever used with a different input source.
@@ -41,13 +43,18 @@ class PayMongoImportPlan {
         add.add(item);
       } else {
         skipped++;
-        if (!_sameTransaction(previous, item)) conflicts++;
+        if (!_sameTransaction(previous, item)) {
+          conflicts++;
+        } else if (previous.canEnrichFrom(item)) {
+          enrichable++;
+        }
       }
     }
     return PayMongoImportPlan(
       newTransactions: List.unmodifiable(add),
       alreadyImported: skipped,
       conflictingExisting: conflicts,
+      customerDetailsToEnrich: enrichable,
     );
   }
 

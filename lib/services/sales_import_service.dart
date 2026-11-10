@@ -23,8 +23,8 @@ class SalesImportService {
   static const maxBytes = 12 * 1024 * 1024;
   static const maxRows = 50000;
   static const template =
-      'Reference,Date,Gross Amount,Fee,Fee VAT,Net Amount,Status,Payment Method,Type,Currency\n'
-      'SALE-0001,2026-11-10 09:30,1000.00,-15.00,-1.61,985.00,Paid,Bank Transfer,Payment,PHP\n';
+      'Reference,Date,Gross Amount,Fee,Fee VAT,Net Amount,Status,Payment Method,Type,Currency,Customer Name,Customer Email,Customer Phone,Buyer Address,Buyer TIN\n'
+      'SALE-0001,2026-11-10 09:30,1000.00,-15.00,-1.61,985.00,Paid,Bank Transfer,Payment,PHP,Sample Customer,buyer@example.test,+63-900-000-0000,,\n';
 
   static Future<SalesImportPreview?> select() async {
     const group = XTypeGroup(label: 'Sales CSV or Excel workbook',
@@ -152,12 +152,19 @@ class SalesImportService {
     final methodColumn = column(['payment method','method','channel']);
     final typeColumn = column(['type','transaction type']);
     final currencyColumn = column(['currency']);
+    final customerColumn = column(['customer name','buyer name','billing name','customer','name']);
+    final emailColumn = column(['customer email','buyer email','email address','email','billing email']);
+    final phoneColumn = column(['customer phone','phone','phone number','mobile number','contact number','billing phone']);
+    final addressColumn = column(['buyer address','billing address','customer address','address']);
+    final tinColumn = column(['buyer tin','customer tin','billing tin','tin']);
     String cell(List<String> row, int? index) =>
       index == null || index >= row.length ? '' : row[index].trim();
 
     final normalized = <List<String>>[
       ['Transaction ID','Type','Currency','Gross Amount','Fee','VAT',
-       'Net Amount','Status','Transaction Date','Payment Method'],
+       'Net Amount','Status','Transaction Date','Payment Method',
+       'Customer Name','Customer Email','Customer Phone',
+       'Buyer Address','Buyer TIN'],
     ];
     final seen = <String>{};
     var ignored = 0;
@@ -222,6 +229,8 @@ class SalesImportService {
         ref, type, 'PHP', _decimal(gross), _decimal(signedFee),
         _decimal(signedVat), _decimal(net), status,
         cell(row, dateColumn), cell(row, methodColumn),
+        cell(row, customerColumn), cell(row, emailColumn),
+        cell(row, phoneColumn), cell(row, addressColumn), cell(row, tinColumn),
       ]);
     }
     final output = PayMongoCsvService.parse(_asCsv(normalized));

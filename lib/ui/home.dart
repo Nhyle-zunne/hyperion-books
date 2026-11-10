@@ -40,6 +40,7 @@ class _BooksHomeState extends State<BooksHome> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   String _filter = 'All';
   String _month = 'All time';
+  String? _invoiceSourceId;
 
   void _navigate(int page) {
     final target = switch (page) {
@@ -52,6 +53,15 @@ class _BooksHomeState extends State<BooksHome> {
       _ => 'dashboard',
     };
     _openRoute(target);
+  }
+
+  void _prepareInvoice(PayMongoTransaction sale) {
+    setState(() {
+      _invoiceSourceId = sale.id;
+      _route = 'tax-invoices';
+      _page = 5;
+    });
+    HyperionLoading.pageTransition('Preparing linked invoice record');
   }
 
   void _openRoute(String route) {
@@ -67,8 +77,9 @@ class _BooksHomeState extends State<BooksHome> {
       'tax-annual' || 'tax-2307' || 'tax-invoices' => 5,
       _ => 6,
     };
-    if (_route == route) return;
+    if (_route == route && _invoiceSourceId == null) return;
     setState(() {
+      _invoiceSourceId = null;
       _route = route;
       _page = page;
       if (route == 'daily-expenses') _filter = 'Expenses';
@@ -242,6 +253,7 @@ class _BooksHomeState extends State<BooksHome> {
           onAddManual: () => _manualSale(context),
           onEditManual: (sale) => _manualSale(context, initial: sale),
           onDeleteManual: (sale) => _deleteManualSale(context, sale),
+          onPrepareInvoice: _prepareInvoice,
         ),
         'compliance' => CompliancePage(
           workspace: ctrl.workspace,
@@ -266,8 +278,9 @@ class _BooksHomeState extends State<BooksHome> {
         'tax-calendar' || 'tax-monthly' || 'tax-quarterly' ||
         'tax-annual' || 'tax-2307' || 'tax-invoices' =>
           TaxFilingPage(
-            key: ValueKey(_route),
+            key: ValueKey('$_route-${_invoiceSourceId ?? ''}'),
             initialSection: _taxSection,
+            initialSaleId: _invoiceSourceId,
             entries: ctrl.entries,
             transactions: ctrl.paymongoTransactions,
             workspace: ctrl.workspace,
@@ -279,6 +292,7 @@ class _BooksHomeState extends State<BooksHome> {
             key: ValueKey(_route), initialTab: _businessTab,
             initialKind: _masterKind,
             workspace: ctrl.workspace,
+            transactions: ctrl.paymongoTransactions,
             save: ctrl.saveWorkspace,
             backupPage: _settings(context),
           ),
@@ -580,10 +594,10 @@ class _BooksHomeState extends State<BooksHome> {
       );
       final newRows = plan.newTransactions;
       final duplicates = plan.alreadyImported;
+      final enrich = plan.customerDetailsToEnrich;
       final totals = PayMongoTotals.fromTransactions(newRows);
-      final duplicateNotice = newRows.isEmpty
-          ? 'All eligible transactions in this file were already imported. '
-            'No records will be changed.\n\n'
+      final duplicateNotice = newRows.isEmpty && enrich == 0
+          ? 'All eligible transactions are already imported; no changes are needed.\n\n'
           : '';
       final changedNotice = plan.conflictingExisting == 0
           ? ''
@@ -596,7 +610,8 @@ class _BooksHomeState extends State<BooksHome> {
           content: SingleChildScrollView(child: Text(
             'New successful payments: ${totals.payments}\n'
             'New adjustments/refunds: ${totals.adjustments}\n'
-            'Already imported (skipped): $duplicates\n'
+            'Already imported (no additional sales): $duplicates\n'
+            'Existing sales eligible for missing buyer details: $enrich\n'
             'Unpaid / unsupported rows (skipped): ${preview.ignored}\n\n'
             '$duplicateNotice'
             '$changedNotice'
@@ -606,28 +621,30 @@ class _BooksHomeState extends State<BooksHome> {
             'Net new payment activity, including adjustments: '
             '${php(totals.activityNetCentavos)}\n\n'
             'Records are sorted by the exact date/time shown in the file. '
-            'Only transaction IDs, amounts, type, status and method are kept: '
-            'customer names/emails are not saved.\n\n'
-            'These are customer transactions, NOT bank payouts. '
-            'They will NOT be added to the cashflow or journal. '
-            'Keep entering actual bank payouts under Entries.',
+            'Customer name, email, phone, address and buyer TIN are kept '
+            'when provided, locally in this browser and in unencrypted '
+            'backups/Excel sales exports. Protect those files.\n\n'
+            'Re-importing matching IDs only fills missing buyer details; '
+            'financial amounts and existing contact values remain unchanged. '
+            'Imported customer payments are sales, not additional bank payouts.'
           )),
           actions: [
             TextButton(onPressed: () => Navigator.pop(dialog, false),
               child: Text('Cancel')),
-            if (newRows.isNotEmpty)
+            if (newRows.isNotEmpty || enrich > 0)
               FilledButton(
                 onPressed: () => Navigator.pop(dialog, true),
-                child: Text('Import ${newRows.length} new records')),
+                child: Text(newRows.isEmpty ? 'Update $enrich customer profiles'
+                  : 'Import ${newRows.length} sales + $enrich profile updates')),
           ],
         ));
       if (proceed != true || !context.mounted) return;
       final added = await HyperionLoading.whileRunning(
-        'Importing sales transactions', () => widget.controller.importPayMongo(newRows));
+        'Importing sales transactions', () => widget.controller.importPayMongo(preview.transactions));
       if (context.mounted) {
         final skipped = duplicates + (newRows.length - added);
-        _message(context, 'Imported $added new sales transactions; '
-          'skipped $skipped already imported. Export a JSON backup.');
+        _message(context, 'Imported $added sales and enriched $enrich existing profiles; '
+          '$skipped repeat records. Export a JSON backup securely.');
       }
     } catch (error) {
       if (context.mounted) _message(context, 'Sales spreadsheet import failed: $error');

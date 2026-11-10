@@ -32,7 +32,8 @@ class PayMongoCsvService {
     if (matrix.isEmpty) throw const FormatException('CSV is empty.');
     final headers = <String, int>{};
     for (var i = 0; i < matrix.first.length; i++) {
-      headers[matrix.first[i].trim().toLowerCase()] = i;
+      headers[matrix.first[i].trim().toLowerCase().replaceAll(RegExp(r'[_-]+'), ' ')
+          .replaceAll(RegExp(r'\s+'), ' ')] = i;
     }
     const required = [
       'transaction id', 'type', 'currency', 'gross amount',
@@ -47,6 +48,20 @@ class PayMongoCsvService {
     String cell(List<String> row, String name) {
       final index = headers[name];
       return index == null || index >= row.length ? '' : row[index].trim();
+    }
+    // PayMongo exports and generic Excel templates use different labels.
+    // Keep only buyer identity/contact fields necessary for records/invoicing;
+    // never persist unrelated card, token or billing-credential columns.
+    String buyerField(List<String> row, List<String> labels, int limit, int line) {
+      var value = '';
+      for (final label in labels) {
+        value = cell(row, label);
+        if (value.isNotEmpty) break;
+      }
+      if (value.length > limit || value.contains(RegExp(r'[\x00-\x08\x0B\x0C\x0E-\x1F]'))) {
+        throw FormatException('Buyer detail exceeds allowed length or has invalid characters on row $line.');
+      }
+      return value;
     }
 
     final seen = <String>{};
@@ -87,6 +102,26 @@ class PayMongoCsvService {
         feeCentavos: _money(cell(row, 'fee'), i + 1),
         vatCentavos: _money(cell(row, 'vat'), i + 1),
         netCentavos: _money(cell(row, 'net amount'), i + 1),
+        customer: buyerField(row, const [
+          'customer name', 'buyer name', 'billing name', 'name',
+        ], 160, i + 1),
+        customerEmail: buyerField(row, const [
+          'customer email', 'customer email address', 'billing email',
+          'buyer email', 'email address', 'email',
+        ], 254, i + 1),
+        customerPhone: buyerField(row, const [
+          'customer phone', 'customer mobile', 'customer mobile number',
+          'customer contact', 'customer contact number',
+          'billing phone', 'buyer phone', 'phone number', 'contact number',
+          'mobile number', 'phone', 'mobile',
+        ], 60, i + 1),
+        customerAddress: buyerField(row, const [
+          'buyer registered business address', 'customer address',
+          'billing address', 'buyer address', 'address',
+        ], 400, i + 1),
+        customerTin: buyerField(row, const [
+          'buyer tin', 'customer tin', 'billing tin', 'tin',
+        ], 40, i + 1),
       ));
     }
     parsed.sort((a,b) {

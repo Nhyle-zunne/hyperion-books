@@ -48,15 +48,27 @@ class LocalRepository {
     return db.transaction((txn) async {
       var added = 0;
       final existing = await _paymongo.find(txn);
-      final usedIds = existing.map((row) => row.key).toSet();
+      final byId = {for (final row in existing) row.key: row.value};
+      final usedIds = byId.keys.toSet();
       final manualReferences = existing
           .map((row) => PayMongoTransaction.fromJson(row.value))
           .where((sale) => sale.isManual && sale.reference.isNotEmpty)
           .map((sale) => sale.reference.trim().toLowerCase())
           .toSet();
       for (final item in transactions) {
-        if (usedIds.contains(item.id) ||
-            manualReferences.contains(item.id.toLowerCase())) {
+        final prior = byId[item.id];
+        if (prior != null) {
+          final saved = PayMongoTransaction.fromJson(prior);
+          // Existing financial data is immutable. A repeat import can only
+          // fill buyer fields that were previously omitted; conflicts never
+          // overwrite even customer metadata.
+          if (saved.canEnrichFrom(item)) {
+            await _paymongo.record(item.id).put(
+              txn, saved.withMissingCustomerDetails(item).toJson());
+          }
+          continue;
+        }
+        if (manualReferences.contains(item.id.toLowerCase())) {
           continue;
         }
         await _paymongo.record(item.id).put(txn, item.toJson());

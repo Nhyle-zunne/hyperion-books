@@ -48,6 +48,7 @@ class ExportService {
       });
     final books = AccountingBooks.fromSources(
       [...report.payouts, ...report.expenses], imported);
+    final buyers = {for (final t in imported) t.id: t.customer.trim()};
     if (!books.balanced) {
       throw StateError('Combined accounting journal is not balanced. Export cancelled.');
     }
@@ -69,7 +70,7 @@ class ExportService {
       'The Cash Receipts Journal separates gross imported sales, net settlement clearing and actual bank receipts. Do not sum these distinct columns as revenue.',
       'The General Journal includes all postings consolidated; do not also post the specialized journal sheets a second time.',
       'The reports are not a substitute for a registered set of books or verified invoices, official supporting documents and tax returns.',
-      'BUSINESS PROFILE, MASTER LISTS, and COMPLIANCE TASKS are private data. Protect your exported workbook.',
+      'Sales transaction customer name/email/phone/address/TIN and invoice drafts are personal data. Protect this unencrypted workbook and share only with authorized recipients.',
       'Compliance reminders are user-set dates and do not validate filing deadlines or produce tax returns.',
       'BIR RMC 65-2025: https://bir-cdn.bir.gov.ph/BIR/pdf/RMC%20No.%2065-2025%20Digest.pdf',
       'BIR RMC 4-2026: https://bir-cdn.bir.gov.ph/BIR/pdf/RMC%20No.%204-2026.pdf',
@@ -92,7 +93,9 @@ class ExportService {
       ['Date','Reference','Particulars','Gross PHP','Fees PHP',
        'Bank / cash PHP','Clearing PHP'],
       books.cashReceipts.map((e) => [
-        dateCell(e.date), t(e.reference), t(e.particulars),
+        dateCell(e.date), t(e.reference), t(buyers[e.reference] == null ||
+          buyers[e.reference]!.isEmpty ? e.particulars
+          : '${e.particulars} · ${buyers[e.reference]}'),
         moneyOrBlank(e.gross), moneyOrBlank(e.fees),
         moneyOrBlank(e.bankReceived), moneyOrBlank(e.processorNet),
       ]),
@@ -157,18 +160,21 @@ class ExportService {
       widths: [120]);
     addSheet(book, 'SALES TRANSACTIONS',
       ['Date / time', 'Record ID', 'Source', 'Payment reference',
-       'Product / service', 'Customer (optional)', 'Received into',
+       'Product / service', 'Customer name', 'Customer email',
+       'Customer phone', 'Buyer address', 'Buyer TIN', 'Received into',
        'Type', 'Status', 'Gross PHP', 'Fee PHP',
        'Fee VAT portion PHP', 'Net PHP', 'Method', 'Notes'],
       imported.map((e) => [
         t(DateFormat('yyyy-MM-dd HH:mm').format(e.occurredAt)), t(e.id),
         t(e.isManual ? 'Manual direct payment' : 'CSV / Excel import'),
-        t(e.reference), t(e.description), t(e.customer), t(e.depositAccount),
+        t(e.reference), t(e.description), t(e.customer),
+        t(e.customerEmail), t(e.customerPhone),
+        t(e.customerAddress), t(e.customerTin), t(e.depositAccount),
         t(e.type), t(e.status), amount(e.grossCentavos),
         amount(e.feeCentavos), amount(e.vatCentavos),
         amount(e.netCentavos), t(e.paymentMethod), t(e.notes),
       ]),
-      widths: [23, 41, 24, 27, 35, 27, 27, 17, 19, 20, 22, 23, 20, 18, 38]);
+      widths: [23, 41, 24, 27, 35, 27, 32, 24, 38, 23, 27, 17, 19, 20, 22, 23, 20, 18, 38]);
     addSheet(book, 'BUSINESS PROFILE',
       ['Field', 'Value'], [
         [t('Business name'), t(workspace.businessName)],
@@ -179,11 +185,13 @@ class ExportService {
         [t('Private notes'), t(workspace.notes)],
       ], widths: [34, 90]);
     addSheet(book, 'MASTER LISTS',
-      ['List', 'Name', 'Notes', 'Reference price PHP'],
+      ['List','Name','Email','Phone','Address','TIN (unverified)',
+       'Notes','Reference price PHP'],
       workspace.masters.map((item) => [
-        t(item.kind), t(item.name), t(item.details),
+        t(item.kind), t(item.name), t(item.email), t(item.phone),
+        t(item.address), t(item.tin), t(item.details),
         item.priceCentavos == null ? t('') : amount(item.priceCentavos!),
-      ]), widths: [23, 40, 68, 26]);
+      ]), widths: [23,40,32,22,48,25,68,26]);
     addSheet(book, 'COMPLIANCE TASKS',
       ['Due date', 'Task', 'Completed', 'Notes'],
       workspace.reminders.map((item) => [
@@ -199,15 +207,20 @@ class ExportService {
         amount(item.amountCentavos),t(item.notes),
       ]), widths: [20,18,38,55,44,20,23,60]);
     addSheet(book, 'TAX TRACKING RECORDS',
-      ['Kind','Date','Due Date','Period','Name / form','Reference','Status',
-       'Direction','Amount PHP','Notes'],
+      ['Kind','Date','Due Date','Period','Name / buyer','Reference','Status',
+       'Direction','Amount PHP','Linked sale ID','Buyer email',
+       'Buyer phone','Buyer address','Buyer TIN','Goods / service',
+       'CWT if applicable PHP','Notes'],
       workspace.taxRecords.map((item) => [
         t(item.kind),dateCell(item.date),
         item.dueDate == null ? t('') : dateCell(item.dueDate!),
         t(item.period),t(item.name),
         t(item.reference),t(item.status),t(item.direction),
-        amount(item.amountCentavos),t(item.notes),
-      ]), widths: [17,19,19,17,45,39,20,19,20,55]);
+        amount(item.amountCentavos),t(item.sourceSaleId),
+        t(item.buyerEmail),t(item.buyerPhone),t(item.buyerAddress),
+        t(item.buyerTin),t(item.itemDescription),
+        amount(item.cwtCentavos),t(item.notes),
+      ]), widths: [17,19,19,17,45,39,20,19,20,38,34,24,45,25,52,24,55]);
     final bytes = book.save();
     if (bytes == null) throw StateError('Excel could not generate the workbook');
     await FileSaver.instance.saveFile(
