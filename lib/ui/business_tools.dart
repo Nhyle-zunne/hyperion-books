@@ -3,15 +3,17 @@ import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../models/business_workspace.dart';
 import '../models/book_entry.dart';
+import '../models/paymongo_transaction.dart';
 
 class BusinessTools extends StatefulWidget {
   final BusinessWorkspace workspace;
+  final List<PayMongoTransaction> transactions;
   final Future<void> Function(BusinessWorkspace) save;
   final Widget backupPage;
   final int initialTab;
   final String initialKind;
   const BusinessTools({super.key, required this.workspace,
-    required this.save, required this.backupPage,
+    this.transactions = const [], required this.save, required this.backupPage,
     this.initialTab = 0, this.initialKind = 'Customer'});
   @override State<BusinessTools> createState() => _BusinessToolsState();
 }
@@ -127,6 +129,16 @@ class _BusinessToolsState extends State<BusinessTools> {
 
   Widget masterList() {
     final items = widget.workspace.masters.where((x) => x.kind == kind).toList();
+    final fromSales = <String, PayMongoTransaction>{};
+    if (kind == 'Customer') {
+      for (final row in widget.transactions.where((t) => t.isPayment)) {
+        final email = row.customerEmail.trim().toLowerCase();
+        final name = row.customer.trim().toLowerCase();
+        if (name.isEmpty && email.isEmpty) continue;
+        final key = email.isNotEmpty ? 'email:$email' : 'name:$name';
+        fromSales.putIfAbsent(key, () => row);
+      }
+    }
     return scroll([
       const Text('Master lists', style: TextStyle(
         fontWeight: FontWeight.w800, fontSize: 18)),
@@ -143,14 +155,56 @@ class _BusinessToolsState extends State<BusinessTools> {
           onPressed: () => editItem(null), icon: const Icon(Icons.add),
           label: Text('Add $kind'))),
       const SizedBox(height: 10),
-      if (items.isEmpty) const Text('No items yet.'),
+      if (items.isEmpty) Text(kind == 'Customer'
+        ? 'No manually saved customer profiles yet.'
+        : 'No items yet.'),
       for (final item in items)
         Card(child: ListTile(title: Text(item.name),
-          subtitle: Text(item.details),
+          subtitle: Text([
+            if (item.email.isNotEmpty) item.email,
+            if (item.phone.isNotEmpty) item.phone,
+            if (item.tin.isNotEmpty) 'TIN (unverified): ${item.tin}',
+            if (item.details.isNotEmpty) item.details,
+          ].join(' · ')),
           onTap: () => editItem(item),
           trailing: IconButton(tooltip: 'Delete item',
             icon: const Icon(Icons.delete_outline),
             onPressed: () => _confirmMasterDelete(item)))),
+      if (kind == 'Customer' && fromSales.isNotEmpty) ...[
+        const SizedBox(height: 14),
+        const Text('Customers from sales imports',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 5),
+        const Text('Read-only customer directory derived from your local sales. '
+          'Same email is grouped; names without email are indicative only. '
+          'These customers are not copied into the manual master list.'),
+        const SizedBox(height: 7),
+        for (final sale in fromSales.values)
+          Card(child: ListTile(
+            leading: const Icon(Icons.person_outline),
+            title: Text(sale.customer.isEmpty ? 'Name not provided' : sale.customer),
+            subtitle: Text([
+              if (sale.customerEmail.isNotEmpty) sale.customerEmail,
+              if (sale.customerPhone.isNotEmpty) sale.customerPhone,
+              if (sale.customerAddress.isNotEmpty) sale.customerAddress,
+            ].join(' · ')),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => showDialog<void>(context: context, builder: (d) =>
+              AlertDialog(
+                title: const Text('Imported buyer details'),
+                content: SelectableText([
+                  'Name: ${sale.customer}',
+                  'Email: ${sale.customerEmail}',
+                  'Phone: ${sale.customerPhone}',
+                  'Address: ${sale.customerAddress}',
+                  'TIN (unverified): ${sale.customerTin}',
+                  'Last matching sale: ${sale.id}',
+                ].join('\n')),
+                actions: [TextButton(onPressed: () => Navigator.pop(d),
+                  child: const Text('Close'))],
+              )),
+          )),
+      ],
     ]);
   }
 
@@ -176,6 +230,10 @@ class _BusinessToolsState extends State<BusinessTools> {
     var type = original?.kind ?? kind;
     var label = original?.name ?? '';
     var details = original?.details ?? '';
+    var email = original?.email ?? '';
+    var phone = original?.phone ?? '';
+    var address = original?.address ?? '';
+    var buyerTin = original?.tin ?? '';
     var price = original?.priceCentavos == null ? '' :
       (original!.priceCentavos! / 100).toStringAsFixed(2);
     final record = await showDialog<BusinessListItem>(context: context,
@@ -194,6 +252,27 @@ class _BusinessToolsState extends State<BusinessTools> {
               TextFormField(initialValue: details, maxLength: 500,
                 decoration: const InputDecoration(labelText: 'Notes'),
                 onChanged: (v) => details = v),
+              if (type == 'Customer') ...[
+                TextFormField(initialValue: email, maxLength: 254,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'Email (optional; private)'),
+                  onChanged: (v) => email = v),
+                TextFormField(initialValue: phone, maxLength: 60,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'Contact number (optional)'),
+                  onChanged: (v) => phone = v),
+                TextFormField(initialValue: address, maxLength: 400,
+                  maxLines: 2,
+                  decoration: const InputDecoration(
+                    labelText: 'Buyer address (B2B if applicable)'),
+                  onChanged: (v) => address = v),
+                TextFormField(initialValue: buyerTin, maxLength: 40,
+                  decoration: const InputDecoration(
+                    labelText: 'Buyer TIN (if applicable; not verified)'),
+                  onChanged: (v) => buyerTin = v),
+              ],
               if (type == 'Product')
                 TextFormField(initialValue: price,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -206,7 +285,9 @@ class _BusinessToolsState extends State<BusinessTools> {
               child: const Text('Cancel')),
             FilledButton(onPressed: () {
               if (label.trim().isEmpty || label.length > 160 ||
-                  details.length > 500) {
+                  details.length > 500 || email.length > 254 ||
+                  phone.length > 60 || address.length > 400 ||
+                  buyerTin.length > 40) {
                 return;
               }
               final parsedPrice = type == 'Product' && price.trim().isNotEmpty
@@ -218,6 +299,10 @@ class _BusinessToolsState extends State<BusinessTools> {
               Navigator.pop(dialog, BusinessListItem(
                 id: original?.id ?? const Uuid().v4(), kind: type,
                 name: label.trim(), details: details.trim(),
+                email: type == 'Customer' ? email.trim() : '',
+                phone: type == 'Customer' ? phone.trim() : '',
+                address: type == 'Customer' ? address.trim() : '',
+                tin: type == 'Customer' ? buyerTin.trim() : '',
                 priceCentavos: parsedPrice));
             }, child: const Text('Save')),
           ])));
