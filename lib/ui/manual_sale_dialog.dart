@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../models/book_entry.dart';
 import '../models/paymongo_transaction.dart';
+import '../models/hyperion_product_catalog.dart';
 
 /// Direct receipts (QR Ph, personal bank transfers, wallets, cash).
 /// Unlike a platform payout these count as sales immediately on their date.
@@ -22,7 +23,7 @@ class _ManualSaleEditor extends StatefulWidget {
 class _ManualSaleEditorState extends State<_ManualSaleEditor> {
   late final TextEditingController _amount;
   late final TextEditingController _fee;
-  late final TextEditingController _description;
+  String? _selectedProduct;
   late final TextEditingController _reference;
   late final TextEditingController _customer;
   late final TextEditingController _email;
@@ -49,7 +50,8 @@ class _ManualSaleEditorState extends State<_ManualSaleEditor> {
     _amount = TextEditingController(text: pesoInput(item?.grossCentavos));
     _fee = TextEditingController(text: item == null || item.feeCentavos == 0
         ? '' : pesoInput(-item.feeCentavos));
-    _description = TextEditingController(text: item?.description ?? '');
+    final existing = item?.description.trim() ?? '';
+    _selectedProduct = existing.isEmpty ? null : existing;
     _reference = TextEditingController(text: item?.reference ?? '');
     _customer = TextEditingController(text: item?.customer ?? '');
     _email = TextEditingController(text: item?.customerEmail ?? '');
@@ -62,7 +64,7 @@ class _ManualSaleEditorState extends State<_ManualSaleEditor> {
 
   @override
   void dispose() {
-    for (final c in [_amount, _fee, _description, _reference,
+    for (final c in [_amount, _fee, _reference,
       _customer, _email, _phone, _address, _tin, _account, _notes]) {
       c.dispose();
     }
@@ -82,7 +84,7 @@ class _ManualSaleEditorState extends State<_ManualSaleEditor> {
   void _save() {
     final gross = parsePesos(_amount.text);
     final fee = _fee.text.trim().isEmpty ? 0 : parsePesos(_fee.text);
-    final description = _description.text.trim();
+    final description = _selectedProduct?.trim() ?? '';
     if (gross == null || gross <= 0) {
       setState(() => _error = 'Enter the sale amount in pesos.');
       return;
@@ -92,7 +94,7 @@ class _ManualSaleEditorState extends State<_ManualSaleEditor> {
       return;
     }
     if (description.isEmpty || description.length > 180) {
-      setState(() => _error = 'Enter the product or service (up to 180 characters).');
+      setState(() => _error = 'Select the product or service.');
       return;
     }
     if (_reference.text.trim().length > 160 ||
@@ -150,11 +152,25 @@ class _ManualSaleEditorState extends State<_ManualSaleEditor> {
               child: Text('Payment received  ·  ${DateFormat('MMM d, yyyy').format(_date)}')),
           ),
           const SizedBox(height: 14),
-          TextField(controller: _description,
-            maxLength: 180, textCapitalization: TextCapitalization.sentences,
-            textInputAction: TextInputAction.next,
+          DropdownButtonFormField<String>(
+            key: const ValueKey('manual-sale-product'),
+            initialValue: _selectedProduct,
+            isExpanded: true,
+            menuMaxHeight: 380,
             decoration: const InputDecoration(
-              labelText: 'Product / service *', hintText: 'OIC-NW monthly access')),
+              labelText: 'Product / service *',
+              hintText: 'Select Hyperion product'),
+            items: HyperionProductCatalog.choicesForExisting(
+              widget.initial?.description,
+            ).map((product) => DropdownMenuItem<String>(
+              value: product,
+              child: Text(product, overflow: TextOverflow.ellipsis),
+            )).toList(),
+            onChanged: (value) => setState(() {
+              _selectedProduct = value;
+              _error = null;
+            }),
+          ),
           const SizedBox(height: 6),
           TextField(controller: _amount,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
