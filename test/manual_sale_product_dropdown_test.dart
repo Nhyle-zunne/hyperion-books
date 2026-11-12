@@ -30,7 +30,8 @@ void main() {
     description: description, customer: 'Existing customer',
   );
 
-  Future<PayMongoTransaction?> openEditor(WidgetTester tester, {
+  Future<void> openEditor(WidgetTester tester, {
+    required ValueNotifier<PayMongoTransaction?> saved,
     PayMongoTransaction? initial,
     Size screen = const Size(900, 900),
   }) async {
@@ -40,11 +41,10 @@ void main() {
       tester.view.resetPhysicalSize();
       tester.view.resetDevicePixelRatio();
     });
-    PayMongoTransaction? result;
     await tester.pumpWidget(MaterialApp(home: Scaffold(body: Builder(
       builder: (context) => TextButton(
         onPressed: () async {
-          result = await showManualSaleEditor(context, initial: initial);
+          saved.value = await showManualSaleEditor(context, initial: initial);
         },
         child: const Text('Open sale editor'),
       ),
@@ -52,12 +52,12 @@ void main() {
     await tester.tap(find.text('Open sale editor'));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('manual-sale-product')), findsOneWidget);
-    return result;
   }
 
   testWidgets('new manual sale requires a selected product and preserves price entered',
       (tester) async {
-    await openEditor(tester);
+    final saved = ValueNotifier<PayMongoTransaction?>(null);
+    await openEditor(tester, saved: saved);
     expect(find.text('Select Hyperion product'), findsOneWidget);
     final amount = find.widgetWithText(TextField, 'Gross amount paid *');
     await tester.enterText(amount, '50.00');
@@ -76,12 +76,19 @@ void main() {
     await tester.pumpAndSettle();
     // A persisted sale is observable by capturing the completion in the widget.
     expect(find.text('Add sale'), findsNothing);
+    expect(saved.value?.description, 'OIC-NW monthly access');
+    expect(saved.value?.grossCentavos, 5000,
+      reason: 'Choosing a product must not invent or change payment amount');
+    expect(saved.value?.netCentavos, 5000);
+    expect(saved.value?.source, 'manual');
     expect(tester.takeException(), isNull);
   });
 
   testWidgets('editing old custom description does not alter accounting details',
       (tester) async {
-    await openEditor(tester, initial: existingSale('Legacy maritime tutorial'));
+    final saved = ValueNotifier<PayMongoTransaction?>(null);
+    await openEditor(tester, saved: saved,
+      initial: existingSale('Legacy maritime tutorial'));
     final picker = find.byKey(const ValueKey('manual-sale-product'));
     final selected = tester.widget<DropdownButtonFormField<String>>(picker);
     expect(selected.initialValue, 'Legacy maritime tutorial');
@@ -90,6 +97,10 @@ void main() {
     await tester.tap(find.text('Save sale'));
     await tester.pumpAndSettle();
     expect(find.text('Edit sale'), findsNothing);
+    expect(saved.value?.description, 'Legacy maritime tutorial');
+    expect(saved.value?.reference, 'REF-OLD-001');
+    expect(saved.value?.grossCentavos, 5000);
+    expect(saved.value?.customer, 'Existing customer');
     expect(tester.takeException(), isNull);
   });
 }
