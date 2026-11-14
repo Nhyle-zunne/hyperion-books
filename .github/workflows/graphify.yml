@@ -40,6 +40,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: false
       - name: Build local-only Graphify source graph
         run: uvx --from graphifyy==0.9.108 graphify extract . --code-only
       - name: Verify graph was generated
