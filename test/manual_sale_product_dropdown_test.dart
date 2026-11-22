@@ -5,17 +5,17 @@ import 'package:hyperion_books/models/paymongo_transaction.dart';
 import 'package:hyperion_books/ui/manual_sale_dialog.dart';
 
 void main() {
-  test('catalog offers every Hyperion access group and subscription duration', () {
-    expect(HyperionProductCatalog.products.length, 15);
-    expect(HyperionProductCatalog.products.toSet().length, 15);
+  test('catalog offers every Hyperion access group including lifetime', () {
+    expect(HyperionProductCatalog.products.length, 20);
+    expect(HyperionProductCatalog.products.toSet().length, 20);
     for (final group in ['OIC-NW', 'OIC-EW', 'Deck Management',
       'Engine Management', 'GMDSS GOC']) {
-      for (final term in ['weekly', 'monthly', 'yearly']) {
+      for (final term in ['weekly', 'monthly', 'yearly', 'lifetime']) {
         expect(HyperionProductCatalog.products, contains('$group $term access'));
       }
     }
-    expect(HyperionProductCatalog.choicesForExisting(null).length, 15);
-    expect(HyperionProductCatalog.choicesForExisting('OIC-NW monthly access').length, 15);
+    expect(HyperionProductCatalog.choicesForExisting(null).length, 20);
+    expect(HyperionProductCatalog.choicesForExisting('OIC-NW monthly access').length, 20);
     expect(HyperionProductCatalog.choicesForExisting(
       'Legacy maritime tutorial').first, 'Legacy maritime tutorial');
     expect(HyperionProductCatalog.products, isNot(contains('Legacy maritime tutorial')),
@@ -81,6 +81,26 @@ void main() {
       reason: 'Choosing a product must not invent or change payment amount');
     expect(saved.value?.netCentavos, 5000);
     expect(saved.value?.source, 'manual');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('lifetime sale records selected product and actual paid amount',
+      (tester) async {
+    final saved = ValueNotifier<PayMongoTransaction?>(null);
+    await openEditor(tester, saved: saved);
+    await tester.enterText(find.widgetWithText(TextField, 'Gross amount paid *'), '925.00');
+    final picker = find.byKey(const ValueKey('manual-sale-product'));
+    await tester.ensureVisible(picker);
+    await tester.tap(picker);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Deck Management lifetime access').last);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Save sale'));
+    await tester.tap(find.text('Save sale'));
+    await tester.pumpAndSettle();
+    expect(saved.value?.description, 'Deck Management lifetime access');
+    expect(saved.value?.grossCentavos, 92500);
+    expect(saved.value?.netCentavos, 92500);
     expect(tester.takeException(), isNull);
   });
 
