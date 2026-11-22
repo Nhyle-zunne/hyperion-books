@@ -93,12 +93,12 @@ void main() {
     await tester.ensureVisible(picker);
     await tester.tap(picker);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Deck Management lifetime access').last);
+    await tester.tap(find.text('OIC-NW lifetime access').last);
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Save sale'));
     await tester.tap(find.text('Save sale'));
     await tester.pumpAndSettle();
-    expect(saved.value?.description, 'Deck Management lifetime access');
+    expect(saved.value?.description, 'OIC-NW lifetime access');
     expect(saved.value?.grossCentavos, 92500);
     expect(saved.value?.netCentavos, 92500);
     expect(tester.takeException(), isNull);
