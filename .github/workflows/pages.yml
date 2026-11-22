@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
 permissions:
+  actions: read
   contents: read
   pages: write
   id-token: write
@@ -36,6 +37,20 @@ jobs:
         with:
           name: pages-${{ github.run_id }}-${{ github.run_attempt }}
           path: build/web
+      - name: Wait for Pages artifact visibility
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_NAME: pages-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          for attempt in $(seq 1 20); do
+            if gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100" --jq '.artifacts[].name' | grep -Fxq "$ARTIFACT_NAME"; then
+              echo "Pages artifact is available after attempt $attempt"
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "::error::Pages artifact not visible to deployment API"
+          exit 1
       - id: deployment
         uses: actions/deploy-pages@v4
         with:
